@@ -1,0 +1,22 @@
+%% Example analyst output: a Mermaid ER diagram in a *-DB-Changes.md document —
+%% written by the agent, rendered by the doc-shell template
+erDiagram
+    ORGANIZATION ||--o{ SUB_ACCOUNT : has
+    SUB_ACCOUNT ||--o{ COST_DATA : generates
+    COST_DATA ||--o{ RECOMMENDATION : has
+    ORGANIZATION {
+        int OrganizationId PK
+        string Name
+        string CloudProvider
+    }
+    SUB_ACCOUNT {
+        int SubAccountId PK
+        int OrganizationId FK
+        string AccountName
+    }
+    COST_DATA {
+        int CostDataId PK
+        int SubAccountId FK
+        decimal TotalCost
+        date ReportDate
+    }

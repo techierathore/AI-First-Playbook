@@ -1,0 +1,11 @@
+%% Workflow 1 — New module / feature development
+flowchart TD
+    A["BRD + Mockup + Standards"] --> B["/feature-plan\n(fresh chat)"]
+    B --> C{"Human reviews\ndocuments"}
+    C -- "needs changes" --> B
+    C -- "approved" --> D["/implement\n(fresh chat)"]
+    D --> E["/verify\n(fresh chat)"]
+    E --> F{"Verdict"}
+    F -- "has FAILs" --> G["/fix\n(same or fresh chat)"]
+    G --> E
+    F -- "ALL PASS" --> H["Human acceptance\nDone!"]

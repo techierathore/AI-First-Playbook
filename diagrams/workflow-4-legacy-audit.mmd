@@ -1,0 +1,12 @@
+%% Workflow 4 — Legacy module: audit upgraded checklist + fix QA bugs
+flowchart TD
+    A["Legacy module:\nupgraded checklist +\nQA reported bugs in Issues MD"] --> B["/verify\n(fresh chat)\nannotates FAIL items\nINSIDE the checklist"]
+    B --> C["Checklist now has:\n- inline Verifier Result on each item\n- Status Table reflecting reality\n- Run Log entry"]
+    C --> D{"Any QA bugs NOT already\nin the checklist?"}
+    D -- "yes" --> E["/analyze-fix\n(fresh chat)\nfold Issues into checklist"]
+    D -- "no" --> F["/fix directly"]
+    E --> F["/fix\n(fresh chat)\nuses inline FAIL annotations"]
+    F --> G["/verify\n(fresh chat)"]
+    G --> H{"Verdict"}
+    H -- "has FAILs" --> F
+    H -- "ALL PASS" --> I["Re-test manually\nAccept\nDelete Issues.md"]

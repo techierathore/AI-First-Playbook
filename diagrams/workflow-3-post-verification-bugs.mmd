@@ -1,0 +1,13 @@
+%% Workflow 3 — Post-verification bugs (manual testing or production)
+flowchart TD
+    A["Bug found during\nmanual testing or\nreported in production"] --> B1["/create-issue-list\n(pulls from Jira)\nor write Issues MD manually"]
+    B1 --> B["Issues MD file (transient)"]
+    B --> C["/analyze-fix\n(fresh chat)\nUPDATES existing checklist"]
+    C --> D["EXISTING implementation checklist now has:\n1. Root cause\n2. WHY Verifier missed it\n3. New items + improved Verify methods"]
+    D --> E{"Human reviews\nupdated checklist"}
+    E -- "needs changes" --> C
+    E -- "approved" --> F["/fix\n(fresh chat)\nupdates checklist Status Table"]
+    F --> G["/verify\n(fresh chat)\nnow includes new items"]
+    G --> H{"Verdict"}
+    H -- "has FAILs" --> F
+    H -- "ALL PASS" --> I["Re-test manually\nAccept\nDelete Issues.md"]

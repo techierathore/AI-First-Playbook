@@ -1,0 +1,13 @@
+%% Workflow 2 — Bug fixes & user stories (before/without production escape)
+flowchart TD
+    Z["Jira tickets"] -. optional .-> A0["/create-issue-list\n(fresh chat)"]
+    A0 --> A["Issues MD file\nor User story MD"]
+    Z2["User story MD or\nmanual bug list"] --> A
+    A --> B["/analyze-fix\n(fresh chat)\nUPDATES existing checklist"]
+    B --> C{"Human reviews\nupdated checklist"}
+    C -- "needs changes" --> B
+    C -- "approved" --> D["/fix\n(fresh chat)\nUPDATES checklist Status Table"]
+    D --> E["/verify\n(fresh chat)"]
+    E --> F{"Verdict"}
+    F -- "has FAILs" --> D
+    F -- "ALL PASS" --> G["Delete transient files\nHuman acceptance\nDone!"]

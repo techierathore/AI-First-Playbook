@@ -1,0 +1,9 @@
+%% Service / package / job flow class (e.g. a cloud-data sync) — the second
+%% flow class documented in every Developer-Flow-Guide (v2.5)
+flowchart LR
+    T["Trigger\nscheduler / queue /\nmanual / DI caller"] --> E["Entrypoint\nSyncAllCostData"]
+    E --> O["Orchestration\nresolve orgs, loop"]
+    O --> C["Core library\nCloudManagerCore\nCostClient.GetCosts"]
+    C --> S["Standardise\nresource types,\ncurrency, labels"]
+    S --> W["DB write\nuspUpsertCostData\n-> CostRecord"]
+    W --> R["Outcome\nrows written +\nINFO log line"]

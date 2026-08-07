@@ -1,0 +1,20 @@
+%% The feature lifecycle — ten steps, gates at 2, 5/6, 9
+flowchart TD
+    A["BRD + mockup + Coding Standards"] --> B["1 - PLAN\n/feature-plan command\nanalyst persona"]
+    B --> C{"2 - PLAN REVIEW GATE\nhuman reviews docs"}
+    C -- "gaps found" --> B
+    C -- "approved" --> D["3 - BUILD\n/implement command\norchestrator persona"]
+    D --> E["4 - SELF-REVIEW\norchestrator audits own work"]
+    E --> F["5 - VERIFY\n/verify command\nverifier agent (fresh context)"]
+    F --> G{"6 - GAP REPORT"}
+    G -- "FAIL items" --> H["7 - FIX\n/fix command\norchestrator persona"]
+    H --> F
+    G -- "all PASS" --> I["8 - HUMAN ACCEPTANCE\ntesting + HTML docs"]
+    I -- "bugs found" --> K["9 - POST-VERIFY BUG\nlog in issues MD"]
+    K --> L["/analyze-fix\n(root cause + checklist patch)"]
+    L --> M{"Human reviews\nupdated checklist"}
+    M -- "needs changes" --> L
+    M -- "approved" --> H
+    I -- "accepted" --> N["DONE\nDeploy"]
+    N --> O["10 - PRODUCTION BUG\nreported by users"]
+    O --> K
