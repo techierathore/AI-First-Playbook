@@ -12,8 +12,8 @@ every document readable by both the model and the humans.
 
 ## The problem
 
-AI coding agents implement a checklist, then *declare* themselves done. In our production
-use we found three structural gaps behind the bugs that leaked:
+AI coding agents implement a checklist, then *declare* themselves done. Three structural
+gaps sit behind the bugs that leak:
 
 1. **There is no closed verification loop — you are the loop.** Nothing independent
    re-derives expected behaviour from the spec and checks the artifact. The agent that
@@ -21,7 +21,7 @@ use we found three structural gaps behind the bugs that leaked:
 2. **Cross-cutting rules live inside long per-feature docs the model deprioritises.**
    Logging, error handling, coding standards, and UI fidelity slide under context
    pressure.
-3. **Commands don't enforce context gathering.** When context was missing, the AI guessed
+3. **Commands don’t enforce context gathering.** When context is missing, the AI guesses
    wrong. Commands must *ask* for what they need.
 
 The reframe this playbook is built on: *you do not have an AI quality problem — you have
@@ -35,8 +35,8 @@ make commands demand their inputs.
   real-world codebase — not a demo repo.
 - A designated **process owner** who installs and maintains the framework, plus
   developers who drive it day to day.
-- Originally built for a .NET + React multi-cloud product on the OpenCode harness with
-  BMAD v4 personas; the process itself is harness-portable.
+- Built on the OpenCode harness with BMAD v4 personas, against a .NET + React stack; the
+  process itself is harness- and stack-portable.
 
 ## The lifecycle at a glance
 
@@ -98,12 +98,15 @@ observing the real side effect**:
   FAIL, not a pass."*
 
 Full spec: [`templates/verifier-agent.md`](templates/verifier-agent.md) and
-[`phases/05-verify.md`](phases/05-verify.md).
+[`phases/05-verify.md`](phases/05-verify.md). The **runnable agent** — all 1,050 lines of
+probes, anti-excuse rules, and verdict discipline — is
+[`harness/opencode/agent/verifier.md`](harness/opencode/agent/verifier.md).
 
 ## The command library
 
 **Four commands carry the daily loop**; nine more support it. Specs (one file per
-command) live in [`templates/commands/`](templates/commands/).
+command) live in [`templates/commands/`](templates/commands/); the **runnable command
+files** are in [`harness/opencode/command/`](harness/opencode/command/).
 
 | Core loop | What it does |
 |---|---|
@@ -118,11 +121,13 @@ Supporting: `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`,
 
 ## Quickstart
 
-The full setup runbook is in the phase docs; the short version:
+The runnable artifacts are in [`harness/`](harness/) — install instructions, environment
+assumptions, and porting notes are in [`harness/README.md`](harness/README.md). The short
+version:
 
-1. **Commit the framework files** to your shared repo root: the Verifier agent
-   definition, the command files, the HTML doc-shell template, an `AGENTS.md` with the
-   standing rules ([template](templates/agents-md-template.md)), and a `Context-Prompt.md`
+1. **Copy `harness/opencode/` to `.opencode/`** at your repo root — 13 command files, the
+   Verifier agent, the guardrail plugin, the HTML doc-shell. Add an `AGENTS.md` with the
+   standing rules ([template](templates/agents-md-template.md)) and a `Context-Prompt.md`
    cold-start primer.
 2. **Per machine (optional):** start Playwright MCP on the host
    (`npx @playwright/mcp@latest --port 8931 --allowed-hosts "*"`) and point your harness
@@ -131,8 +136,9 @@ The full setup runbook is in the phase docs; the short version:
    the Verifier annotates them FAIL inline.
 4. **Run your first feature** through the loop: `/feature-plan` → review → `/implement`
    → `/verify` → `/fix` until ALL PASS.
-5. **Read [ADOPTION-LESSONS.md](ADOPTION-LESSONS.md) before rolling out to a team.**
-   Steps 1–4 are the easy part; we learned that the hard way.
+5. **Read [ENABLEMENT.md](ENABLEMENT.md) before rolling out to a team**, then
+   run the first developer through [`onboarding/first-week.md`](onboarding/first-week.md).
+   Steps 1–4 are the easy part; getting a second person to run the loop is the hard one.
 
 ## Relationship to TechieFlow
 
@@ -151,39 +157,56 @@ at two scales:
 Both share: markdown as source of truth, Mermaid-only diagrams, HTML for human docs only,
 "verify by executing, not by reading", and single-source-of-truth checklists.
 
-## Adoption lessons (the honest part)
+## Enablement (the part frameworks usually skip)
 
-This process ran in production at a real company — and team adoption **stalled at 2 of 15
-developers**. The tooling worked; the enablement didn't. The full post-mortem, and what
-we'd do differently, is in [ADOPTION-LESSONS.md](ADOPTION-LESSONS.md). If you only read
-one file beyond this README, read that one.
+A verification-first process fixes the *AI's* failure mode — declaring itself done without
+proof. It does nothing about the human one: **a team that reads about a process and never
+runs it.** Rolling one of these out fails for structural reasons that have nothing to do
+with whether the tooling works, and shipping two polished guides is not a rollout.
+
+[ENABLEMENT.md](ENABLEMENT.md) is the argument — five reasons adoption stalls
+and what each one costs you. [`onboarding/first-week.md`](onboarding/first-week.md) is the
+answer: a five-rung ladder from one mechanical command to a solo verified feature, a
+definition of "adopted" you can actually measure, and the cliffs that end first
+experiments.
+
+If you only read one thing beyond this README before rolling this out to a team, read
+those two.
 
 ## Repo map
 
 ```
 README.md                  ← you are here
 DECISIONS.md               ← decision log (why sibling repo, license)
-ADOPTION-LESSONS.md        ← the 2/15 stall, diagnosed honestly
+ENABLEMENT.md              ← why team rollouts stall, and what to do instead
+onboarding/
+  first-week.md            ← the people-runbook: five rungs to "adopted"
 phases/                    ← one file per lifecycle step (01–10)
 diagrams/                  ← Mermaid sources for every diagram
-templates/
+templates/                 ← what each part does (specs, one page each)
   commands/                ← one spec per command (13)
   verifier-agent.md        ← the Verifier agent spec
   checklist-item-template.md
   deployment-steps-template.md
   agents-md-template.md    ← standing rules for AGENTS.md
   issues-file-template.md
+harness/                   ← what actually runs (install these)
+  README.md                ← install, personas, environment assumptions, porting
+  opencode/command/        ← the 13 runnable command files
+  opencode/agent/          ← verifier.md — the real 1,050-line agent
+  opencode/plugins/        ← spec-guardrails.ts — tool-level rule enforcement
+  opencode/templates/      ← doc-shell.html
 LICENSE                    ← Apache-2.0
 ```
 
-## Provenance & attribution
+## Attribution
 
-Converted from an internal playbook (v2.5) proven on a production multi-cloud product;
-company- and product-specific names have been genericized. The original implementation
-ran on [OpenCode](https://opencode.ai) with persona agents from
-[BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) (MIT); BMAD content is
-referenced, not redistributed. No capability described here is invented — everything was
-run in production, including the failures.
+Built on [OpenCode](https://opencode.ai), with persona agents from
+[BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) (MIT). BMAD content is
+**referenced, not redistributed** — this repo ships only original work (the command
+library, the Verifier agent, the guardrails plugin, the templates, the doc-shell, and the
+process itself). If you want the personas, install BMAD from upstream; see
+[`harness/README.md`](harness/README.md#personas) for the alternatives.
 
 ## License
 

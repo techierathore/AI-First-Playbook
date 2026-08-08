@@ -18,7 +18,7 @@ Accepts issue keys, full Jira URLs, or a mix with manual additions.
 
 ## Key behaviors
 
-- Reads credentials from a **gitignored** `.atlassian-config.json` (baseUrl, email, API
+- Reads credentials from a **gitignored** `jira-config.json` (baseUrl, email, API
   token). Direct REST calls via `curl` — a deliberate choice over an MCP server:
   leaner, no context pollution, full API access. The token is never echoed or logged.
 - Pulls summary, description, priority, status, assignee, reporter, type, labels,

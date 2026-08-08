@@ -3,4 +3,5 @@ node_modules/
 *.bak
 .DS_Store
 Thumbs.db
-.atlassian-config.json
+jira-config.json
+.claude/

@@ -2,7 +2,7 @@
 
 Cross-cutting rules fail when they live inside long per-feature docs the model
 deprioritises. Promote them to a repo-root `AGENTS.md` that is always in context.
-This is the production rule set, verbatim (paths genericized):
+The rule set, verbatim:
 
 ```markdown
 ## Logging (non-negotiable)
@@ -49,10 +49,10 @@ This is the production rule set, verbatim (paths genericized):
   is a process violation — consolidate immediately.
 ```
 
-## Enforcement note (learned in production)
+## Enforcement note
 
-Rules stated in prompts get forgotten under output pressure. The production
-implementation eventually **enforced the report-file ban mechanically** — a harness
-plugin intercepting write/edit calls and rejecting forbidden filenames
-(`Gap-Report*.md`, `Verification-Report*.md`, …) with an instructive error. If your
-harness supports pre-tool hooks, enforce your hardest rules there, not in prose.
+Rules stated in prompts get forgotten under output pressure. Which is why this framework
+**enforces the report-file ban mechanically** — a harness plugin intercepting write/edit
+calls and rejecting forbidden filenames (`Gap-Report*.md`, `Verification-Report*.md`, …)
+with an instructive error ([`spec-guardrails.ts`](../harness/opencode/plugins/spec-guardrails.ts)).
+If your harness supports pre-tool hooks, enforce your hardest rules there, not in prose.

@@ -3,7 +3,7 @@
 **Output of:** `/verify` · **Type: GATE** (only an all-PASS result reaches the human)
 
 There is **no separate gap-report file** — that pattern was deliberately retired (and is
-mechanically blocked in the original implementation by a guardrails plugin that rejects
+mechanically blocked by a guardrails plugin that rejects
 writes to `Gap-Report*.md`, `Verification-Report*.md`, etc.). The Verifier's findings
 live inline, in the one place both agents and humans already look:
 

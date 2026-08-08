@@ -10,7 +10,7 @@ checklist** with root-cause analysis. The heavier-weight sibling of `/amend-chec
 
 ```
 /analyze-fix @docs/CostDocs/Cost-Issues.md @src/backend/ @src/frontend/
-/analyze-fix @docs/UserStories/US-2547-MultiCloud.md @src/integrations/ @src/frontend/
+/analyze-fix @docs/UserStories/US-101-MultiCloud.md @src/integrations/ @src/frontend/
 ```
 
 ## Key behaviors

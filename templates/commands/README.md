@@ -1,9 +1,13 @@
 # The Command Library
 
 Thirteen commands: **four carry the daily loop**, nine support it. Each has a spec file
-here. In the original implementation every command is a markdown file in the harness's
-command directory; custom commands activate a persona by prompt instruction, except
-`/verify`, which targets the native Verifier agent directly.
+here — and a **runnable counterpart** in
+[`harness/opencode/command/`](../../harness/opencode/command/), which is the actual file
+the harness loads. Read the specs here to understand the process; install from `harness/`.
+
+Every command is a markdown file in the harness's command directory; custom commands
+activate a persona by prompt instruction, except `/verify`, which targets the native
+Verifier agent directly.
 
 Two universal rules:
 

@@ -1,10 +1,13 @@
 # The Verifier Agent — spec
 
-The keystone of the process: an independent, fresh-context native agent (in the original
-implementation, an OpenCode native agent invoked by `/verify` with `subtask: true`, or
-directly with `@verifier`). It never modifies product code and never logs credentials.
+The keystone of the process: an independent, fresh-context native agent — on OpenCode,
+invoked by `/verify` with `subtask: true`, or directly with `@verifier`. It never modifies
+product code and never logs credentials.
 
-## Agent definition (sanitized from the production config)
+The runnable agent is [`harness/opencode/agent/verifier.md`](../harness/opencode/agent/verifier.md);
+this file is the condensed spec.
+
+## Agent definition
 
 ```yaml
 ---
@@ -28,7 +31,7 @@ The agent prompt restricts edit/write to: the implementation checklist (inline
 annotations), files under `verification/` (integration tests, SQL runners), and
 referenced-but-missing scripts under `deploy/<feature>/`.
 
-## Absolute rules (from the production prompt, condensed)
+## Absolute rules (condensed — see the full agent for all of them)
 
 1. **Five verdict tiers only** — `PASS`, `FAIL`, `PASS (code-audit)`,
    `FAIL (code-audit)`, `BLOCKED`. Never invent new tiers.

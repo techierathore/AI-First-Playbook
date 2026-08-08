@@ -18,12 +18,11 @@ agent that must *prove* work by executing it):
   ledger), 27 tasks, dual Claude-Code/OpenCode harness. The multi-role, story-by-story
   flow was **deliberately trimmed on 2026-06-12** — solo focus is a design decision, not
   an accident.
-- **AI-First Development Playbook** (private, built at the office) — a team-scale process
+- **AI-First Development Playbook** (this repo; private until now) — a team-scale process
   on OpenCode + BMAD v4: a 10-step lifecycle with 4 gates, a 13-command library (core
   loop: `/feature-plan` → `/implement` → `/verify` → `/fix`), an independent Verifier
   native agent (Playwright MCP, `verification/` dotnet integration-test runners, optional
-  Windows-app bridge), a prescribed document set, and 42 documented process gotchas.
-  Adoption at the office stalled at **2 of 15 developers**.
+  Windows-app bridge), and a prescribed document set.
 
 **Hard constraint:** public ship date 2026-08-11. Merging is allowed ONLY if it fits in
 one weekend / two days of Claude Code (Opus) work; otherwise default to sibling +
@@ -41,7 +40,7 @@ An honest merge is not a docs copy-paste; it requires:
 3. Rewriting TechieFlow's 888-line README and its positioning — reversing the 2026-06-12
    solo-only trim on a live public repo.
 4. Handling third-party BMAD v4 content (the Playbook rides on it; TechieFlow doesn't).
-5. Full sanitization of employer-internal material (required in every option).
+5. Genericizing project-specific names throughout (required in every option).
 
 Items 1–3 alone exceed two days at any model tier, and carry regression risk on a repo
 users already consume. **Fails the hard constraint.**
@@ -63,27 +62,29 @@ be.
 
 ### Consequences
 
-- This repo (`AI-First-Playbook`) is the team edition. TechieFlow's README gets a short
-  "Team edition" cross-link section (snippet in SHIP-PLAN.md — owner applies it, since
-  TechieFlow commits are owner-manual by policy).
+- This repo (`AI-First-Playbook`) is the team edition. TechieFlow's README carries a short
+  "Team edition" cross-link section pointing back here.
 - BMAD v4 stock content is **not** redistributed here. The repo documents the process and
-  ships only original work (command specs, Verifier spec, templates, diagrams), with
-  attribution pointing to upstream BMAD-METHOD.
-- All employer-internal names are sanitized per the ledger in SHIP-PLAN.md.
+  ships only original work (command specs, Verifier spec, runnable command/agent files,
+  templates, diagrams), with attribution pointing to upstream BMAD-METHOD.
+- Project-specific names throughout the artifacts (products, repos, services, tables,
+  ticket keys) are replaced with generic placeholders against a fixed rename map, verified
+  by a grep gate before publication. The placeholders are deliberately concrete rather
+  than abstract — see [`harness/README.md`](harness/README.md#a-note-on-the-examples).
 
-### Fidelity notes (source vs. earlier working descriptions)
+### Fidelity notes
 
-Recorded so the public repo never overstates or misstates the source:
+Recorded so the repo's own description never drifts from what it actually ships:
 
-- The lifecycle in the source Playbook is **10 numbered steps, 4 of them gates** — not 7
-  phases. This repo ships the real 10-step structure (`phases/01…10`).
+- The lifecycle is **10 numbered steps, 4 of them gates** — not 7 phases. `phases/01…10`
+  is the real structure.
 - The command library is **13 commands**, with a **4-command core loop**
   (`/feature-plan`, `/implement`, `/verify`, `/fix`). "Four-command library" undersells
-  the source; the README presents "4 core + 9 supporting".
-- The Verifier's toolset per source: Playwright MCP (accessibility tree + screenshots),
-  self-written dotnet integration tests / SQL runner consoles under `verification/`,
-  environment probing, real-config-only rule, optional Windows-app bridge (FlaUI). Code
-  audit is the explicit last resort.
+  it; the README presents "4 core + 9 supporting".
+- The Verifier's toolset: Playwright MCP (accessibility tree + screenshots), self-written
+  dotnet integration tests / SQL runner consoles under `verification/`, environment
+  probing, real-config-only rule, optional Windows-app bridge. Code audit is the explicit
+  last resort.
 
 ## ADR-002 — License: Apache-2.0
 

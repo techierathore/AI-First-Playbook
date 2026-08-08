@@ -23,7 +23,7 @@ then the file is **deleted**. It is an input, never a record.
 ## Pulling from Jira
 
 `/create-issue-list PROJ-1234 PROJ-1235` (keys, URLs, or mixed with manual additions)
-reads credentials from a gitignored `.atlassian-config.json`, calls the Jira REST API
+reads credentials from a gitignored `jira-config.json`, calls the Jira REST API
 directly with `curl` (a deliberate design choice over an MCP server — leaner, no context
 pollution, full API access), parses the description into plain markdown, and structures
 each ticket into the Expected / Actual / Steps format above. The API token is never
