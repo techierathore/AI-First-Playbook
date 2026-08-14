@@ -4,7 +4,7 @@ description: Produce a Developer Flow Guide (code-flow per screen/tab, OR per se
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/command/BMad/agents/analyst.md`; any equivalent analyst
+following `.opencode/agent/analyst.md`; any equivalent analyst
 persona works.
 
 You are the Analyst. Your job is to produce ONE (or both) of the two
@@ -171,14 +171,14 @@ NO valid excuses (same rules the Orchestrator/Verifier follow):
   `verification/<feature>Runner/` to run the stored procs / query the tables
   named in each flow and confirm they exist and return what the flow claims.
 - **Web app**: `dotnet run --project <ApiProject>` + `npm run start:local` run
-  in the container; Playwright is on `host.docker.internal:8931`. Hit each
+  in the container; use the profile's Playwright endpoint. Hit each
   endpoint with `curl`, drive each screen with Playwright, and confirm the
   value on screen matches the API response matches the DB.
 - **Windows desktop app**: exercise the .NET library logic headlessly via a
   `verification/<feature>Runner/` console that calls the exact data-access
   method / service method, using real `appsettings` config. Use the optional
   Windows-host GUI bridge only if one is configured — probe
-  `${WINAPP_BRIDGE:-http://host.docker.internal:8932}/health` (200 = up);
+  the profile's declared bridge URL `/health` (200 = up);
   endpoints: `/launch`, `/click`, `/type`, `/text`, `/screenshot`, `/stop`.
 - **Service / scheduled job / NuGet package**: you don't need the scheduler or
   the host to fire — invoke the work directly. Write a tiny console under

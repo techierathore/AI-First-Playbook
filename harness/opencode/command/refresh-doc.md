@@ -4,7 +4,7 @@ description: Refresh documents against the CURRENT code — either a single shar
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/command/BMad/agents/analyst.md`; any equivalent analyst
+following `.opencode/agent/analyst.md`; any equivalent analyst
 persona works.
 
 You are the Analyst. Your job is to **bring documents back in sync with the
@@ -141,10 +141,10 @@ valid excuses (same rules as the Orchestrator/Verifier):
   the named stored procs / query the named tables via `sqlcmd` or a
   `Microsoft.Data.SqlClient` console under `verification/<feature>Runner/`.
 - **Web app**: `dotnet run --project <ApiProject>` + `npm run start:local`;
-  `curl` the endpoints; Playwright (`host.docker.internal:8931`) drives the UI.
+  `curl` the endpoints; the profile's Playwright endpoint drives the UI.
 - **Windows desktop app**: exercise the .NET library logic headlessly via a
   `verification/<feature>Runner/` console; optional host GUI bridge if present
-  (probe `${WINAPP_BRIDGE:-http://host.docker.internal:8932}/health`).
+  (probe `${WINAPP_BRIDGE_URL}/health` when declared in the profile).
 - **Service / scheduled job / NuGet package**: don't wait for the scheduler —
   invoke the work directly from a `verification/<feature>Runner/` console that
   news up the service/package class with real `appsettings` config and calls

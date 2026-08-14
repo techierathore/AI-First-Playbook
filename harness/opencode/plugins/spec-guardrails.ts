@@ -18,6 +18,8 @@
  */
 
 import type { Plugin } from "@opencode-ai/plugin";
+import { existsSync, lstatSync, realpathSync } from "node:fs";
+import { isAbsolute, relative, resolve } from "node:path";
 
 // ────────────────────────────────────────────────────────────────────────────
 // FORBIDDEN FILE PATTERNS
@@ -66,7 +68,7 @@ const FORBIDDEN_PATH_PATTERNS: { pattern: RegExp; reason: string }[] = [
  * Tool names whose file-write behaviour we want to police.
  * write, edit, patch all eventually land on disk.
  */
-const FILE_WRITING_TOOLS = new Set(["write", "edit", "apply_patch"]);
+const FILE_WRITING_TOOLS = new Set(["write", "edit", "apply_patch", "patch", "create_file", "delete_file", "move_file"]);
 
 /**
  * Extract the file path from a tool input, if any. Handles the differing
@@ -79,6 +81,64 @@ function extractPath(tool: string, args: Record<string, unknown>): string | null
   // edit / apply_patch also use `filePath` in current SDK versions
   if (typeof args.path === "string") return args.path;
   if (typeof args.file === "string") return args.file;
+  if (typeof args.target === "string") return args.target;
+  return null;
+}
+
+function pathsInPatch(value: unknown): string[] {
+  if (typeof value !== "string") return [];
+  return [...value.matchAll(/(?:\+\+\+|---|\*\*\* (?:Add|Update|Delete) File:)\s*[^\s]+\s*$/gm)]
+    .map((m) => m[0].replace(/^(?:\+\+\+|---|\*\*\* (?:Add|Update|Delete) File:)\s*/, "").trim());
+}
+
+function normalizePath(path: string, root = process.cwd()): string | null {
+  if (!path || /[\0\r\n]/.test(path)) return null;
+  const unix = path.replaceAll("\\", "/");
+  const absolute = isAbsolute(unix) ? resolve(unix) : resolve(root, unix);
+  const rel = relative(root, absolute);
+  if (rel === ".." || rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) || isAbsolute(rel)) return null;
+  if (existsSync(absolute)) {
+    try {
+      const real = realpathSync(absolute);
+      const realRel = relative(root, real);
+      if (realRel === ".." || realRel.startsWith("../") || isAbsolute(realRel)) return null;
+    } catch { return null; }
+    if (lstatSync(absolute).isSymbolicLink()) return null;
+  }
+  return rel.replaceAll("\\", "/");
+}
+
+function isChecklist(path: string): boolean {
+  return /(^|\/)[^/]*Implementation[-_ ]Checklist\.md$/i.test(path) || /(^|\/)checklists?\/[^/]+\.md$/i.test(path);
+}
+
+function isSelectedChecklist(path: string): boolean {
+  const selected = process.env.PLAYBOOK_CHECKLIST;
+  if (!selected) return isChecklist(path);
+  const normalized = normalizePath(selected);
+  return normalized === path;
+}
+
+function isVerifier(input: unknown): boolean {
+  const value = input as { agent?: unknown };
+  return value.agent === "verifier" || (typeof value.agent === "object" && value.agent !== null && ((value.agent as {name?: string}).name === "verifier"));
+}
+
+function shellWriteTargets(command: unknown): string[] {
+  if (typeof command !== "string") return [];
+  const targets: string[] = [];
+  for (const m of command.matchAll(/(?:>|>>|tee\s+(?:-a\s+)?|\b(?:cp|mv|rm|install|touch|mkdir)\s+)([^\s;&|]+)/g)) targets.push(m[1]);
+  return targets;
+}
+
+export function checkWritePolicy(path: string, verifier = true): string | null {
+  const normalized = normalizePath(path);
+  if (!normalized) return "target path is absolute, traverses the repository, is a symlink, or cannot be determined";
+  const forbidden = checkForbidden(normalized);
+  if (forbidden) return forbidden;
+  if (verifier && !(isSelectedChecklist(normalized) || /^verification\//.test(normalized) || /^deploy\/[^/]+\//.test(normalized))) {
+    return "Verifier writes are limited to the selected implementation checklist, verification/**, or explicitly referenced deploy/<feature>/** helpers";
+  }
   return null;
 }
 
@@ -129,22 +189,25 @@ export const SpecGuardrails: Plugin = async ({ client }) => {
      * result, which forces it to redirect.
      */
     "tool.execute.before": async (input, output) => {
-      if (!FILE_WRITING_TOOLS.has(input.tool)) return;
+      const args = output.args as Record<string, unknown>;
+      const shell = input.tool === "bash" || input.tool === "shell" || input.tool === "run";
+      if (!FILE_WRITING_TOOLS.has(input.tool) && !shell) return;
 
-      const path = extractPath(input.tool, output.args as Record<string, unknown>);
-      if (!path) return;
+      const paths = shell ? shellWriteTargets(args?.command ?? args?.cmd) : [extractPath(input.tool, args), ...pathsInPatch(args?.patch), ...pathsInPatch(args?.patchText)].filter(Boolean) as string[];
+      if (shell && !paths.length && isVerifier(input)) throw new Error("BLOCKED by spec-guardrails: verifier shell write target could not be determined; use a permitted file tool");
+      if (!paths.length) return;
 
-      const reason = checkForbidden(path);
+      const reason = paths.map((path) => checkWritePolicy(path!, isVerifier(input))).find(Boolean);
       if (reason) {
         await log("warn", `BLOCKED ${input.tool} of forbidden path`, {
           tool: input.tool,
-          path,
+          path: paths.join(", "),
           callId: input.callID,
         });
         // Throwing aborts the tool. The thrown message is what the agent
         // sees as the tool result.
         throw new Error(
-          `BLOCKED by spec-guardrails: cannot ${input.tool} ${path}.\n\n` +
+          `BLOCKED by spec-guardrails: cannot ${input.tool} ${paths.join(", ")}.\n\n` +
             `Reason: ${reason}\n\n` +
             `What to do instead:\n` +
             `  1. Locate the implementation checklist for this feature ` +

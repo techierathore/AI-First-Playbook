@@ -4,7 +4,7 @@ description: Create a structured Issues markdown file from Jira tickets or manua
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/command/BMad/agents/analyst.md`; any equivalent analyst
+following `.opencode/agent/analyst.md`; any equivalent analyst
 persona works.
 
 You are the Analyst. Your job is to create a structured **Issues Markdown file**
@@ -67,7 +67,7 @@ and `jira.apiBase`.
 For each issue key the user provided, run:
 ```bash
 # Replace placeholders with values from the config + the issue key
-curl -s -u "<email>:<apiToken>" \
+  curl -s -H "Authorization: Bearer $JIRA_TOKEN" \
   -H "Accept: application/json" \
   "<baseUrl><jira.apiBase>/issue/<ISSUE-KEY>?fields=summary,description,priority,status,assignee,reporter,issuetype,labels,components,attachment"
 ```

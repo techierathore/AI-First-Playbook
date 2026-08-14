@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md", "docs/ENVIRONMENT-PROFILE.md"],
+  "plugin": ["./.opencode/plugin/spec-guardrails.ts"],
+  "agent": {
+    "analyst": {"mode": "primary", "prompt": "file://.opencode/agent/analyst.md", "permission": {"edit": "allow", "write": "allow", "bash": "deny"}},
+    "orchestrator": {"mode": "primary", "prompt": "file://.opencode/agent/orchestrator.md", "permission": {"edit": "allow", "write": "allow", "bash": "allow"}},
+    "verifier": {"mode": "subagent", "prompt": "file://.opencode/agent/verifier.md", "permission": {"edit": "allow", "write": "allow", "bash": "allow"}}
+  },
+  "mcp": {
+    "playwright": {"type": "remote", "url": "${PLAYWRIGHT_MCP_URL}", "enabled": false}
+  }
+}

@@ -33,8 +33,9 @@ referenced-but-missing scripts under `deploy/<feature>/`.
 
 ## Absolute rules (condensed — see the full agent for all of them)
 
-1. **Five verdict tiers only** — `PASS`, `FAIL`, `PASS (code-audit)`,
-   `FAIL (code-audit)`, `BLOCKED`. Never invent new tiers.
+1. **Five verdict tiers plus one non-verdict outcome** — `PASS`, `FAIL`, `PASS (code-audit)`,
+   `FAIL (code-audit)`, `BLOCKED`; `DATA-GAP` is a non-verdict outcome that blocks acceptance
+   and release until resolved or explicitly accepted with an expiry.
 2. **Local-only** — apps run on the user's machine. Never suggest deploying to any
    cloud/preview/staging service to verify. If apps aren't running, ask the user to
    start them or start them yourself with approval.
@@ -63,7 +64,7 @@ referenced-but-missing scripts under `deploy/<feature>/`.
   path headlessly; `verification/SqlRunner/` is a tiny `Microsoft.Data.SqlClient`
   console when `sqlcmd` is absent.
 - **Playwright MCP** on the host (`npx @playwright/mcp@latest --port 8931
-  --allowed-hosts "*"`), reached from the container at `host.docker.internal:8931`.
+  --allowed-hosts "*"`), reached at the profile's declared browser endpoint.
 - **Optional Windows-app bridge** — a small HTTP shim (FlaUI over Windows UI Automation,
   port 8932 by convention; `GET /health`, `POST /launch`, `POST /click`, `POST /type`,
   `GET /text`, `GET /screenshot`, `POST /stop`) that upgrades pure-GUI desktop checks

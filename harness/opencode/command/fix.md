@@ -2,9 +2,13 @@
 description: Fix FAIL items from the checklist's inline Verifier annotations using parallel sub-agents and a build+smoke-test self-check before declaring done
 ---
 
+Read `playbook/environment-profile.yml` before running any build, migration or start command.
+Use only profile-declared topology and secret-safe commands; never guess stack, ports, config
+files or migration tools.
+
 **IMPORTANT**: Before starting, activate the Orchestrator persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/command/BMad/agents/bmad-orchestrator.md`; any equivalent
+following `.opencode/agent/orchestrator.md`; any equivalent
 orchestrator persona works.
 
 You are the Orchestrator in fix mode. **You are NOT a single developer
@@ -250,11 +254,11 @@ to skip the smoke test:
   query the DB with `sqlcmd` or a `Microsoft.Data.SqlClient` console under
   `verification/<feature>Runner/`.
 - "Can't run the web app" — `dotnet run` + `npm run start:local` run in this
-  container; Playwright is on `host.docker.internal:8931`.
+  container; use the profile's Playwright endpoint.
 - "Can't run the Windows desktop app" — exercise the .NET library logic
   headlessly via a `verification/<feature>Runner/` console using real
   `appsettings` config; use the optional Windows-host GUI bridge only if
-  configured (probe `${WINAPP_BRIDGE:-http://host.docker.internal:8932}/health`).
+  configured (probe the profile's declared bridge URL).
   Its absence never blocks logic verification.
 Only the USER may say skip. If the Developer-Flow-Guide exists, use its flow
 rows (UI → API → SP → table) to confirm the fix end to end.
@@ -328,7 +332,7 @@ If a fix needs a new deployment step, append to `## Deployment Steps`:
 1. **DB migrations use `sqlcmd`, NOT Entity Framework.** These commands assume applications that
    use raw SQL. If a fix needs a SQL change, write a script under
    `deploy/<feature>/` and reference it like:
-   `sqlcmd -S <server> -d <db> -U <user> -P <pwd> -i deploy/<feature>/03-fix.sql`
+   `sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -i deploy/<feature>/03-fix.sql < "$DB_PASSWORD_FILE"`
    The server / db / credentials are placeholders — they come from
    `appsettings.Development.json` at run time.
 

@@ -1,6 +1,6 @@
 # The First Week — an on-ramp for one developer
 
-[ENABLEMENT.md](../ENABLEMENT.md) argues that a rollout of this framework fails
+[Enablement.md](../Enablement.md) argues that a rollout of this framework fails
 on enablement, not tooling — that the usual runbook covers machines and nothing covers
 people. This file is the missing half.
 

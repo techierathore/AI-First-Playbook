@@ -4,7 +4,7 @@ description: Convert/update existing feature documents to the new verifiable for
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/command/BMad/agents/analyst.md`; any equivalent analyst
+following `.opencode/agent/analyst.md`; any equivalent analyst
 persona works.
 
 You are the Analyst. Your job is to **upgrade/update existing feature
@@ -300,10 +300,10 @@ container (no excuses — same rules as the Orchestrator/Verifier):
   named stored procs / query tables via `sqlcmd` or a
   `Microsoft.Data.SqlClient` console under `verification/<feature>Runner/`.
 - **Web app**: `dotnet run` + `npm run start:local`; `curl` endpoints;
-  Playwright at `host.docker.internal:8931` for UI.
+  the profile's Playwright endpoint for UI.
 - **Windows desktop app**: exercise the .NET library logic headlessly via a
   `verification/<feature>Runner/` console; optional host GUI bridge if present
-  (probe `${WINAPP_BRIDGE:-http://host.docker.internal:8932}/health`).
+  (probe the profile's declared bridge URL `/health`).
 - **Service / scheduled job / NuGet package**: invoke the entrypoint directly
   from a `verification/<feature>Runner/` console with real `appsettings` config
   (don't wait for the scheduler), then confirm the DB rows it should write via

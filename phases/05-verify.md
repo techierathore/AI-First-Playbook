@@ -51,4 +51,4 @@ This eliminates the "did anyone remember to run the migration?" failure mode.
 
 Only the human may authorize a skip.
 
-**Next:** [Phase 6 — Gap report](06-gap-report-gate.md)
+**Next:** [Phase 6 — Verification Results](06-verification-results-gate.md)

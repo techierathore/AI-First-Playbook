@@ -1,0 +1,5 @@
+.github/
+.git/
+Ai-First-Playbook-Gap.md
+scripts/playbook-validate.mjs
+scripts/test-guardrails.mjs

@@ -1,16 +1,32 @@
 # Phase 10 — Production Bugs
 
-**Path:** `/analyze-fix` → `/fix` → `/verify` → redeploy
+**Path:** triage → `/analyze-fix` → `/fix` → `/verify` → release gate → redeploy
+
+## Incident policy
+
+| Severity | Target | Authority and communication |
+|---|---|---|
+| SEV1: outage, security incident, or material data loss | acknowledge 15 min; mitigate 1 hr | incident commander may rollback/hotfix; status updates every 30 min |
+| SEV2: major workflow unavailable or broad customer impact | acknowledge 1 hr; mitigate 4 hrs | service owner may rollback; customer-support owner communicates |
+| SEV3: degraded behavior or workaround exists | acknowledge 1 business day; fix next planned release | product owner prioritizes |
+| SEV4: cosmetic or low impact | acknowledge 3 business days | normal backlog |
+
+Preserve logs, traces, deployment metadata and the original reproduction before changing
+anything. Record customer impact, detection time, owner, communications owner and rollback
+authority. SEV1/SEV2 incidents require a postmortem within five business days; amend the
+checklist when the root cause was not already covered by a passing requirement.
 
 User-reported bugs after deployment follow **exactly the same loop as
 [Phase 9](09-post-verification-bugs.md)** — production is just a later discovery point
 for the same class of escape:
 
-1. Log the bug(s) in a transient Issues file (`/create-issue-list` can pull them straight
+1. Log the bug(s) in the tracker and optionally a transient Issues file (`/create-issue-list` can pull them straight
    from Jira with full fields, parsing descriptions into Expected / Actual / Steps).
 2. `/analyze-fix` — root cause, why verification missed it, checklist patch.
 3. Human review → `/fix` → `/verify` until ALL PASS.
-4. Redeploy. Delete the Issues file.
+4. Pass the release readiness and post-deploy validation gates, then redeploy. Delete the
+   transient file only after copying the tracker key/link, severity, impact, timestamps,
+   root cause and regression-test reference into the checklist.
 
 ## The long game
 

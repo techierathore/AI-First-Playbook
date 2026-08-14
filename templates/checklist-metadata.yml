@@ -1,0 +1,10 @@
+# Canonical metadata for every checklist item. Markdown remains the human view.
+schema: 1
+required: [id, title, owner, priority, risk, status, created_at, updated_at, evidence]
+statuses: [planned, in-progress, pass, fail, data-gap, blocked, deferred, awaiting-dependency, out-of-scope, abandoned]
+feature_states: [proposed, planned, plan-approved, building, self-reviewed, verification-in-progress, verification-failed, data-gap, blocked, human-accepted, pr-ready, pr-approved, release-ready, deployed, post-deploy-validated, closed, deferred, abandoned]
+evidence:
+  item_fields: [run_id, verdict, observed_at, links]
+  retention_days: 180
+  allowed_classes: [public, internal, synthetic]
+  prohibited: [credentials, access_tokens, secrets, unredacted_pii]

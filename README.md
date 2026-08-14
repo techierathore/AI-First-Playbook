@@ -50,7 +50,7 @@ flowchart TD
     C -- "approved" --> D["3 - BUILD\n/implement command\norchestrator persona"]
     D --> E["4 - SELF-REVIEW\norchestrator audits own work"]
     E --> F["5 - VERIFY\n/verify command\nverifier agent (fresh context)"]
-    F --> G{"6 - GAP REPORT"}
+    F --> G{"6 - VERIFICATION RESULTS"}
     G -- "FAIL items" --> H["7 - FIX\n/fix command\norchestrator persona"]
     H --> F
     G -- "all PASS" --> I["8 - HUMAN ACCEPTANCE\ntesting + HTML docs"]
@@ -71,7 +71,7 @@ flowchart TD
 | 3 | [Build](phases/03-build.md) | `/implement` (orchestrator) | Parallel sub-agents build from the checklist with standing rules always in context |
 | 4 | [Self-review](phases/04-self-review.md) | orchestrator | Re-read checklist vs own diff; build + smoke test before declaring done |
 | 5 | [Verify **gate**](phases/05-verify.md) | `/verify` (Verifier agent) | Fresh-context independent audit that *executes* the code — the keystone |
-| 6 | [Gap report **gate**](phases/06-gap-report-gate.md) | Verifier output | PASS/FAIL per item with evidence, annotated inline in the checklist |
+| 6 | [Verification results **gate**](phases/06-verification-results-gate.md) | Verifier output | PASS/FAIL/DATA-GAP/BLOCKED per item with evidence, annotated inline in the checklist |
 | 7 | [Fix](phases/07-fix.md) | `/fix` (orchestrator) | Fix only the FAIL items; loop back to Verify until clean |
 | 8 | [Human acceptance](phases/08-human-acceptance.md) | you / QA / BA | Manual testing for what automated checks can't catch |
 | 9 | [Post-verification bugs **gate**](phases/09-post-verification-bugs.md) | `/analyze-fix` (analyst) | Root-cause *why the Verifier missed it*; every escaped bug tightens the checklist |
@@ -93,7 +93,7 @@ observing the real side effect**:
   connection strings from `appsettings.Development.json` — never invented, never logged.
 - **Three forbidden excuses**: "no SQL access", "can't run the web app", "can't run the
   Windows app". Each has a prescribed workaround; only the human may authorize skipping.
-- Verdicts: `PASS`, `FAIL`, `PASS (code-audit)`, `FAIL (code-audit)`, `BLOCKED` — written
+- Verdicts: `PASS`, `FAIL`, `PASS (code-audit)`, `FAIL (code-audit)`, `DATA-GAP`, `BLOCKED` — written
   inline in the checklist with evidence. *"A 200 response with zero rows written is a
   FAIL, not a pass."*
 
@@ -104,7 +104,7 @@ probes, anti-excuse rules, and verdict discipline — is
 
 ## The command library
 
-**Four commands carry the daily loop**; nine more support it. Specs (one file per
+**Four commands carry the daily loop**; ten more support it. Specs (one file per
 command) live in [`templates/commands/`](templates/commands/); the **runnable command
 files** are in [`harness/opencode/command/`](harness/opencode/command/).
 
@@ -117,7 +117,33 @@ files** are in [`harness/opencode/command/`](harness/opencode/command/).
 
 Supporting: `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`,
 `/create-issue-list`, `/amend-checklist`, `/archive-checklist`, `/generate-html`,
-`/update-context`.
+`/update-context`, `/legacy-audit`.
+
+## Installation
+
+### Easiest: npm
+
+Open PowerShell, Command Prompt, Terminal, or a GUI terminal and run:
+
+```text
+npx @ai-first/playbook@latest --target="C:\work\my-project" --dry-run
+npx @ai-first/playbook@latest --target="C:\work\my-project"
+```
+
+Use a normal macOS/Linux path instead of `C:\work\my-project`. The first command previews the
+files. The second installs them. Existing project files are preserved. Then open the project in
+OpenCode, restart OpenCode, and replace the placeholders in `playbook/environment-profile.yml`.
+
+### From A Git Clone
+
+```text
+git clone <repository-url> ai-first-playbook
+node ai-first-playbook/scripts/install.mjs --target="C:\work\my-project"
+```
+
+This also works in Terminal with a POSIX path. The installer creates the target folder if needed.
+Full details are in [docs/Installation.md](docs/Installation.md). Maintainers publishing the
+package should use [docs/Npm-Publishing-Guide.md](docs/Npm-Publishing-Guide.md).
 
 ## Quickstart
 
@@ -125,10 +151,8 @@ The runnable artifacts are in [`harness/`](harness/) — install instructions, e
 assumptions, and porting notes are in [`harness/README.md`](harness/README.md). The short
 version:
 
-1. **Copy `harness/opencode/` to `.opencode/`** at your repo root — 13 command files, the
-   Verifier agent, the guardrail plugin, the HTML doc-shell. Add an `AGENTS.md` with the
-   standing rules ([template](templates/agents-md-template.md)) and a `Context-Prompt.md`
-   cold-start primer.
+1. Follow the [installation steps](#installation), configure `playbook/environment-profile.yml`,
+   and restart OpenCode.
 2. **Per machine (optional):** start Playwright MCP on the host
    (`npx @playwright/mcp@latest --port 8931 --allowed-hosts "*"`) and point your harness
    at it. Skipping it just means UI verification falls back to code-audit mode.
@@ -136,7 +160,7 @@ version:
    the Verifier annotates them FAIL inline.
 4. **Run your first feature** through the loop: `/feature-plan` → review → `/implement`
    → `/verify` → `/fix` until ALL PASS.
-5. **Read [ENABLEMENT.md](ENABLEMENT.md) before rolling out to a team**, then
+5. **Read [Enablement.md](Enablement.md) before rolling out to a team**, then
    run the first developer through [`onboarding/first-week.md`](onboarding/first-week.md).
    Steps 1–4 are the easy part; getting a second person to run the loop is the hard one.
 
@@ -164,7 +188,7 @@ proof. It does nothing about the human one: **a team that reads about a process 
 runs it.** Rolling one of these out fails for structural reasons that have nothing to do
 with whether the tooling works, and shipping two polished guides is not a rollout.
 
-[ENABLEMENT.md](ENABLEMENT.md) is the argument — five reasons adoption stalls
+[Enablement.md](Enablement.md) is the argument — five reasons adoption stalls
 and what each one costs you. [`onboarding/first-week.md`](onboarding/first-week.md) is the
 answer: a five-rung ladder from one mechanical command to a solo verified feature, a
 definition of "adopted" you can actually measure, and the cliffs that end first
@@ -177,14 +201,14 @@ those two.
 
 ```
 README.md                  ← you are here
-DECISIONS.md               ← decision log (why sibling repo, license)
-ENABLEMENT.md              ← why team rollouts stall, and what to do instead
+Decisions.md               ← decision log (why sibling repo, license)
+Enablement.md              ← why team rollouts stall, and what to do instead
 onboarding/
   first-week.md            ← the people-runbook: five rungs to "adopted"
 phases/                    ← one file per lifecycle step (01–10)
 diagrams/                  ← Mermaid sources for every diagram
 templates/                 ← what each part does (specs, one page each)
-  commands/                ← one spec per command (13)
+  commands/                ← one spec per command (14)
   verifier-agent.md        ← the Verifier agent spec
   checklist-item-template.md
   deployment-steps-template.md
@@ -192,10 +216,13 @@ templates/                 ← what each part does (specs, one page each)
   issues-file-template.md
 harness/                   ← what actually runs (install these)
   README.md                ← install, personas, environment assumptions, porting
-  opencode/command/        ← the 13 runnable command files
+  opencode/command/        ← the 14 runnable command files
   opencode/agent/          ← verifier.md — the real 1,050-line agent
   opencode/plugins/        ← spec-guardrails.ts — tool-level rule enforcement
   opencode/templates/      ← doc-shell.html
+docs/                       ← installation, operating model, security, and session case studies
+  Greenfield-Case-Study.md ← presenter-ready greenfield walkthrough
+  Brownfield-Case-Study.md ← presenter-ready legacy audit walkthrough
 LICENSE                    ← Apache-2.0
 ```
 

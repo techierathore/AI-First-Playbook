@@ -1,0 +1,11 @@
+# Release Readiness Record
+- Feature / release: <name>
+- Release owner and rollback authority: <identities>
+- PR and approvals: <links>
+- Migration order and compatibility check: <links>
+- Feature flag state: <state>
+- Rollback steps and recovery point: <links>
+- Monitoring signals and thresholds: <links>
+- Post-deploy checks and incident escalation: <links>
+- Decision and expiry of exceptions: <decision>
+- Recorded at (UTC): <timestamp>

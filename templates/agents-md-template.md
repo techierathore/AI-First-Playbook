@@ -41,8 +41,9 @@ The rule set, verbatim:
   add" (deployment step, item field, infrastructure requirement).
 - /analyze-fix is for "something feels incomplete, figure it out from BRD
   + code" — heavier-weight, uses the Analyst persona.
-- Issues.md files are TRANSIENT inputs. Once their content is folded into
-  the checklist and the fix is verified, they should be deleted. The
+- Issues.md files are TRANSIENT inputs. Once their tracker key/link, reporter,
+  severity, impact, timestamps, reproduction, root cause and regression reference are folded
+  into the checklist and the fix is verified, they may be deleted. The
   Verifier does not produce a separate Gap-Report file — its findings
   are written inline in the checklist itself.
 - If you ever see a feature with multiple competing checklist files, that

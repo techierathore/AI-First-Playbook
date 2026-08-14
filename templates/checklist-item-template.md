@@ -6,6 +6,7 @@
 ## The format
 
 ```markdown
+<!-- metadata: {"schema":1,"id":"REQ-001","owner":"identity","priority":"P1","risk":"medium","status":"planned","created_at":"2026-08-14T00:00:00Z","updated_at":"2026-08-14T00:00:00Z","evidence":[]} -->
 - [ ] <Item title>
   - Type: ui | backend-api | backend-service | db | logging | infrastructure | cross-cutting
   - Behavior: <what the user/system observes when this works>
@@ -51,3 +52,10 @@
 ## Verifier Run Log             <- appended per /verify run; history preserved
 ## Verified History             <- created by /archive-checklist past ~2,000 lines
 ```
+
+The metadata comment is authoritative for item status; checkbox state is presentation only.
+Use `templates/checklist-metadata.yml`. Exceptions require an approver, owner, reason and
+expiry. Restored items reset to `planned` and require a new verification run.
+
+Allowed verification outcomes are `PASS`, `FAIL`, `PASS (code-audit)`, `FAIL (code-audit)`,
+`DATA-GAP`, and `BLOCKED`.

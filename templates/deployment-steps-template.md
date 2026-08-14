@@ -15,7 +15,7 @@ is one line. No per-step field labels.
 
 ### Automated (Verifier runs these with your approval)
 - [ ] Run <feature> schema migration
-  - `sqlcmd -S <server> -d <db> -U <user> -P <pwd> -i deploy/<feature>/01-schema.sql`
+  - `sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -i deploy/<feature>/01-schema.sql < "$DB_PASSWORD_FILE"`
 - [ ] (only if you ADDED new npm packages this run)
       Install new dependencies
   - `npm install` in src/frontend/
@@ -30,9 +30,9 @@ is one line. No per-step field labels.
 
 ## Standing tool rules (baked into `/implement`, `/fix`, and the Verifier)
 
-- DB migrations are **raw SQL scripts** under `deploy/<feature>/`, run via `sqlcmd`
-  (placeholders resolved from `appsettings.Development.json` at run time).
-  **Never Entity Framework** — no `dotnet ef database update`, ever.
+- DB migrations use the migration tool declared by `playbook/environment-profile.yml`.
+  Credentials come from a secret manager, protected stdin or a protected temporary file;
+  never command arguments or Markdown.
 - `npm install` only when packages were actually added to `package.json`.
 - Frontend start scripts are environment-specific: the Verifier reads `package.json`,
   enumerates the real `start:*` variants, **asks which environment to test against**,

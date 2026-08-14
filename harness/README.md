@@ -16,7 +16,7 @@ Read `templates/` first. Install from here.
 
 ```
 harness/opencode/
-  command/          13 command files — the slash commands (/feature-plan, /verify, …)
+  command/          14 command files — the slash commands (/feature-plan, /verify, /legacy-audit, …)
   agent/verifier.md the Verifier agent: 1,050 lines of anti-excuse rules and probes
   plugins/          spec-guardrails.ts — mechanical enforcement of the one-file rule
   templates/        doc-shell.html — the self-rendering HTML shell for human docs
@@ -28,13 +28,16 @@ agent files are plain markdown prompts with YAML frontmatter — see
 
 ## Install (OpenCode)
 
-1. Copy `harness/opencode/` to `.opencode/` at the root of the repo your team works in:
+1. Copy `harness/opencode/` to `.opencode/` and copy `opencode.json` to the target root. The
+   plugin is under singular `.opencode/plugin/`, the supported discovery path:
 
    ```bash
    cp -r harness/opencode/. /path/to/your-repo/.opencode/
+   cp opencode.json /path/to/your-repo/opencode.json
    ```
 
-2. Install the plugin's one dependency so the guardrail loads:
+2. Install the plugin's one dependency so the guardrail loads. Restart OpenCode after changing
+   configuration, commands, agents, skills or plugins:
 
    ```bash
    cd /path/to/your-repo/.opencode && npm install @opencode-ai/plugin
@@ -44,12 +47,12 @@ agent files are plain markdown prompts with YAML frontmatter — see
    [`templates/agents-md-template.md`](../templates/agents-md-template.md). The standing
    rules live there, not inside the commands — that's the point of it.
 
-4. Optional but recommended — start Playwright MCP on the host and point your harness at
-   it. Without it, UI items fall back to code-audit mode, which the Verifier treats as a
-   last resort:
+4. Copy `playbook/environment-profile.yml` to the target and replace its placeholders. It is
+   the source of truth for topology, commands, URLs, database, browser, logs, secrets and
+   cleanup. Optional Playwright is configured through `PLAYWRIGHT_MCP_URL`:
 
    ```bash
-   npx @playwright/mcp@latest --port 8931 --allowed-hosts "*"
+   npx @playwright/mcp@latest --port "$PLAYWRIGHT_PORT" --allowed-hosts "*"
    ```
 
 5. Smoke-test before trusting it: run `/verify` against a checklist with a bug you
@@ -67,10 +70,10 @@ style before the command body runs. Two roles are used:
 | **Analyst** | `/feature-plan`, `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`, `/create-issue-list` | Asks for missing inputs instead of guessing; writes documents, not code |
 | **Orchestrator** | `/implement`, `/fix` | Coordinates parallel sub-agents in waves rather than working items one at a time |
 
-These commands were written against persona agents from
+These commands were originally written against persona agents from
 [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) (MIT), which is **not
-redistributed here** — hence the `.opencode/command/BMad/agents/…` paths in the command
-files. Three ways to satisfy them:
+redistributed here**. The shipped native agents under `.opencode/agent/` are the supported
+default; existing BMAD installations remain optional:
 
 - **Install BMAD** into your harness and the paths resolve as written.
 - **Substitute your own** analyst/orchestrator persona files and update the path in the

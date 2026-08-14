@@ -18,9 +18,16 @@ issues, cross-browser quirks, and usability.**
 3. Review the generated HTML docs if requested (human docs only — the checklist is
    never rendered).
 
+## Durable gate record
+
+The approver writes `acceptance.md` from [the handoff template](../templates/handoffs/acceptance.md)
+in the feature folder or links the equivalent tracker record. Chat is evidence of discussion,
+not the durable decision. The record includes producer, consumer, accountable approver,
+identity, timestamp, scope, evidence links, exceptions and expiry.
+
 ## Outcomes
 
-- **Accepted** → Done. Deploy. (Definition of Done: every item PASS with evidence; every
+- **Accepted** → [Release readiness](../docs/Release-And-Operations.md). (Definition of Done: every item PASS with evidence; every
   mockup element present; every sync/job headlessly invocable with its target view
   populated; every data path returns data or logs why not; required logging fires; build
   and touched tests green; Status Table current; HTML docs current if requested.)

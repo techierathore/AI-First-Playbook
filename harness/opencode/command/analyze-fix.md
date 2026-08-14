@@ -4,7 +4,7 @@ description: Analyze a user story or bug report and fold the findings into the e
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/command/BMad/agents/analyst.md`; any equivalent analyst
+following `.opencode/agent/analyst.md`; any equivalent analyst
 persona works.
 
 You are the Analyst. Your job is to analyze a user story, bug report, or

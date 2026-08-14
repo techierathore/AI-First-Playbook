@@ -2,9 +2,13 @@
 description: Build a planned feature from its implementation checklist using parallel sub-agents and a build+smoke-test self-check before declaring done
 ---
 
+Read `playbook/environment-profile.yml` before running any build, migration or start command.
+Use only profile-declared topology and secret-safe commands; never guess stack, ports, config
+files or migration tools.
+
 **IMPORTANT**: Before starting, activate the Orchestrator persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/command/BMad/agents/bmad-orchestrator.md`; any equivalent
+following `.opencode/agent/orchestrator.md`; any equivalent
 orchestrator persona works.
 
 You are the Orchestrator. **You are NOT a single developer working through a
@@ -260,13 +264,13 @@ for skipping it (they have been abused before):
   or `sqlcmd` if present. Read the real connection string and use it.
 - **"I can't run the web app"** — FALSE. `dotnet run --project <ApiProject>`
   and `npm run start:local` both run IN this container; Playwright is on
-  `host.docker.internal:8931`.
+  the profile's Playwright endpoint.
 - **"I can't run the Windows desktop app"** — NOT a blocker. The real logic is
   in .NET class libraries the container CAN execute. Write a console runner
   under `verification/<feature>Runner/` that calls the exact library method/
   data-access method/stored proc the item is about, using real `appsettings`
   config, and capture the DB rows it produces. Use the optional Windows-host
-  GUI bridge only if one is configured — probe `${WINAPP_BRIDGE:-http://host.docker.internal:8932}/health`;
+  GUI bridge only if one is configured — probe the profile's declared bridge URL;
   if it doesn't return 200, it's not configured, so use the headless runner.
   Its absence never blocks logic verification.
 
@@ -325,7 +329,7 @@ matches expectation. A 200 with zero rows written is a smoke FAIL, not a pass.
 This is the step that catches the "looks done but does nothing" class of bug.
 
 ### Step 3.5: One frontend snapshot
-If Playwright MCP is reachable (`curl http://host.docker.internal:8931/mcp`
+If the profile's Playwright MCP endpoint is reachable (`curl "$PLAYWRIGHT_MCP_URL/mcp"`
 returns success), use it to navigate to the new page and take a snapshot
 that confirms the page rendered without an error boundary. Just one
 snapshot — this is a smoke test, not full verification.
@@ -376,7 +380,7 @@ what's manual:
 
 ### Automated (Verifier runs these with your approval)
 - [ ] Run cost schema migration
-  - `sqlcmd -S <server> -d <db> -U <user> -P <pwd> -i deploy/cost/01-schema.sql`
+  - `sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -i deploy/cost/01-schema.sql < "$DB_PASSWORD_FILE"`
 - [ ] (only if you ADDED new npm packages this run)
       Install new dependencies
   - `npm install` in src/frontend/
@@ -398,7 +402,7 @@ what's manual:
    `sqlcmd` available on their Windows host (comes with SSMS). The
    command pattern is:
    ```
-   sqlcmd -S <server> -d <db> -U <user> -P <pwd> -i deploy/<feature>/01-name.sql
+   sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -i deploy/<feature>/01-name.sql < "$DB_PASSWORD_FILE"
    ```
    The actual server / db / credentials come from the project's
    `appsettings.Development.json` connection string — DO NOT bake them

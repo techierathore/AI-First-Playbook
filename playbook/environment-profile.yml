@@ -1,0 +1,28 @@
+# Copy to the target repository as playbook/environment-profile.yml.
+# Values are examples and must be replaced; secrets are references, never values.
+version: 1
+topology: same-host # same-host | container | remote-service | desktop-app
+os: linux
+shell: bash
+commands:
+  build: "<replace: build command>"
+  test: "<replace: test command>"
+  start: "<replace: start command>"
+  stop: "<replace: cleanup command>"
+application:
+  api_url: "http://127.0.0.1:<api-port>"
+  web_url: "http://127.0.0.1:<web-port>"
+database:
+  method: app-config # app-config | managed-secret | none
+  config_path: "<replace: config path>"
+  migration_command: "<replace: migration command using stdin or secret store>"
+browser:
+  endpoint: "<replace: optional Playwright MCP endpoint>"
+logs:
+  paths: ["<replace: log path>"]
+secrets:
+  sources: [environment, local-secret-store]
+  forbidden: [markdown, command-line-arguments, process-environment-dumps, logs]
+cleanup:
+  command: "<replace: cleanup command>"
+  evidence_directory: verification/<feature>/<run-id>

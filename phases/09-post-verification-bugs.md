@@ -23,8 +23,9 @@ don't just fix the bug — **fix the checklist that let it escape.**
 3. **Human review** of the updated checklist ("Verification Gap Analysis") — check the
    new Verify methods would actually catch the bug.
 4. **`/fix`** → **`/verify`** (now includes the new items) → loop until ALL PASS.
-5. Re-test manually, accept, **delete the Issues file** (its content now lives in the
-   checklist).
+5. Re-test manually, accept, and delete the transient Issues file only after its tracker key,
+   reporter, severity, customer impact, timestamps, reproduction, root cause and regression
+   reference are copied into the checklist.
 
 ## Why this makes the process better over time
 
