@@ -77,6 +77,21 @@ can enforce consistency with `--check`. Rationale per phase: `docs/Adapter-Desig
    planted, and confirm the Verifier annotates it `FAIL` **inline in the checklist**. If
    it produces a separate report file instead, the plugin isn't loading.
 
+## Install (Claude Code)
+
+```bash
+node scripts/harness-install.mjs claude-code --target=/path/to/your-repo
+```
+
+Installs the generated pack: `.claude/commands/` (same bodies, translated frontmatter,
+tier-stamped models), `.claude/agents/` (verifier, builder, analyst, orchestrator),
+`.claude/hooks/` (the guardrail as a PreToolUse hook sharing `write-policy.mjs` with the
+OpenCode plugin), `.claude/settings.json`, `CLAUDE.md` (imports `@AGENTS.md`) and
+`.mcp.json`. Steps 3–5 above apply unchanged — same `AGENTS.md`, same profile, same
+smoke test. `/verify` delegates to the `verifier` subagent for its fresh-context
+guarantee; the hook enforces the verifier write-scope via the subagent's `agent_type`.
+Verified end-to-end on Claude Code 2.1.237 (`docs/Decisions.md`).
+
 ## Personas
 
 Several commands open with "activate the Analyst persona" or "activate the Orchestrator

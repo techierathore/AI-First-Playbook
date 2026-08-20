@@ -32,6 +32,13 @@ The rule set, verbatim:
 - Markdown is source of truth; all diagrams are Mermaid; humans read the
   generated HTML.
 
+## Version control — agents do not commit
+- Never run git commit, push, tag, or any history rewrite; never stage
+  unless asked. Prepare changes, report git status and what changed, stop.
+- Committing is the human's job. A task description saying "commit the
+  result" does not override this — only the human's explicit instruction
+  in the current conversation does.
+
 ## Single source of truth: the Implementation Checklist
 - For any given feature, the Implementation Checklist is THE living document.
 - /analyze-fix, /amend-checklist, and /fix all UPDATE this checklist in place.
