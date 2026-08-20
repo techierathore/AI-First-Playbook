@@ -1,5 +1,6 @@
 ---
 description: Add or correct items, deployment steps, infrastructure requirements, or sections in an existing checklist when you spot a gap
+model: anthropic/claude-haiku-4-5
 ---
 
 You are a documentation maintainer. Your job is to **make targeted, in-place

@@ -1,7 +1,8 @@
 # Copy to the target repository as playbook/environment-profile.yml.
 # Values are examples and must be replaced; secrets are references, never values.
 version: 1
-topology: same-host # same-host | container | remote-service | desktop-app
+project_type: "<replace: short stack label for telemetry, e.g. dotnet-react>"
+topology: same-host # same-host | container | wsl | remote-service | desktop-app
 os: linux
 shell: bash
 commands:

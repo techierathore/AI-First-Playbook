@@ -5,8 +5,12 @@ on. Produced 2026-08-20.
 
 **Sources.** OpenCode claims were read from source at `/mnt/c/4RoCode/opencode`
 (commit `da4730e4a4`, 2026-08-19, `packages/opencode` v1.18.18); paths below are relative to
-that repo root. Claude Code claims were verified against official documentation; each carries
-its URL. Anything inferred rather than read is marked **UNVERIFIED** with what would verify it.
+that repo root. The source is **evidence only** — the framework targets the deployed OpenCode
+binary, and the load-bearing behaviours (command/agent `model:` frontmatter, plugin
+tool-hooks, `{env:}` config substitution, `opencode run`) were additionally confirmed live
+against a deployed 1.18.18 install. Claude Code claims were verified against official
+documentation; each carries its URL. Anything inferred rather than read is marked
+**UNVERIFIED** with what would verify it.
 
 **One structural caveat that applies to every OpenCode row:** the repo contains two parallel
 engines — v1 (`packages/opencode/src/**`, the shipping CLI/TUI path) and v2
@@ -34,15 +38,15 @@ conclusion.
 | Session-wide default | Yes — config `model` (`"provider/model"`), plus `small_model` for utility calls. — `packages/core/src/v1/config/config.ts:74-79` | Yes — settings / `claude --model`. — https://code.claude.com/docs/en/settings.md |
 | **Mid-session switch** | **Yes — model is a per-message parameter.** `PromptInput.model` is optional per prompt; resolution per user message is `input.model ?? agent.model ?? currentModel(session)`, the agent loop re-reads the model from the **last user message each iteration**, and one session's transcript can contain assistant messages from different models. — `packages/opencode/src/session/prompt.ts:1499-1520`, `:646`, `:1141`. TUI `/models` sends the selection with every subsequent message in the same session. — `packages/tui/src/component/prompt/index.tsx:968`, `:1094-1101` | **Yes** — `/model` switches for subsequent turns in the same session. — https://code.claude.com/docs/en/commands.md |
 | **Per subagent** | **Yes** (row a). — `packages/opencode/src/tool/task.ts:181-184` | **Yes** — subagent `model:` frontmatter. — https://code.claude.com/docs/en/sub-agents.md |
-| **Per command invocation** | **Yes, and it has the *highest* precedence:** `cmd.model` → model of `cmd.agent` → caller/TUI model → session model. A command's `model:` frontmatter beats even the model the user picked in the TUI. With `subtask: true` the override is fully scoped to a child session; inline, it also becomes the session's new sticky model. — `packages/opencode/src/session/prompt.ts:1411-1419`, `:1439-1458`; schema `packages/core/src/v1/config/command.ts:5-12` | **UNVERIFIED.** No `model` frontmatter field is documented for skills/slash commands (documented fields: `description`, `argument-hint`, `disable-model-invocation`, `user-invocable`). Verify by testing `model:` in a command file in a live session, or via the changelog. — https://code.claude.com/docs/en/skills.md |
+| **Per command invocation** | **Yes, and it has the *highest* precedence:** `cmd.model` → model of `cmd.agent` → caller/TUI model → session model. A command's `model:` frontmatter beats even the model the user picked in the TUI. With `subtask: true` the override is fully scoped to a child session; inline, it also becomes the session's new sticky model. — `packages/opencode/src/session/prompt.ts:1411-1419`, `:1439-1458`; schema `packages/core/src/v1/config/command.ts:5-12` | **Yes — VERIFIED empirically, but undocumented.** Live test on Claude Code 2.1.237 (2026-08-20): a command with `model: claude-haiku-4-5` frontmatter executed on Haiku (`modelUsage` in `claude -p --output-format json`); the same command without it executed on the session default. Not in the documented frontmatter fields (`description`, `argument-hint`, `disable-model-invocation`, `user-invocable`), so treat as version-fragile and keep subagent-model routing as the documented backstop. — https://code.claude.com/docs/en/skills.md ; test recorded in `Decisions.md` |
 | Per CLI invocation (headless) | Yes — `opencode run -m provider/model --agent <a> -s <session>`. — `packages/opencode/src/cli/cmd/run.ts:165-170`, `:859-865` | Yes — `claude -p --model`. — https://code.claude.com/docs/en/headless.md |
 | Per tool call | **No.** `Tool.Context` carries no model; the model is fixed once per assistant-message loop step. — `packages/opencode/src/tool/tool.ts:36-46`; `packages/opencode/src/session/prompt.ts:1213-1218` | **No.** Sub-message granularity is not exposed; the subagent is the smallest routing unit. — https://code.claude.com/docs/en/sub-agents.md |
 | Programmatic per-turn override | Yes — HTTP `POST /session/{id}/message` accepts `model`, `agent`, `variant` per request; a plugin can also mutate `output.message.model` in the `chat.message` hook (undocumented but structurally honored — the mutated message is persisted *after* the hook and the loop resolves the model from it). — `packages/opencode/src/server/routes/instance/httpapi/groups/session.ts:70`; `packages/opencode/src/session/prompt.ts:999-1046`, `:1141` | No equivalent; hooks cannot change the model. — https://code.claude.com/docs/en/hooks.md |
 
-**Conclusion for this row:** per-phase model routing is **natively expressible in OpenCode**
-(command frontmatter `model:` maps 1:1 onto "phase declares its tier", since every phase is
-entered through a command). In Claude Code the only *verified* routing units are the subagent
-and the session; per-command routing is UNVERIFIED.
+**Conclusion for this row:** per-phase model routing is **natively expressible in both
+harnesses** at command granularity — documented and highest-precedence in OpenCode,
+empirically verified but undocumented in Claude Code (2.1.237). The subagent and the session
+remain Claude Code's *documented* routing units, so the design stamps both.
 
 ## c. Custom command definition
 
@@ -110,8 +114,9 @@ and the session; per-command routing is UNVERIFIED.
 1. **OpenCode supports per-command model override at the highest precedence** — a phase can
    declare its tier in the command file it is entered through, with zero framework changes
    (`packages/opencode/src/session/prompt.ts:1411-1419`).
-2. **Claude Code's verified routing units are the subagent and the session**, not the command.
-   Per-command `model:` frontmatter is UNVERIFIED there.
+2. **Claude Code's documented routing units are the subagent and the session** — but
+   per-command `model:` frontmatter works too (verified live on 2.1.237, undocumented; see
+   row b).
 3. **Guardrail enforcement is a TS plugin in OpenCode and a shell hook in Claude Code** — same
    policy, two mechanically different carriers. Both can abort a tool call and return text to
    the model, which is the property the framework depends on.

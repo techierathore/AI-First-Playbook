@@ -1,5 +1,6 @@
 ---
 description: Update Context-Prompt.md to reflect recent changes to the AI-first development process
+model: anthropic/claude-haiku-4-5
 ---
 
 You are a documentation maintainer. Your job is to keep `Context-Prompt.md`

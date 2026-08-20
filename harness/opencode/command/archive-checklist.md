@@ -1,5 +1,6 @@
 ---
 description: Compact already-passing checklist items into a richer Verified History section to keep the active checklist manageable, or restore archived items when their context is needed again
+model: anthropic/claude-haiku-4-5
 ---
 
 You are a documentation utility. Your job is to **rotate** the implementation

@@ -1,5 +1,6 @@
 ---
 description: Produce a Developer Flow Guide (code-flow per screen/tab, OR per service/package/job) and/or a Business Verification Reference (plain-English sources/calculation/mapping) for an EXISTING feature, function, or service — derived from the real code
+model: anthropic/claude-sonnet-5
 ---
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See

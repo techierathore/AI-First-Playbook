@@ -1,5 +1,6 @@
 ---
 description: Build a planned feature from its implementation checklist using parallel sub-agents and a build+smoke-test self-check before declaring done
+model: anthropic/claude-sonnet-5
 ---
 
 Read `playbook/environment-profile.yml` before running any build, migration or start command.
@@ -106,7 +107,10 @@ Before spawning ANY sub-agent, produce an execution plan:
 
 5. After approval, launch wave by wave. **Inside each wave, use the `task` tool
    to spawn sub-agents in PARALLEL** (multiple tool calls in a single message)
-   — never sequentially.
+   — never sequentially. **Always spawn the `builder` subagent type for wave
+   work** — it carries its own (cheaper) model tier, so wave workers never
+   silently inherit your model. Use a different subagent type only if the user
+   explicitly asks for one.
 
 ---
 

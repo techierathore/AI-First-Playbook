@@ -1,5 +1,6 @@
 ---
 description: Fix FAIL items from the checklist's inline Verifier annotations using parallel sub-agents and a build+smoke-test self-check before declaring done
+model: anthropic/claude-sonnet-5
 ---
 
 Read `playbook/environment-profile.yml` before running any build, migration or start command.
@@ -125,7 +126,9 @@ Before fixing ANY item, produce an execution plan:
    ```
 5. After approval, launch wave by wave. **Inside each wave, spawn sub-agents
    in PARALLEL** using the `task` tool (multiple tool calls in a single
-   message). Never sequentially.
+   message). Never sequentially. **Always spawn the `builder` subagent type
+   for wave work** — it carries its own (cheaper) model tier, so wave workers
+   never silently inherit your model.
 
 ---
 

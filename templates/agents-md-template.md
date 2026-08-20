@@ -55,5 +55,5 @@ The rule set, verbatim:
 Rules stated in prompts get forgotten under output pressure. Which is why this framework
 **enforces the report-file ban mechanically** — a harness plugin intercepting write/edit
 calls and rejecting forbidden filenames (`Gap-Report*.md`, `Verification-Report*.md`, …)
-with an instructive error ([`spec-guardrails.ts`](../harness/opencode/plugins/spec-guardrails.ts)).
+with an instructive error ([`spec-guardrails.ts`](../harness/opencode/plugin/spec-guardrails.ts)).
 If your harness supports pre-tool hooks, enforce your hardest rules there, not in prose.

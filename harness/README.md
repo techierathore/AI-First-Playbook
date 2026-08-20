@@ -17,14 +17,32 @@ Read `templates/` first. Install from here.
 ```
 harness/opencode/
   command/          14 command files — the slash commands (/feature-plan, /verify, /legacy-audit, …)
+                    each stamped with a `model:` tier from playbook/model-tiers.yml
   agent/verifier.md the Verifier agent: 1,050 lines of anti-excuse rules and probes
-  plugins/          spec-guardrails.ts — mechanical enforcement of the one-file rule
+  agent/builder.md  the wave worker /implement and /fix spawn — carries its own (cheaper)
+                    model tier so parallel waves never inherit the orchestrator's model
+  plugin/           spec-guardrails.ts + write-policy.mjs — mechanical enforcement of the
+                    one-file rule (write-policy.mjs is the harness-independent policy)
+                    telemetry.ts — opt-in per-phase token/cost capture (PLAYBOOK_TELEMETRY=1)
   templates/        doc-shell.html — the self-rendering HTML shell for human docs
+harness/claude-code/
+  GENERATED pack for Claude Code — same command bodies, translated frontmatter, the
+  guardrail as a PreToolUse hook. Regenerate with `node scripts/harness-install.mjs
+  claude-code`; install with `--target=/path/to/repo`. See its README.
 ```
 
-Built for **[OpenCode](https://opencode.ai)**, hence the directory name. The command and
-agent files are plain markdown prompts with YAML frontmatter — see
+Built first for **[OpenCode](https://opencode.ai)**. The command and agent files are plain
+markdown prompts with YAML frontmatter — see
 [Porting to another harness](#porting-to-another-harness).
+
+## Model tiers (per-phase routing)
+
+Each command declares the model tier it needs in `playbook/model-tiers.yml`
+(frontier / standard / economy). `node scripts/apply-model-tiers.mjs` stamps the resolved
+`model:` into the OpenCode frontmatter (command-level `model:` has the highest precedence in
+OpenCode — it overrides even the TUI selection); the Claude Code generator resolves the same
+map to model aliases. Substitute your own models in the tier map and re-run the script; CI
+can enforce consistency with `--check`. Rationale per phase: `docs/Adapter-Design.md`.
 
 ## Install (OpenCode)
 

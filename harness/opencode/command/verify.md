@@ -2,6 +2,7 @@
 description: Independently verify a built feature against its checklist
 agent: verifier
 subtask: true
+model: anthropic/claude-sonnet-5
 ---
 
 Read `playbook/environment-profile.yml` before probing. All URLs, ports, commands, config paths,
@@ -46,4 +47,4 @@ Append a `**Verifier Result**` line to each in-scope item, update the Status
 Table, and append a run entry to `## Verifier Run Log` — all inside the
 checklist the user pointed you at. Creating a `*-Gap-Report.md` (or any
 other separate report file) violates Rule 6 of the verifier agent and is
-blocked at the tool level by `.opencode/plugins/spec-guardrails.ts`.
+blocked at the tool level by `.opencode/plugin/spec-guardrails.ts`.

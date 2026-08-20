@@ -69,3 +69,59 @@ wave workers inheriting the orchestrator's frontier model.
   command frontmatter (5-minute live test); (b) does OpenCode expand `${VAR}` in `mcp` config
   or only `{env:VAR}` (`Coupling-Points.md` item 9); (c) does the historical bun large-file
   crash reproduce in current OpenCode under WSL (`OpenCode-Guide.md` §1.3).
+
+## 2026-08-20 (later) — verification outcomes and implementation
+
+**Status:** implemented (working tree; commit pending owner review)
+
+All three open items were tested the same day:
+
+- **(a) CONFIRMED — Claude Code honors command `model:` frontmatter.** Live test on Claude
+  Code 2.1.237: a command with `model: claude-haiku-4-5` executed on Haiku
+  (`modelUsage` in `--output-format json`); the identical command without the field executed
+  on the session default. The capability is **undocumented**, so the generated pack stamps
+  both command models *and* subagent models (the documented mechanism) — routing survives
+  either way.
+- **(b) CONFIRMED DEFECT, FIXED.** OpenCode substitutes only `{env:VAR}` / `{file:path}`
+  (`packages/opencode/src/config/variable.ts:33-38`); `${PLAYWRIGHT_MCP_URL}` passed through
+  as a literal. `opencode.json` now uses `{env:PLAYWRIGHT_MCP_URL}`.
+- **(c) PASSED (proxy test).** OpenCode 1.18.18 as the **Windows** binary — the originally
+  crashing configuration — read a 19.4 MB markdown checklist via a free-tier model without
+  any bun error; the streaming read caps handled it. Caveat: not the original office
+  workload; §1.3's acceptance test against the real workload still applies before
+  decommissioning the container.
+
+Implemented in this pass: `playbook/model-tiers.yml` + `scripts/apply-model-tiers.mjs`
+(all 14 commands + 5 agents stamped for OpenCode); `builder` subagent
+(`harness/opencode/agent/builder.md`, wired into `/implement` and `/fix` wave instructions);
+shared guardrail policy (`harness/opencode/plugin/write-policy.mjs`) consumed by both the
+OpenCode plugin and the Claude Code PreToolUse hook; generated Claude Code pack
+(`harness/claude-code/`, via `scripts/harness-install.mjs`); telemetry plugin
+(`harness/opencode/plugin/telemetry.ts`, opt-in via `PLAYBOOK_TELEMETRY=1`) +
+`scripts/playbook-telemetry.mjs`; `scripts/provision-wsl.sh`; fixes for Coupling items 4b
+(instructions path), 9 (env syntax), 10 (duplicate plugin dir removed).
+
+One policy bug found by the port's own tests and fixed in the shared module: the
+shell-redirect pattern missed the space-separated form (`echo x > Gap-Report.md`) — present
+in the original plugin since inception. The refactor paid for itself before it shipped.
+
+## 2026-08-20 (later) — no OpenCode version pinning
+
+**Status:** decided (owner)
+
+The framework does not pin an OpenCode version and does not treat OpenCode upgrades as
+re-verification events — this supersedes the earlier advice to treat an engine flip as a
+design-review trigger. Rationale: the friction of verifying every release outweighs the
+risk, because (a) the framework consumes only stable, documented OpenCode surface
+(command/agent `model:` frontmatter, the plugin API, `{env:}` config substitution), so the
+OpenCode source tree was reference material for the capability matrix, never a dependency;
+and (b) breakage is cheaply detectable after the fact instead of expensively prevented
+before it: CI runs `validate` + `test:guardrails`, `apply-model-tiers.mjs --check` guards
+the tier stamps, and the two-minute plant-a-bug smoke test proves the guardrail inside the
+live harness (`docs/OpenCode-Guide.md` §8). Version numbers in `Capability-Matrix.md`
+remain as provenance only.
+
+**Alternative rejected:** pin the deployed version and re-verify the capability matrix on
+each bump — safest on paper, but it converts every routine update into a chore nobody will
+do, and the failure mode it prevents (a silently changed harness surface) is exactly what
+the smoke test catches in two minutes anyway.

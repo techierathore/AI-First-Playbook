@@ -237,3 +237,23 @@ this guide; it is descriptive prose, not logic.
    Only after it passes: stop launching the container, keep the Dockerfile for CI.
 6. Rotate nothing silently: when the corporate CA rotates, re-run §4 steps 1–2 —
    `update-ca-certificates` is idempotent.
+
+## 8. OpenCode upgrades — no version pinning
+
+The framework does **not** pin an OpenCode version, and upgrading is not a
+re-verification event. Leave autoupdate on (the `OPENCODE_DISABLE_AUTOUPDATE` flag in §4 is
+for change-controlled shops that freeze *all* tooling, not a framework recommendation).
+
+This posture is safe because everything the framework depends on is stable, public OpenCode
+surface — documented command/agent frontmatter, the plugin API, config substitution — not
+internals, and because breakage is cheap to detect after the fact:
+
+- `npm run validate` and `npm run test:guardrails` (already in CI) prove the pack and the
+  shared write-policy are intact.
+- `node scripts/apply-model-tiers.mjs --check` proves the tier stamps are consistent.
+- The plant-a-bug smoke test (§5) proves the guardrail actually blocks inside the running
+  harness — two minutes, and it exercises the only integration that could break silently.
+
+If a run ever misbehaves after an update, run that smoke test first; a failure there tells
+you it's the harness integration, not your checklist or your code. Version numbers quoted in
+`Capability-Matrix.md` are provenance (what the claims were verified against), not a pin.

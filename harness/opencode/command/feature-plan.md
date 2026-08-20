@@ -1,5 +1,6 @@
 ---
 description: Plan a new feature - produces the full verifiable document set
+model: anthropic/claude-opus-5
 ---
 
 **IMPORTANT**: Before starting, you MUST activate the Analyst persona. See

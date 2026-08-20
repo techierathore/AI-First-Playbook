@@ -1,5 +1,6 @@
 ---
 description: Generate HTML versions of existing markdown documents using the doc-shell template
+model: anthropic/claude-haiku-4-5
 ---
 
 You are a documentation utility. Your job is to convert existing markdown

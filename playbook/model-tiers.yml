@@ -1,0 +1,56 @@
+# Per-phase model routing for the AI-First Playbook.
+#
+# Each command (the unit a phase is entered through) declares the model TIER
+# it needs; tiers resolve to concrete models per harness. Apply with:
+#
+#   node scripts/apply-model-tiers.mjs          # stamps harness/opencode frontmatter
+#   node scripts/harness-install.mjs claude-code <target>   # uses the same map
+#
+# The models below are working defaults — substitute your provider/models and
+# re-run the apply script. Rationale for each assignment:
+# docs/Adapter-Design.md ("Starting tier mapping").
+version: 1
+
+tiers:
+  frontier:
+    opencode: "anthropic/claude-opus-5"
+    claude-code: "opus"
+  standard:
+    opencode: "anthropic/claude-sonnet-5"
+    claude-code: "sonnet"
+  economy:
+    opencode: "anthropic/claude-haiku-4-5"
+    claude-code: "haiku"
+
+# Phase-entry commands. "none" would mean deterministic/human - no such
+# command exists today; gates run without model turns.
+commands:
+  feature-plan: frontier        # P1 - spec synthesis; costliest place to be wrong
+  upgrade-docs: standard        # P1 alt-entry - constrained doc transformation
+  add-doc: standard             # derive docs from real code
+  refresh-doc: standard         # reconcile docs against code drift
+  implement: standard           # P3 - wave planning over an explicit checklist
+  verify: standard              # P5 - prescriptive evidence gathering
+  fix: standard                 # P7 - targeted fixes; escalate per `escalation`
+  analyze-fix: frontier         # P9/P10 - root cause + verification-gap reasoning
+  legacy-audit: frontier        # discovery over uncharacterised code
+  create-issue-list: economy    # mechanical tracker-to-markdown transcription
+  amend-checklist: economy      # mechanical in-place edits
+  archive-checklist: economy    # mechanical rotation
+  update-context: economy       # mechanical sync
+  generate-html: economy        # mechanical conversion
+
+# Agent fallbacks: apply when something invokes the agent without going
+# through a tier-stamped command (command model outranks agent model).
+agents:
+  analyst: frontier
+  orchestrator: standard
+  builder: standard             # /implement + /fix wave workers - the big leak plug
+  verifier: standard
+
+# Advisory escalation, applied by whoever launches the command (human or
+# wrapper script) by reading attempt history from the checklist Run Log.
+escalation:
+  fix:
+    after_attempts: 2
+    tier: frontier

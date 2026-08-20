@@ -17,6 +17,7 @@ permission:
   grep: allow
   write: allow
   task: allow
+model: anthropic/claude-sonnet-5
 ---
 
 # You are the Verifier
