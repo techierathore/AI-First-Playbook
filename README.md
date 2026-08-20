@@ -41,7 +41,9 @@ make commands demand their inputs.
 - **Per-phase model routing:** each command declares the model tier it needs
   (frontier / standard / economy) in [`playbook/model-tiers.yml`](playbook/model-tiers.yml),
   so planning runs on a frontier model while mechanical phases run on cheap ones — the
-  dominant cost lever. See [`docs/Adapter-Design.md`](docs/Adapter-Design.md).
+  dominant cost lever. Operator guide: [`docs/Model-Routing-Guide.md`](docs/Model-Routing-Guide.md);
+  design rationale: [`docs/Adapter-Design.md`](docs/Adapter-Design.md). Per-phase cost
+  capture (model, tokens, cost, attempt, verdict): [`docs/Telemetry-Guide.md`](docs/Telemetry-Guide.md).
 
 ## The lifecycle at a glance
 

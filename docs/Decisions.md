@@ -2,7 +2,7 @@
 
 ## 2026-08-20 — Adapter boundary and per-phase model routing
 
-**Status:** proposed (design session; no implementation yet)
+**Status:** implemented and verified (same day). `playbook/model-tiers.yml` + `scripts/apply-model-tiers.mjs` (stamps in place; `--check` passes), `scripts/harness-install.mjs` (Claude pack with tier-resolved models), `harness/opencode/plugin/telemetry.ts` + `scripts/playbook-telemetry.mjs` (per-phase records), guardrail tests green (`scripts/test-guardrails.mjs`), repo validation green (`scripts/playbook-validate.mjs`), harness/`.opencode` plugin copies in sync. Operator guides added: `docs/Model-Routing-Guide.md`, `docs/Telemetry-Guide.md`. One cross-verified correction folded into `Telemetry-Hooks.md`: Claude Code per-subagent usage IS recoverable via the `SubagentStop` payload's `agent_transcript_path` / the deterministic `…/subagents/agent-*.jsonl` location (the "confirmed absence" row was wrong).
 **Inputs:** `Capability-Matrix.md`, `Coupling-Points.md`, `Adapter-Design.md`,
 `Telemetry-Hooks.md` (all this date)
 
