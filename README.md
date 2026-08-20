@@ -36,7 +36,12 @@ make commands demand their inputs.
 - A designated **process owner** who installs and maintains the framework, plus
   developers who drive it day to day.
 - Built on the OpenCode harness with BMAD v4 personas, against a .NET + React stack; the
-  process itself is harness- and stack-portable.
+  process itself is harness- and stack-portable — a generated
+  [Claude Code pack](harness/claude-code/) ships alongside the OpenCode original.
+- **Per-phase model routing:** each command declares the model tier it needs
+  (frontier / standard / economy) in [`playbook/model-tiers.yml`](playbook/model-tiers.yml),
+  so planning runs on a frontier model while mechanical phases run on cheap ones — the
+  dominant cost lever. See [`docs/Adapter-Design.md`](docs/Adapter-Design.md).
 
 ## The lifecycle at a glance
 
@@ -216,10 +221,13 @@ templates/                 ← what each part does (specs, one page each)
   issues-file-template.md
 harness/                   ← what actually runs (install these)
   README.md                ← install, personas, environment assumptions, porting
-  opencode/command/        ← the 14 runnable command files
-  opencode/agent/          ← verifier.md — the real 1,050-line agent
-  opencode/plugins/        ← spec-guardrails.ts — tool-level rule enforcement
+  opencode/command/        ← the 14 runnable command files (tier-stamped models)
+  opencode/agent/          ← verifier.md — the real 1,050-line agent — plus builder.md
+  opencode/plugin/         ← spec-guardrails.ts + write-policy.mjs + telemetry.ts
   opencode/templates/      ← doc-shell.html
+  claude-code/             ← generated Claude Code pack (same bodies, PreToolUse guardrail)
+playbook/
+  model-tiers.yml          ← per-phase model routing (frontier / standard / economy)
 docs/                       ← installation, operating model, security, and session case studies
   Greenfield-Case-Study.md ← presenter-ready greenfield walkthrough
   Brownfield-Case-Study.md ← presenter-ready legacy audit walkthrough

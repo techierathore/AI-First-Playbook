@@ -125,3 +125,18 @@ remain as provenance only.
 each bump — safest on paper, but it converts every routine update into a chore nobody will
 do, and the failure mode it prevents (a silently changed harness surface) is exactly what
 the smoke test catches in two minutes anyway.
+
+## 2026-08-20 (later) — Claude Code pack verified end-to-end
+
+**Status:** verified live (Claude Code 2.1.237)
+
+The generated pack was installed into a scratch repo and driven for real: the main session
+(Haiku) launched the `verifier` subagent, which ran on **Sonnet** — its stamped
+`model:` frontmatter honored (`modelUsage` showed both models). The subagent's attempt to
+`Write Probe-Gap-Report.md` was **blocked** by the PreToolUse hook with the full shared
+remediation text fed back to it, while its write to `verification/smoke/note.txt` was
+allowed — both policy branches proven in the live harness. A debug hook captured the raw
+PreToolUse input and confirmed `agent_type: "verifier"` **is** delivered for subagent tool
+calls, so the stricter verifier write-scope is fully active in Claude Code (the
+fail-open-on-scope fallback in the hook remains as defence for harness versions that omit
+the field). Nothing about this run required the OpenCode source — deployed binaries only.
