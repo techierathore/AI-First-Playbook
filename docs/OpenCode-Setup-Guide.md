@@ -1,4 +1,6 @@
 
+> **Legacy (Docker) path.** This setup is superseded by [OpenCode-WSL-Setup-Guide.md](OpenCode-WSL-Setup-Guide.md), which runs OpenCode directly in WSL and also works on Windows Server 2022 / Azure VMs where Docker Desktop does not. Keep this file only for CI images.
+
 # OpenCode (SST) + .NET 10 + Playwright MCP Setup Guide
 **For Windows Users (Corporate Environment Friendly)**
 

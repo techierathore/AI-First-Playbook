@@ -2,7 +2,7 @@
 
 1. Pick your harness: **OpenCode** (the original) or **Claude Code** (generated pack) — same
    commands, same process. See [Installation.md](Installation.md) for both paths. On Windows,
-   run the whole stack in WSL: [OpenCode-Guide.md](OpenCode-Guide.md) and
+   run the whole stack in WSL: [OpenCode-WSL-Setup-Guide.md](OpenCode-WSL-Setup-Guide.md) (step-by-step), [OpenCode-Guide.md](OpenCode-Guide.md) (rationale) and
    `scripts/provision-wsl.sh`.
 2. Run the npm installer or clone and run `scripts/install.mjs` (OpenCode), or
    `scripts/harness-install.mjs claude-code --target=...` (Claude Code).

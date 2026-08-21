@@ -85,7 +85,7 @@ Details and every case: [`Model-Routing-Guide.md`](Model-Routing-Guide.md) §5.
 
 ## Windows
 
-Run the harness inside WSL, not on Windows directly — see
+Run the harness inside WSL, not on Windows directly — step-by-step setup (laptops and Windows Server 2022 VMs): [OpenCode-WSL-Setup-Guide.md](OpenCode-WSL-Setup-Guide.md); see
 [OpenCode-Guide.md](OpenCode-Guide.md) for the full corporate deployment guide (SSL
 certificates, proxy, topology) and `scripts/provision-wsl.sh` for the scripted setup.
 
