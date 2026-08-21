@@ -1,6 +1,6 @@
 /**
  * tier-lib.mjs — shared helpers for playbook/model-tiers.yml consumers
- * (apply-model-tiers.mjs and harness-install.mjs).
+ * (apply-model-tiers.mjs, harness-install.mjs and playbook-routing.mjs).
  */
 
 /**
@@ -28,6 +28,14 @@ export function parseTiersYaml(text) {
   return out;
 }
 
+/** True when the tier map's top-level `enabled:` flag is on (absent → off). */
+export function routingEnabled(config) {
+  return String(config.enabled ?? "false").trim() === "true";
+}
+
+/** Tier values that mean "leave unrouted" — the harness session model applies. */
+export const UNROUTED_TIERS = new Set(["inherit", "none"]);
+
 export function resolveModel(tiers, tier, forHarness) {
   const entry = tiers[tier];
   if (!entry) throw new Error(`unknown tier '${tier}'`);
@@ -48,6 +56,18 @@ export function stampFrontmatter(text, field, value) {
   const lineRe = new RegExp(`^${field}:.*$`, "m");
   if (lineRe.test(head)) head = head.replace(lineRe, `${field}: ${value}`);
   else head = `${head}\n${field}: ${value}`;
+  return head + body;
+}
+
+/** Remove a frontmatter field if present; drops the frontmatter block entirely if it becomes empty. */
+export function removeFrontmatterField(text, field) {
+  if (!text.startsWith("---")) return text;
+  const end = text.indexOf("\n---", 3);
+  if (end === -1) return text;
+  const head = text.slice(0, end).replace(new RegExp(`\n${field}:.*$`, "m"), "");
+  if (head === text.slice(0, end)) return text;
+  const body = text.slice(end);
+  if (head.trim() === "---") return body.replace(/^\n---\n*/, "");
   return head + body;
 }
 

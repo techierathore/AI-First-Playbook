@@ -250,7 +250,7 @@ internals, and because breakage is cheap to detect after the fact:
 
 - `npm run validate` and `npm run test:guardrails` (already in CI) prove the pack and the
   shared write-policy are intact.
-- `node scripts/apply-model-tiers.mjs --check` proves the tier stamps are consistent.
+- `node scripts/apply-model-tiers.mjs --check` (or `node scripts/playbook-routing.mjs status`) proves the tier stamps agree with the map and its on/off flag.
 - The plant-a-bug smoke test (§5) proves the guardrail actually blocks inside the running
   harness — two minutes, and it exercises the only integration that could break silently.
 

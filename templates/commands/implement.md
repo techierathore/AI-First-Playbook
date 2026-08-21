@@ -9,10 +9,20 @@ with a build + smoke-test self-check before declaring done.
 
 ```
 /implement docs/CostDocs/App-CostDashboard-FullStack-Implementation-Checklist.md
+/implement YOLO docs/CostDocs/App-CostDashboard-FullStack-Implementation-Checklist.md   # unattended
 ```
 
 ## Key behaviors
 
+- **Completion contract**: the command ends only when every item in scope is
+  implemented, built, self-tested and marked to-verify (or tagged `[INFRA BLOCKER]` /
+  `[EXTERNAL BLOCKER]` with what is missing). It never hands back "run again for the
+  remaining items" — it plans more waves instead, and hands off to `/verify` once.
+- **YOLO mode** (token `YOLO`, an active `/goal`, or `PLAYBOOK_YOLO=1`): every approval
+  gate is pre-approved, decisions are logged under `## YOLO Decisions`, git history writes
+  stay denied, and the run ends with `PLAYBOOK_RUN_COMPLETE:` / `PLAYBOOK_RUN_BLOCKED:` so
+  the supervisor (`scripts/playbook-yolo.mjs`) can wait out usage limits and resume. See
+  [`docs/YOLO-Mode-Guide.md`](../../docs/YOLO-Mode-Guide.md).
 - Demands the checklist and coding-standards paths; reads sibling docs (DB changes,
   architecture) automatically.
 - **Wave-based parallelism**: Wave 1 sequential foundations (DB migrations, shared

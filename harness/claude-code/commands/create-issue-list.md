@@ -1,6 +1,5 @@
 ---
 description: Create a structured Issues markdown file from Jira tickets or manual input
-model: haiku
 ---
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and

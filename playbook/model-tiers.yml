@@ -1,15 +1,24 @@
 # Per-phase model routing for the AI-First Playbook.
 #
 # Each command (the unit a phase is entered through) declares the model TIER
-# it needs; tiers resolve to concrete models per harness. Apply with:
+# it needs; tiers resolve to concrete models per harness. The one command that
+# edits this file and applies it (docs/Model-Routing-Guide.md §5):
 #
-#   node scripts/apply-model-tiers.mjs          # stamps harness/opencode frontmatter
+#   node scripts/playbook-routing.mjs status | on | off | set-tier | set-model | set-escalation | bind
+#
+# Lower level, still supported:
+#   node scripts/apply-model-tiers.mjs          # stamps/strips harness/opencode frontmatter
 #   node scripts/harness-install.mjs claude-code <target>   # uses the same map
 #
 # The models below are working defaults — substitute your provider/models and
 # re-run the apply script. Rationale for each assignment:
 # docs/Adapter-Design.md ("Starting tier mapping").
 version: 1
+
+# Master switch — OFF by default (docs/Decisions.md 2026-08-21). While off, no
+# harness file carries a model: stamp and every phase runs on the session
+# model; the map below is kept but dormant. Flip with: playbook-routing.mjs on|off
+enabled: false
 
 tiers:
   frontier:

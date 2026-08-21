@@ -1,6 +1,5 @@
 ---
 description: Create a structured Issues markdown file from Jira tickets or manual input
-model: anthropic/claude-haiku-4-5
 ---
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See

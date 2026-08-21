@@ -1,6 +1,5 @@
 ---
 description: Fix FAIL items from the checklist's inline Verifier annotations using parallel sub-agents and a build+smoke-test self-check before declaring done
-model: anthropic/claude-sonnet-5
 ---
 
 Read `playbook/environment-profile.yml` before running any build, migration or start command.
@@ -72,6 +71,17 @@ checklist; mention the Gap-Report and ask whether to delete it.
 
 If the checklist path is not provided at all, **ASK** for it.
 
+## YOLO mode (unattended)
+If the input contains the token `YOLO`, a `/goal` is active, or `PLAYBOOK_YOLO=1` is
+set, the `AGENTS.md` "YOLO mode" rules apply to this run and every builder you spawn:
+every "Proceed?/Approve?/ASK" below is pre-approved (print the plan, then go); when a
+Gap-Report and a checklist are both given, use the checklist and delete the Gap-Report
+(log it under `## YOLO Decisions`); git history writes stay denied. `/fix` is finished
+only when **every** FAIL / BLOCKED item in scope has been addressed and re-built — never
+"fixed #14 and #17, run `/fix` again for the rest"; add waves instead. End with
+`PLAYBOOK_RUN_COMPLETE: <summary>` or `PLAYBOOK_RUN_BLOCKED: <missing + owner>` as the
+very last line.
+
 ## Before fixing
 1. Read the **implementation checklist** completely. Look at:
    - The **Status Table** at the top — rows marked FAIL or BLOCKED are yours.
@@ -124,7 +134,8 @@ Before fixing ANY item, produce an execution plan:
 
    Proceed? (yes / no / refine)
    ```
-5. After approval, launch wave by wave. **Inside each wave, spawn sub-agents
+   **YOLO mode:** print the plan and proceed immediately.
+5. After approval (or immediately in YOLO mode), launch wave by wave. **Inside each wave, spawn sub-agents
    in PARALLEL** using the `task` tool (multiple tool calls in a single
    message). Never sequentially. **Always spawn the `builder` subagent type
    for wave work** — it carries its own (cheaper) model tier, so wave workers
@@ -280,6 +291,8 @@ or the Verification Guide):
 
 **ASK ONCE**: "Starting backend (`<cmd>`) and frontend (`<cmd>`) for smoke
 test. Approve? (yes/no)"
+**YOLO mode:** announce and start — pre-approved; log the environment choice
+under `## YOLO Decisions`.
 
 Only the USER may skip. You do NOT self-skip with a SQL/run-app/Windows-app
 excuse. If startup genuinely fails, capture the EXACT error into the checklist
@@ -366,6 +379,11 @@ restart needed), don't touch either section.
 ---
 
 ## When done
+0. **Completion check first**: every FAIL / BLOCKED item in scope must now carry
+   a `**Fix applied**` annotation or an external-blocker note. If any is still
+   untouched, plan the next wave and go back — do not write the summary yet.
+   In YOLO mode, finish with `PLAYBOOK_RUN_COMPLETE: <fixed>/<total> fixed,
+   self-test <summary>` (or `PLAYBOOK_RUN_BLOCKED: …`) as the very last line.
 1. Status Table updated with what was fixed (one-line per item).
 2. Each fixed item has `**Fix applied**` and `**Self-test**` annotations.
 3. Deployment Steps and Infrastructure Requirements updated if needed.

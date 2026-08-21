@@ -1,5 +1,4 @@
 ---
-model: opus
 ---
 Read `AGENTS.md`, the selected `playbook/environment-profile.yml`, and the target module. Ask
 for missing ownership, data classification, environment or acceptance context. Execute safe

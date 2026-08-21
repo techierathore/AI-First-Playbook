@@ -16,6 +16,13 @@ for (const name of readdirSync(join(root, "docs"))) {
 }
 const config = JSON.parse(read("opencode.json"));
 if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/plugin/spec-guardrails.ts")) errors.push("plugin is not explicitly registered");
+if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/plugin/yolo.ts")) errors.push("yolo plugin is not explicitly registered in opencode.json");
+if (config.plugin?.indexOf("./.opencode/plugin/spec-guardrails.ts") > config.plugin?.indexOf("./.opencode/plugin/yolo.ts")) errors.push("opencode.json: spec-guardrails.ts must be registered before yolo.ts (forbidden writes are blocked before YOLO can allow them)");
+for (const f of ["harness/opencode/plugin/yolo-policy.mjs", "harness/opencode/plugin/yolo.ts", "scripts/playbook-yolo.mjs", "docs/YOLO-Mode-Guide.md"]) {
+  if (!existsSync(join(root, f))) errors.push(`missing ${f}`);
+}
+if (!read("AGENTS.md").includes("## YOLO mode")) errors.push("AGENTS.md: missing the '## YOLO mode' standing rules");
+if (!read("templates/agents-md-template.md").includes("## YOLO mode")) errors.push("templates/agents-md-template.md: missing the '## YOLO mode' standing rules");
 for (const f of files("harness/opencode/command", ".md")) {
   const text = read(join("harness/opencode/command", f));
   if (!text.startsWith("---")) errors.push(`${f}: missing frontmatter`);
@@ -48,7 +55,7 @@ if (!existsSync(pack)) {
   const ocAgents = new Set(files("harness/opencode/agent", ".md"));
   const ccAgents = new Set(files("harness/claude-code/agents", ".md"));
   for (const f of ocAgents) if (!ccAgents.has(f)) errors.push(`claude-code pack: missing agents/${f} — regenerate the pack`);
-  for (const required of ["hooks/spec-guardrails-hook.mjs", "hooks/write-policy.mjs", "settings.json", "CLAUDE.md", "mcp.json"]) {
+  for (const required of ["hooks/spec-guardrails-hook.mjs", "hooks/write-policy.mjs", "hooks/yolo-hook.mjs", "hooks/yolo-policy.mjs", "settings.json", "CLAUDE.md", "mcp.json"]) {
     if (!existsSync(join(pack, required))) errors.push(`claude-code pack: missing ${required}`);
   }
   // the shared policy must not drift between its three copies
@@ -57,12 +64,18 @@ if (!existsSync(pack)) {
     if (read("harness/claude-code/hooks/write-policy.mjs") !== master) errors.push("write-policy.mjs drift: harness/claude-code/hooks differs from harness/opencode/plugin — regenerate the pack");
     if (existsSync(join(root, ".opencode/plugin/write-policy.mjs")) && read(".opencode/plugin/write-policy.mjs") !== master) errors.push("write-policy.mjs drift: .opencode/plugin differs from harness/opencode/plugin");
   }
+  if (existsSync(join(pack, "hooks/yolo-policy.mjs"))) {
+    const master = read("harness/opencode/plugin/yolo-policy.mjs");
+    if (read("harness/claude-code/hooks/yolo-policy.mjs") !== master) errors.push("yolo-policy.mjs drift: harness/claude-code/hooks differs from harness/opencode/plugin — regenerate the pack");
+    if (existsSync(join(root, ".opencode/plugin/yolo-policy.mjs")) && read(".opencode/plugin/yolo-policy.mjs") !== master) errors.push("yolo-policy.mjs drift: .opencode/plugin differs from harness/opencode/plugin");
+  }
   if (existsSync(join(pack, "settings.json"))) {
     const settings = JSON.parse(read("harness/claude-code/settings.json"));
     const pre = settings.hooks?.PreToolUse ?? [];
-    if (!pre.some((e) => (e.hooks ?? []).some((h) => (h.command ?? "").includes("spec-guardrails-hook.mjs")))) {
-      errors.push("claude-code pack: settings.json does not register the spec-guardrails PreToolUse hook");
-    }
+    const uses = (entries, name) => entries.some((e) => (e.hooks ?? []).some((h) => (h.command ?? "").includes(name)));
+    if (!uses(pre, "spec-guardrails-hook.mjs")) errors.push("claude-code pack: settings.json does not register the spec-guardrails PreToolUse hook");
+    if (!uses(pre, "yolo-hook.mjs")) errors.push("claude-code pack: settings.json does not register the yolo PreToolUse hook");
+    if (!uses(settings.hooks?.PermissionRequest ?? [], "yolo-hook.mjs")) errors.push("claude-code pack: settings.json does not register the yolo PermissionRequest hook");
   }
   if (existsSync(join(pack, "CLAUDE.md")) && !read("harness/claude-code/CLAUDE.md").includes("@AGENTS.md")) {
     errors.push("claude-code pack: CLAUDE.md must import @AGENTS.md");

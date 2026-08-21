@@ -1,6 +1,6 @@
 # Model Routing Guide — run cheap phases on cheap models
 
-**Audience:** anyone operating the playbook — team lead setting defaults, engineer running phases. **TL;DR:** every command and agent declares a model *tier*; one YAML file maps tiers to real models; one script applies it everywhere. **Design rationale and source evidence:** [`Adapter-Design.md`](Adapter-Design.md) · **capture of what actually ran:** [`Telemetry-Guide.md`](Telemetry-Guide.md).
+**Audience:** anyone operating the playbook — team lead setting defaults, engineer running phases. **TL;DR:** every command and agent declares a model *tier*; one YAML file maps tiers to real models; one command (`node scripts/playbook-routing.mjs`) turns it on/off and changes the map. **Routing ships OFF** — until you run `on`, every phase uses your session model. **Design rationale and source evidence:** [`Adapter-Design.md`](Adapter-Design.md) · **capture of what actually ran:** [`Telemetry-Guide.md`](Telemetry-Guide.md).
 
 ## 1. The problem this solves
 
@@ -12,7 +12,7 @@ Without routing, `/feature-plan` (where a wrong decision poisons every later pha
 | `standard` | Everyday competent execution — building, verifying, fixing | `anthropic/claude-sonnet-5` | `sonnet` |
 | `economy` | Mechanical transcription and rotation | `anthropic/claude-haiku-4-5` | `haiku` |
 
-The defaults are working values — substitute your own provider/models (§5) and re-apply.
+The defaults are working values — substitute your own provider/models (§5.4). Nothing is stamped until routing is turned on (§5.1).
 
 ## 2. The complete map — commands
 
@@ -57,44 +57,103 @@ escalation:
 
 Meaning: if a checklist item's Run Log shows two failed fix attempts, launch the third `/fix` on the frontier tier. It is **advisory** — applied by whoever launches the command (human or wrapper script) by reading the attempt history from the checklist Run Log; nothing switches models mid-run automatically. The telemetry records (`attempt`, `tier`, `model` per phase — [`Telemetry-Guide.md`](Telemetry-Guide.md)) are how you tune the threshold.
 
-## 5. Changing the map — every case
+## 5. Operating routing — one command, every case
 
-All changes are: edit `playbook/model-tiers.yml`, then re-apply. The apply step is idempotent — run it as often as you like.
+Everything goes through **`node scripts/playbook-routing.mjs <verb>`** (alias: `npm run routing -- <verb>`). Each verb edits [`playbook/model-tiers.yml`](../playbook/model-tiers.yml) in place — comments preserved — and immediately re-applies it to the harness files, so the map and the `model:` stamps can never disagree. Every verb is idempotent; run it as often as you like. (`node scripts/apply-model-tiers.mjs` still works underneath; `--check` and `--print` are unchanged.)
+
+### 5.1 Turning it on and off
+
+Routing ships **OFF**. Off means: no harness file carries a `model:` stamp and every phase runs on whatever model your session has. The map stays in the file, dormant.
 
 ```bash
-# 1. Change which model a tier means (e.g. your shop uses a different provider):
-#    edit playbook/model-tiers.yml →
-#      tiers:
-#        standard:
-#          opencode: "myprovider/my-model"
-#          claude-code: "sonnet"
-node scripts/apply-model-tiers.mjs                 # stamps harness/opencode frontmatter
-
-# 2. Move a command between tiers (e.g. verify feels over-modeled on a stable repo):
-#    edit →  commands:
-#              verify: economy
-node scripts/apply-model-tiers.mjs
-
-# 3. Move an agent (e.g. test the "cheap builders" hypothesis — watch the fix-rate!):
-#    edit →  agents:
-#              builder: economy
-node scripts/apply-model-tiers.mjs
-
-# 4. Using the Claude Code pack? Regenerate it after ANY tier change:
-node scripts/harness-install.mjs claude-code --target=/path/to/project
-
-# 5. Prove the stamps match the map (run this in CI):
-node scripts/apply-model-tiers.mjs --check
-
-# 6. See what the map resolves to for a harness without touching anything:
-node scripts/apply-model-tiers.mjs --harness=claude-code --print
+node scripts/playbook-routing.mjs status     # read-only: what routing is / would be doing
+node scripts/playbook-routing.mjs on         # stamps model: into harness/opencode/{command,agent}/*.md
+node scripts/playbook-routing.mjs off        # removes exactly those stamps — fully reversible
 ```
 
-OpenCode model ids are `provider/model` — list what your account offers with `opencode models`. Claude Code accepts the `opus`/`sonnet`/`haiku` aliases or a full model id; the `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL` environment variables re-point the aliases machine-wide.
+After `on` you keep typing the same commands (`/verify`, `/implement`, …); they now execute on their tier's model. Your default chat is never routed (§3).
+
+### 5.2 Seeing what is going on — `status`
+
+```
+$ node scripts/playbook-routing.mjs status
+Routing: OFF   (model: stamps on disk: 0/22 mapped files)
+
+Tier models:
+  frontier  opencode: anthropic/claude-opus-5        claude-code: opus
+  standard  opencode: anthropic/claude-sonnet-5      claude-code: sonnet
+  economy   opencode: anthropic/claude-haiku-4-5     claude-code: haiku
+
+Commands by tier:
+  frontier  analyze-fix, feature-plan, legacy-audit
+  standard  add-doc, fix, implement, refresh-doc, upgrade-docs, verify
+  economy   amend-checklist, archive-checklist, create-issue-list, generate-html, update-context
+Agents:    analyst=frontier, builder=standard, orchestrator=standard, verifier=standard
+
+Escalation (ADVISORY — applied by whoever launches the command; nothing switches a model mid-run):
+  fix                after 2 attempt(s) -> launch the next /fix on frontier (base tier: standard)
+  ...
+
+Every phase runs on the session model. Turn on with:  node scripts/playbook-routing.mjs on
+```
+
+If the flag and the stamps on disk disagree (someone hand-edited a file, or the map, without re-applying) `status` says so and tells you to run `bind`.
+
+### 5.3 Moving a command or agent between tiers
+
+```bash
+# verify feels over-modeled on a stable repo → try economy (watch the fix-rate!):
+node scripts/playbook-routing.mjs set-tier verify economy
+
+# test the "cheap builders" hypothesis — see §3 for why the default is standard:
+node scripts/playbook-routing.mjs set-tier builder economy
+
+# take one command out of routing entirely (runs on the session model again):
+node scripts/playbook-routing.mjs set-tier generate-html inherit
+```
+
+The name must already exist under `commands:` or `agents:` in the map — the script tells you the valid names if it doesn't.
+
+### 5.4 Changing which model a tier means — per tier, per harness
+
+```bash
+# your shop uses a different provider for the everyday tier:
+node scripts/playbook-routing.mjs set-model standard opencode myprovider/my-model
+# zero-cost experiments on OpenCode's free models:
+node scripts/playbook-routing.mjs set-model economy opencode opencode/hy3-free
+# Claude Code aliases or full ids:
+node scripts/playbook-routing.mjs set-model frontier claude-code opus
+```
+
+OpenCode ids are `provider/model` — list what your account offers with `opencode models`. Claude Code accepts the `opus`/`sonnet`/`haiku` aliases or a full model id; the `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL` environment variables re-point the aliases machine-wide.
+
+### 5.5 Escalation — when the base tier isn't cutting it
+
+```bash
+node scripts/playbook-routing.mjs set-escalation fix 2 frontier      # after 2 fix attempts, launch the 3rd on frontier
+node scripts/playbook-routing.mjs set-escalation verify 3 frontier   # add a policy for another command
+```
+
+Escalation is **advisory** (§4): it changes nothing on disk except the map — you apply it when you launch the command, reading the attempt count from the checklist Run Log (it is also the `attempt` field in every telemetry record). `status` lists the current policies.
+
+### 5.6 Edited the map by hand? — `bind`
+
+```bash
+node scripts/playbook-routing.mjs bind               # re-apply whatever model-tiers.yml now says
+node scripts/apply-model-tiers.mjs --check           # CI: prove stamps, map and the on/off flag agree
+```
+
+### 5.7 Using the Claude Code pack?
+
+Regenerate it after **any** of the above — the generator reads the same map and the same flag (off → no `model:` stamps in the pack either):
+
+```bash
+node scripts/harness-install.mjs claude-code --target=/path/to/project
+```
 
 ## 6. How it works, and how you see it
 
-**Mechanism (deliberately boring):** `apply-model-tiers.mjs` writes a `model:` field into the YAML frontmatter of `harness/opencode/command/*.md` and `harness/opencode/agent/*.md`; `harness-install.mjs` does the same for the generated Claude Code pack. Command frontmatter has the highest model precedence in both harnesses. There is no runtime layer — what you stamped is what runs.
+**Mechanism (deliberately boring):** `playbook-routing.mjs` edits the map and calls `apply-model-tiers.mjs`, which writes a `model:` field into the YAML frontmatter of `harness/opencode/command/*.md` and `harness/opencode/agent/*.md` when `enabled: true` — and removes it when `enabled: false`; `harness-install.mjs` does the same for the generated Claude Code pack. Command frontmatter has the highest model precedence in both harnesses. There is no runtime layer — what you stamped is what runs.
 
 **Where you see it:**
 
@@ -111,9 +170,10 @@ OpenCode model ids are `provider/model` — list what your account offers with `
 
 | Symptom | Cause → fix |
 |---|---|
-| "I applied tiers and my chat model didn't change" | Correct — your default chat is never routed (§3). Run a playbook command to see routing. |
-| `--check` fails in CI | Someone edited a command file's `model:` by hand, or edited the map without re-applying → `node scripts/apply-model-tiers.mjs` |
-| A phase ran on the wrong model | Invoked outside a stamped command (typed at the raw agent), or the Claude pack wasn't regenerated after a map change → §5 step 4 |
+| "I ran `on` and my chat model didn't change" | Correct — your default chat is never routed (§3). Run a playbook command to see routing. |
+| "I changed the map and nothing happened" | Routing is OFF (the default) — `status` shows it; run `node scripts/playbook-routing.mjs on` |
+| `--check` fails in CI / `status` says "disagree" | Someone edited a command file's `model:` by hand, or edited the map without re-applying → `node scripts/playbook-routing.mjs bind` |
+| A phase ran on the wrong model | Invoked outside a stamped command (typed at the raw agent), or the Claude pack wasn't regenerated after a map change → §5.7 |
 | Follow-up chat runs on the command's model (OpenCode) | Verified behavior (§6) — re-pick your model or start a new session |
-| Fix keeps failing on standard | That's what escalation is for (§4) — relaunch on frontier after `after_attempts` |
+| Fix keeps failing on standard | That's what escalation is for (§4) — relaunch on frontier after `after_attempts`; tune with `set-escalation` (§5.5) |
 | "Which models can I even use?" | `opencode models` (OpenCode) · alias envs or full ids (Claude Code) |

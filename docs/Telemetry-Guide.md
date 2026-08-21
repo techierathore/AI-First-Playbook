@@ -11,7 +11,8 @@ One NDJSON record per phase execution:
  "tokens_in":48213, "tokens_out":9120, "cost_usd":0.41,
  "attempt":2, "gate_verdict":"FAIL", "project_type":"dotnet-react",
  "timestamp":"2026-08-20T09:12:00Z", "session_id":"ses_…",
- "harness":"opencode", "granularity":"message", "turns":14}
+ "harness":"opencode", "granularity":"message", "turns":14,
+ "tokens_scope":"tree", "subagents":{"count":2, "tokens_out":1840, "cost_usd":0.06}}
 ```
 
 Field by field:
@@ -27,6 +28,10 @@ Field by field:
 | `gate_verdict` | Worst verdict on the checklist: `BLOCKED` > `FAIL` > `DATA-GAP` > `PASS (code-audit)` > `PASS` | Framework — parsed from `**Verifier Result**:` lines |
 | `project_type` | Your stack label | Framework — `playbook/environment-profile.yml` |
 | `granularity` | `message` (OpenCode — exact per-phase) or `session` (Claude Code — see §5) | Capture path |
+| `tokens_scope` | `tree` if the totals include turns from subagent (child) sessions spawned during the phase; `main` if only the phase's own session contributed | Harness — `parentID` on each turn row (or a sessionID different from the phase's) |
+| `subagents` | `{count, tokens_out, cost_usd}` — how much of the total came from child sessions (`count` = distinct child sessions). Always present; all zeros when `tokens_scope` is `main` | Harness — same rows, attributed by `parentID` |
+
+**Subagent tokens are always in the total.** A verifier that fans out sub-verifiers, or an implementer that delegates to a `subtask`, runs those in child sessions; the plugin records every assistant turn between phase-start and phase-end regardless of which session it belongs to, so `tokens_in`/`tokens_out`/`cost_usd` are the cost of the whole phase tree. `tokens_scope` and `subagents` make that explicit — `cost_usd - subagents.cost_usd` is what the main session alone spent — without changing the total.
 
 The design principle behind the split: **attempt and verdict are framework data, not harness data** — they are parsed deterministically from the checklist the process already maintains, identically in any harness. Only phase, model and tokens are harness-sourced, which shrinks the fragile surface to three fields.
 
@@ -68,13 +73,13 @@ node scripts/playbook-telemetry.mjs --checklist=… | \
 
 ## 5. Claude Code — session-level, honestly
 
-Claude Code exposes less: hooks carry no token counts and per-subagent usage is not exposed. The practical setup (full evidence chain in [`Telemetry-Hooks.md`](Telemetry-Hooks.md)):
+The Playbook is OpenCode-first; the Claude Code path is documented for parity but no Claude transcript parser is built or planned. Claude Code exposes less: hooks carry no token counts and per-subagent usage is not surfaced through hooks. The practical setup (full evidence chain in [`Telemetry-Hooks.md`](Telemetry-Hooks.md)):
 
 - Run **session-per-phase** (the launcher records the phase name and model), then take tokens from OpenTelemetry (`claude_code.token.usage` to a local collector) or, for headless mechanical phases, from `claude -p --output-format json` (exact, includes `total_cost_usd`).
-- Records get `granularity: "session"` so consumers know they are phase≈session totals rather than per-message sums.
-- The checklist-parsed fields (`attempt`, `gate_verdict`, `project_type`) are identical to OpenCode — that half of every record never degrades.
+- Records get `granularity: "session"` so consumers know they are phase≈session totals rather than per-message sums; `tokens_scope`/`subagents` are not produced on that path.
+- The checklist-parsed fields (`attempt`, `gate_verdict`, `project_type`) are identical to OpenCode — that half of every record never degrades.[^claude-subagents]
 
-**Verified update (2026-08-20):** the earlier "per-subagent split is not available" finding is out of date. Claude Code's `SubagentStop` hook payload carries an `agent_transcript_path` field, and subagent transcripts live at a deterministic path beside the parent transcript (`<transcript-dir>/<session-id>/subagents/agent-<id>.jsonl`, same JSONL format with per-message `usage`). A transcript-window parser can therefore include subagent tokens without any hook at all — verified empirically on Claude Code 2.1.x. Treat the transcript format as version-pinned (it remains undocumented); parse failures degrade to `null`, never zero.
+[^claude-subagents]: Verified 2026-08-20 on Claude Code 2.1.x: the `SubagentStop` hook payload carries `agent_transcript_path`, and subagent transcripts sit at `<transcript-dir>/<session-id>/subagents/agent-<id>.jsonl` in the same (undocumented) JSONL format with per-message `usage`, so a transcript-window parser *could* recover a subagent split there. Recorded for completeness only — the Playbook will not build that parser.
 
 ## 6. FAQ
 

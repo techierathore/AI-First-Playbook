@@ -1,6 +1,5 @@
 ---
 description: Analyze a user story or bug report and fold the findings into the existing implementation checklist
-model: anthropic/claude-opus-5
 ---
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See

@@ -7,10 +7,11 @@
 2. Run the npm installer or clone and run `scripts/install.mjs` (OpenCode), or
    `scripts/harness-install.mjs claude-code --target=...` (Claude Code).
 3. Replace placeholders in `playbook/environment-profile.yml` (including `project_type`).
-4. Model tiers: the defaults in `playbook/model-tiers.yml` work out of the box — planning
-   phases run frontier, build/verify run standard, mechanical commands run economy. To use
-   different models, edit the tier map and run `node scripts/apply-model-tiers.mjs`
-   (then regenerate the Claude Code pack if you use it). Full guide — the complete
+4. Model routing (optional — ships **OFF**, so every phase starts on your session model):
+   `node scripts/playbook-routing.mjs on` pins planning phases to frontier, build/verify to
+   standard, mechanical commands to economy using the defaults in `playbook/model-tiers.yml`.
+   Change a model or tier with `set-model` / `set-tier`, inspect with `status`, undo with
+   `off` (then regenerate the Claude Code pack if you use it). Full guide — the complete
    command/agent tables, escalation, change recipes and troubleshooting:
    [Model-Routing-Guide.md](Model-Routing-Guide.md).
 5. Restart OpenCode (Claude Code re-reads commands automatically).

@@ -23,6 +23,56 @@ working tree, reports `git status` and what changed, and stops. A task descripti
 "commit the result" does not override this rule — only the human's explicit instruction in
 the current conversation does.
 
+## Build phase — finish the whole checklist, not part of it
+
+`/implement` (and `/fix` for its FAIL set) is done only when **every item in scope** is
+implemented, built, self-tested and moved to the to-verify state, or carries an explicit
+`[INFRA BLOCKER]` / `[EXTERNAL BLOCKER]` annotation naming what is missing and who supplies
+it. "Implemented items #1–#9; run `/implement` again for #10–#19" is a **violation**, not a
+status update: context pressure is solved by adding waves and handing sub-agents smaller
+slices, never by handing the remainder back to the human. The phase hands off to `/verify`
+exactly once, with the Status Table showing every item.
+
+## YOLO mode — unattended runs
+
+YOLO mode is on when **any** of these holds: the user's message or command arguments contain
+the token `YOLO` (any case, with or without `*`), a Claude Code `/goal` is active, or
+`PLAYBOOK_YOLO=1` is set in the environment (the supervisor
+`scripts/playbook-yolo.mjs` sets it). Once on, it stays on for the whole run and for every
+sub-agent spawned in it — pass it down explicitly in each sub-agent brief.
+
+In YOLO mode the human has pre-approved everything except git history. Therefore:
+
+- **Never stop to ask.** Every "Proceed? (yes/no)", "Approve?", "ASK the user" and
+  "with approval" gate in any command or agent file is **pre-approved**. Do not pause for
+  the wave plan, the smoke-test start, deployment steps, deletions, tool installs, port
+  choices or environment choices. Make the sensible decision, record it as one line under
+  `## YOLO Decisions` in the checklist (what / why / how to reverse), and continue. Missing
+  required *input* (no checklist path at all) is the only legitimate question — ask it
+  once at the very start, never mid-run.
+- **You may delete** files and folders inside the repository and its build/verification
+  output, kill processes you started, install tools, and write anywhere the guardrail
+  plugin permits. Read-only git (`status`, `log`, `diff`, `show`, `blame`, `branch`,
+  `fetch`) is allowed and encouraged.
+- **You still never commit.** `git commit/push/tag/add/rebase/reset/merge/checkout/stash`
+  and `gh pr create` are denied mechanically by the YOLO carrier; do not work around it.
+  End the run with `git status` and a summary for the human to commit.
+- **Stop only when the goal is complete.** A phase ends when the completion contract above
+  is met; a goal run ends when `/verify` reports every item PASS (loop `/fix` → `/verify`
+  as many times as needed). Ending early is allowed only when a genuine external blocker
+  remains *after* everything else is finished — then say what is missing and who must
+  supply it.
+- **Usage limits are not failures.** If the provider's 5-hour/weekly limit stops the run,
+  the supervisor waits for the stated reset (+15 min) and resumes the same session. On
+  resume, re-read the checklist Status Table and continue from the first unfinished item;
+  never redo finished work and never start a new checklist.
+- **End with a sentinel line** so the supervisor can tell the outcome apart from a pause:
+  `PLAYBOOK_RUN_COMPLETE: <one-line summary>` when everything is done, or
+  `PLAYBOOK_RUN_BLOCKED: <what is missing and who must supply it>` when only an external
+  blocker remains. Print it as the very last line of the run.
+
+Outside YOLO mode nothing changes: gates ask, approvals are waited for.
+
 ## Windows / WSL note — stale root-owned file metadata
 
 Repos under `/mnt/c` can carry stale root-owner Linux metadata (typically left by earlier

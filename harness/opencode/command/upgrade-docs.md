@@ -1,6 +1,5 @@
 ---
 description: Convert/update existing feature documents to the new verifiable format with Mermaid diagrams. Works from a BRD+mockup OR from alternative specs (integration doc / project specification) + an existing checklist. Supports a full upgrade or a targeted/partial update.
-model: anthropic/claude-sonnet-5
 ---
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See

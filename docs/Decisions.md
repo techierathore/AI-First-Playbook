@@ -140,3 +140,100 @@ PreToolUse input and confirmed `agent_type: "verifier"` **is** delivered for sub
 calls, so the stricter verifier write-scope is fully active in Claude Code (the
 fail-open-on-scope fallback in the hook remains as defence for harness versions that omit
 the field). Nothing about this run required the OpenCode source — deployed binaries only.
+
+## 2026-08-21 — Routing gets a master switch and a one-command front end
+
+**Status:** implemented and verified (same day). `playbook/model-tiers.yml` carries `enabled: false`;
+`scripts/playbook-routing.mjs` (`status | on | off | set-tier | set-model | set-escalation | bind`)
+edits the map in place and re-applies it; `scripts/apply-model-tiers.mjs` honours the flag and is
+importable (`applyTiers()`), its CLI unchanged. Round-trip verified: `off` strips all 22 stamps,
+`on` reproduces them byte-for-byte, both idempotent; `--check` and `playbook-validate` green.
+Ported from TechieFlow's `tf-routing.sh` / `tf-routing-bind.sh`.
+
+### Decision — routing is OFF by default and fully reversible
+
+Until now the tier map was always in force: the shipped `harness/` files carried `model:`
+stamps, so installing the playbook silently pinned every phase to Anthropic model ids. That
+is the wrong default for a team edition — a new team's first experience should be "the phases
+run on the model I picked", with routing something they *turn on* once they have a provider
+mapping they trust. So:
+
+- `enabled: false` is the shipped state and `off` is not "don't stamp" but "**remove** every
+  stamp" — the 22 mapped files end up with no `model:` field at all, identical to a repo that
+  never had routing. Reversibility is what makes the switch safe to flip during a pilot.
+- The map stays in the file while off (dormant, not deleted), so `status` still shows what
+  `on` would do, and a tier of `inherit` opts a single command out while the rest stays routed.
+- One script owns every edit. The old workflow (hand-edit YAML, then remember to re-apply) is
+  exactly how flag and stamps drift apart; every verb re-applies, and `status` reports any
+  disagreement it finds. The Claude Code generator reads the same flag, so the pack cannot
+  carry stamps the OpenCode side doesn't.
+
+**Alternatives rejected:**
+
+- **Stamp-on-install, leave it to the team to delete lines.** Rejected: 22 hand edits across
+  two directories to undo a default nobody chose, and no way to prove it was fully undone.
+- **A runtime toggle (env var read by the plugin).** Rejected: there is no runtime layer —
+  routing is frontmatter the harness reads at load — and inventing one just to carry a boolean
+  re-opens the runtime-adapter decision of 2026-08-20.
+- **Separate "routing profile" files swapped in and out.** Rejected: two files to keep in sync
+  is the drift problem again; an in-place flag plus an idempotent apply is smaller.
+
+**Consequence:** teams upgrading from the 2026-08-20 state will see their stamps removed on the
+first `bind`/`off`; run `node scripts/playbook-routing.mjs on` to restore the prior behaviour.
+
+
+## 2026-08-21 (later) — YOLO mode: unattended runs, mechanical permission bypass, limit-aware restarts
+
+**Context.** An end-to-end goal run on a real codebase took three days instead of one
+evening: the harness stopped for permissions the human had already granted in spirit
+(delete a folder, read git), the command prompts stopped for in-prompt approvals
+("Proceed?", "Approve the smoke test?"), the provider's 5-hour / weekly usage limit killed
+the session with nobody there to restart it, and `/implement` repeatedly finished a subset
+of items and handed back "run the build phase again for the rest".
+
+### Decision 1 — YOLO is a mode with one env flag and two prompt triggers
+
+`PLAYBOOK_YOLO=1` is the mechanical switch (hooks cannot see the conversation); the token
+`YOLO` in a command's arguments or an active Claude Code `/goal` is the prompt-level switch.
+The standing rules (`AGENTS.md` → "YOLO mode") define what the mode means once, for both
+harnesses; the command bodies only annotate their gates ("YOLO mode: proceed immediately").
+
+### Decision 2 — the bypass is mechanical, shared, and has exactly one exception
+
+Same pattern as the guardrail: one pure policy (`yolo-policy.mjs`) and two thin carriers —
+`yolo.ts` (`permission.ask` + `tool.execute.before` + `session.error`) for OpenCode,
+`yolo-hook.mjs` (PreToolUse `permissionDecision: allow` / exit 2, PermissionRequest
+`decision`) for Claude Code. Everything is allowed except git history / index / ref writes
+and `gh` publishes, which are denied with the AGENTS.md reason. Unknown git subcommands fail
+closed. Without the env flag both carriers are no-ops. Rejected: relying on
+`--dangerously-skip-permissions` / `--auto` alone — those remove the prompts but also the
+one rule that must survive (no commits), and do nothing about in-prompt gates.
+
+### Decision 3 — usage limits are handled outside the agent, by a supervisor
+
+Once the provider says "limit reached" the agent process is finished; only something outside
+it can wait and resume. `scripts/playbook-yolo.mjs` runs the harness headless
+(`claude -p … --resume` / `opencode run --session …`), recognises limit text in the output
+(or the plugin's `rate-limit.json`), parses the reset time in every shape the harnesses and
+the API emit, adds a 15-minute buffer, sleeps, and resumes the same session. The agent
+signals the end with a sentinel line (`PLAYBOOK_RUN_COMPLETE` / `PLAYBOOK_RUN_BLOCKED`) so a
+pause cannot be mistaken for completion; runs that end without one are nudged on, then
+given up after eight consecutive tries. State is persisted so a VM reboot can `resume`.
+
+### Decision 4 — the build phase has a completion contract, independent of YOLO
+
+`/implement` (and `/fix` for its FAIL set) ends only when every item in scope is to-verify
+or carries an external-blocker tag; "run again for the remaining items" is named a
+violation, and the "When done" section now begins with a completion check that sends the
+orchestrator back to wave planning. Context pressure is solved with smaller slices and more
+waves, never by handing work back.
+
+### Consequences
+
+- New: `harness/opencode/plugin/{yolo.ts,yolo-policy.mjs}`, `harness/claude-code/hooks/yolo-hook.mjs`,
+  `scripts/playbook-yolo.mjs`, `docs/YOLO-Mode-Guide.md`; `opencode.json` registers `yolo.ts`
+  after `spec-guardrails.ts` (order checked by the validator); the Claude Code pack generator
+  emits both hook registrations and copies the policy; `test-guardrails.mjs` covers git-write
+  denial, allow-list, limit parsing and sentinels.
+- Unchanged: the guardrail, verifier write scope, verdict tiers, secrets rules, and "agents
+  never commit" — now enforced mechanically in YOLO instead of by prose.

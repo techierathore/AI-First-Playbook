@@ -39,6 +39,32 @@ The rule set, verbatim:
   result" does not override this — only the human's explicit instruction
   in the current conversation does.
 
+## Build phase — finish the whole checklist
+- /implement is done only when EVERY item in scope is implemented, built,
+  self-tested and moved to to-verify, or carries an explicit [INFRA BLOCKER] /
+  [EXTERNAL BLOCKER] naming what is missing. "Run /implement again for the
+  remaining items" is a violation — add waves, hand sub-agents smaller slices,
+  never hand the remainder back. The phase hands off to /verify once.
+
+## YOLO mode — unattended runs
+- ON when the message/arguments contain the token YOLO, a Claude Code /goal
+  is active, or PLAYBOOK_YOLO=1 is set. Stays on for the whole run and every
+  sub-agent (pass it down in each brief).
+- Never stop to ask: every "Proceed?/Approve?/ASK/with approval" gate is
+  pre-approved. Decide, log one line under "## YOLO Decisions" in the
+  checklist (what / why / how to reverse), continue. Only a missing required
+  input (no checklist path) may be asked, once, at the very start.
+- May delete files/folders in the repo, kill own processes, install tools,
+  run read-only git (status/log/diff/show/blame/branch/fetch).
+- Still never commit/stage/push/tag/rebase/reset/checkout/stash or gh publish
+  — denied mechanically; end with `git status` + summary for the human.
+- Stop only when the goal is complete (phase contract met; goal run = every
+  item PASS after /verify, looping /fix → /verify). Usage-limit errors are not
+  failures: the supervisor resumes after the reset; on resume re-read the
+  Status Table and continue from the first unfinished item.
+- Last line of the run: `PLAYBOOK_RUN_COMPLETE: <summary>` or
+  `PLAYBOOK_RUN_BLOCKED: <what is missing and who supplies it>`.
+
 ## Single source of truth: the Implementation Checklist
 - For any given feature, the Implementation Checklist is THE living document.
 - /analyze-fix, /amend-checklist, and /fix all UPDATE this checklist in place.

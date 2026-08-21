@@ -1,6 +1,5 @@
 ---
 description: Independently verify a built feature against its checklist
-model: sonnet
 ---
 **IMPORTANT — independence gate:** delegate ALL of the work below to the
 `verifier` subagent in a single Agent call (fresh, isolated context — it must
@@ -36,6 +35,13 @@ You must have:
 
 If the user has NOT provided the checklist path, **ASK for it**.
 Also ask for the verification guide and DB changes doc paths if not provided.
+
+**YOLO mode** (token `YOLO` in the input, an active `/goal`, or `PLAYBOOK_YOLO=1`):
+pass the word `YOLO` into the verifier's brief verbatim. The verifier then treats every
+approval in its rules as pre-approved (starting apps, running Automated deployment steps,
+installing tools), logs decisions under `## YOLO Decisions`, verifies **every** item, and
+ends with `PLAYBOOK_RUN_COMPLETE:` / `PLAYBOOK_RUN_BLOCKED:`. Sibling docs are looked up
+next to the checklist instead of asked for.
 
 ## What to verify
 Go through EVERY item in the checklist and verify it using the method

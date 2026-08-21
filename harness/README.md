@@ -24,6 +24,8 @@ harness/opencode/
   plugin/           spec-guardrails.ts + write-policy.mjs — mechanical enforcement of the
                     one-file rule (write-policy.mjs is the harness-independent policy)
                     telemetry.ts — opt-in per-phase token/cost capture (PLAYBOOK_TELEMETRY=1)
+                    yolo.ts + yolo-policy.mjs — YOLO mode: auto-approve every permission except
+                    git history, record usage-limit reset times (PLAYBOOK_YOLO=1; inert otherwise)
   templates/        doc-shell.html — the self-rendering HTML shell for human docs
 harness/claude-code/
   GENERATED pack for Claude Code — same command bodies, translated frontmatter, the
@@ -38,11 +40,31 @@ markdown prompts with YAML frontmatter — see
 ## Model tiers (per-phase routing)
 
 Each command declares the model tier it needs in `playbook/model-tiers.yml`
-(frontier / standard / economy). `node scripts/apply-model-tiers.mjs` stamps the resolved
-`model:` into the OpenCode frontmatter (command-level `model:` has the highest precedence in
-OpenCode — it overrides even the TUI selection); the Claude Code generator resolves the same
-map to model aliases. Substitute your own models in the tier map and re-run the script; CI
-can enforce consistency with `--check`. Rationale per phase: `docs/Adapter-Design.md`.
+(frontier / standard / economy). Routing ships **OFF**; `node scripts/playbook-routing.mjs on`
+stamps the resolved `model:` into the OpenCode frontmatter (command-level `model:` has the
+highest precedence in OpenCode — it overrides even the TUI selection) and `off` removes it
+again; the Claude Code generator resolves the same map and flag to model aliases. Change
+models or tiers with `set-model` / `set-tier` (the script re-applies automatically); CI can
+enforce consistency with `node scripts/apply-model-tiers.mjs --check`. Operator guide:
+`docs/Model-Routing-Guide.md`; rationale per phase: `docs/Adapter-Design.md`.
+
+## YOLO mode (unattended runs)
+
+Add the token `YOLO` to a command (`/implement YOLO @checklist`), set a Claude Code `/goal`,
+or start the harness with `PLAYBOOK_YOLO=1`. The prompts then treat every approval gate as
+pre-approved and the carriers (`plugin/yolo.ts` for OpenCode, `hooks/yolo-hook.mjs` for
+Claude Code — both thin adapters over `plugin/yolo-policy.mjs`) auto-approve every permission
+request except git history writes, which they deny. For a run that also survives the
+provider's 5-hour / weekly usage limit, use the supervisor — it sets the variable, parses the
+reset time from the limit error, waits it out (+15 min) and resumes the same session until
+the agent prints `PLAYBOOK_RUN_COMPLETE`:
+
+```bash
+node scripts/playbook-yolo.mjs --harness=opencode --cwd=/path/to/your-repo \
+     --goal "Feature X: implement the checklist, verify, fix until every item PASSes"
+```
+
+Operator guide: `docs/YOLO-Mode-Guide.md`.
 
 ## Install (OpenCode)
 

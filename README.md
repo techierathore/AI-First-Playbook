@@ -41,9 +41,16 @@ make commands demand their inputs.
 - **Per-phase model routing:** each command declares the model tier it needs
   (frontier / standard / economy) in [`playbook/model-tiers.yml`](playbook/model-tiers.yml),
   so planning runs on a frontier model while mechanical phases run on cheap ones — the
-  dominant cost lever. Operator guide: [`docs/Model-Routing-Guide.md`](docs/Model-Routing-Guide.md);
+  dominant cost lever. Ships off; `node scripts/playbook-routing.mjs on|off|status` operates it. Operator guide: [`docs/Model-Routing-Guide.md`](docs/Model-Routing-Guide.md);
   design rationale: [`docs/Adapter-Design.md`](docs/Adapter-Design.md). Per-phase cost
   capture (model, tokens, cost, attempt, verdict): [`docs/Telemetry-Guide.md`](docs/Telemetry-Guide.md).
+- **YOLO mode — unattended end-to-end runs:** add `YOLO` to any command, set a `/goal`, or
+  run `node scripts/playbook-yolo.mjs --goal "…"` on a VM. Every permission prompt is
+  auto-approved mechanically (except git history, which stays denied), every in-command
+  approval gate is pre-approved, the build phase must finish the **whole** checklist, and
+  provider usage limits (5-hour / weekly) are waited out — reset time + 15 min — with the
+  same session resumed until the goal is complete. Guide:
+  [`docs/YOLO-Mode-Guide.md`](docs/YOLO-Mode-Guide.md).
 
 ## The lifecycle at a glance
 
@@ -226,6 +233,9 @@ harness/                   ← what actually runs (install these)
   opencode/command/        ← the 14 runnable command files (tier-stamped models)
   opencode/agent/          ← verifier.md — the real 1,050-line agent — plus builder.md
   opencode/plugin/         ← spec-guardrails.ts + write-policy.mjs + telemetry.ts
+                             + yolo.ts + yolo-policy.mjs (unattended-mode permissions)
+scripts/
+  playbook-yolo.mjs        ← YOLO supervisor: auto-approve, wait out usage limits, resume
   opencode/templates/      ← doc-shell.html
   claude-code/             ← generated Claude Code pack (same bodies, PreToolUse guardrail)
 playbook/

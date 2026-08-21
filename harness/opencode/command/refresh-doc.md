@@ -1,6 +1,5 @@
 ---
 description: Refresh documents against the CURRENT code — either a single shared/reference doc, or an entire feature doc set (checklist, dev-flow, business-verification, DB-changes, architecture). Reconciles drift, flags deleted/broken/stale references.
-model: anthropic/claude-sonnet-5
 ---
 
 **IMPORTANT**: Before starting, activate the Analyst persona. See

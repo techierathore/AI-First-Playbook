@@ -1,6 +1,5 @@
 ---
 description: Build a planned feature from its implementation checklist using parallel sub-agents and a build+smoke-test self-check before declaring done
-model: sonnet
 ---
 > Harness note (Claude Code): where this prompt says the `task` tool, use the
 > `Agent` tool; spawn the named subagent types it asks for. Parallel means
@@ -31,6 +30,39 @@ The user's input contains:
 2. **Additional instructions** — any extra constraints, priorities, or specific
    directions the user wants you to follow during implementation. These override
    the checklist where they conflict.
+
+## YOLO mode (unattended) — check this first
+YOLO mode is on if the input above contains the token `YOLO` (any case, `*YOLO*` counts),
+a `/goal` is active, or `PLAYBOOK_YOLO=1` is set. When on, the `AGENTS.md` "YOLO mode"
+rules apply to this whole run and to every builder you spawn (say so in each brief):
+
+- Every approval gate below — the wave plan "Proceed?", the smoke-test "Approve?",
+  deployment steps, tool installs, deletions, environment choices — is **pre-approved**.
+  Do not pause. Decide, log one line under `## YOLO Decisions` in the checklist, continue.
+- Git history writes are denied mechanically; everything else (deletes, read-only git,
+  process kills, installs) is allowed.
+- Do not stop until the **completion contract** (next section) is met. If the provider's
+  usage limit interrupts you, the supervisor resumes this session after the reset; on
+  resume re-read the Status Table and continue from the first unfinished item.
+- Finish with the sentinel line `PLAYBOOK_RUN_COMPLETE: <summary>` (or
+  `PLAYBOOK_RUN_BLOCKED: <missing thing + owner>` if only an external blocker remains).
+
+## Completion contract — the whole checklist, in one run
+`/implement` is finished only when **every item in scope** is implemented, built,
+self-tested and its Status Table row reads to-verify — or carries an explicit
+`[INFRA BLOCKER]` / `[EXTERNAL BLOCKER]` note naming what is missing and who supplies it.
+
+- **Never** end with "items #1–#9 done; run `/implement` again for #10–#19". That is a
+  violation of the phase, not a status. If the remaining items do not fit, plan **another
+  wave** (Wave 4, Wave 5, …) with smaller slices and spawn it — the loop is
+  `plan wave → spawn → aggregate → next wave` until the Status Table has no item left in
+  planned / in-progress.
+- Context pressure is handled by giving sub-agents smaller slices and by summarising wave
+  results tersely, never by handing the remainder back to the human.
+- Hand off to `/verify` **once**, with every item accounted for.
+- Outside YOLO mode you may still pause *between* waves for a human question if one is
+  truly required — but the answer must be "continue with the next wave", not "run the
+  command again".
 
 ## Required inputs
 You must have the path to the **Implementation Checklist** document.
@@ -107,8 +139,9 @@ Before spawning ANY sub-agent, produce an execution plan:
    Total: 19 items, 3 waves. Expected concurrency: 4 in wave 2.
    Proceed? (yes / no / refine)
    ```
+   **YOLO mode:** print the plan, then proceed immediately — do not wait for an answer.
 
-5. After approval, launch wave by wave. **Inside each wave, use the `task` tool
+5. After approval (or immediately in YOLO mode), launch wave by wave. **Inside each wave, use the `task` tool
    to spawn sub-agents in PARALLEL** (multiple tool calls in a single message)
    — never sequentially. **Always spawn the `builder` subagent type for wave
    work** — it carries its own (cheaper) model tier, so wave workers never
@@ -308,6 +341,9 @@ Use the project's **own start commands** (look in `package.json` /
 
 **ASK the user ONCE**: "I'm about to start the backend (`<cmd>`) and frontend
 (`<cmd>`) locally for a smoke test. Approve? (yes/no)"
+**YOLO mode:** announce the commands and start them — pre-approved. Pick the
+environment variant the profile marks as default (else the first `start:*` script) and
+log the choice under `## YOLO Decisions`.
 
 Only the USER may say skip. You do NOT self-skip with an excuse about SQL,
 running the app, or the Windows app (see "NO EXCUSES" above). If a process
@@ -473,9 +509,15 @@ Both sections must exist so `/verify` knows nothing was forgotten.
 ---
 
 ## When done
+0. **Completion check first**: scan the Status Table. If ANY item is still
+   planned / in-progress and has no `[INFRA BLOCKER]` / `[EXTERNAL BLOCKER]`
+   note, you are NOT done — plan the next wave and go back to Phase 1 step 5.
+   Do not write the summary below until that is true.
 1. Update the Status Table in the checklist: mark items as complete with
    the agent ID (e.g., "Agent B"), build status, and self-test status.
-2. If any item could NOT be implemented, explain why in the Notes column.
+2. If any item could NOT be implemented, explain why in the Notes column
+   (and the blocker tag — the reason must be external, never "ran out of
+   context" or "next run").
 3. Verify the Deployment Steps and Infrastructure Requirements sections
    are complete.
 4. Tell the user explicitly:
@@ -488,3 +530,7 @@ Both sections must exist so `/verify` knows nothing was forgotten.
      - Deployment steps to run before /verify: <count> automated, <count> manual
    Next: run `/verify @<checklist>` to do the independent audit.
    ```
+5. **YOLO mode only:** finish with the sentinel as the very last line —
+   `PLAYBOOK_RUN_COMPLETE: <N>/<N> items to-verify, self-test <summary>` or
+   `PLAYBOOK_RUN_BLOCKED: <what is missing and who supplies it>`. Report
+   `git status`; do not commit.

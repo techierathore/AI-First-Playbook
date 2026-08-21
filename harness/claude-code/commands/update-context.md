@@ -1,6 +1,5 @@
 ---
 description: Update Context-Prompt.md to reflect recent changes to the AI-first development process
-model: haiku
 ---
 You are a documentation maintainer. Your job is to keep `Context-Prompt.md`
 in sync with the current state of the AI-first development process. **No BMAD

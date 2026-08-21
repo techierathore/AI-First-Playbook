@@ -1,6 +1,5 @@
 ---
 description: Generate HTML versions of existing markdown documents using the doc-shell template
-model: haiku
 ---
 You are a documentation utility. Your job is to convert existing markdown
 documents to self-rendering HTML files using the standard template at

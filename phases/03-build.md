@@ -23,6 +23,27 @@ architecture) are read automatically.
 Cross-cutting edits (DI registration, `Program.cs`, `appsettings.json`) are consolidated
 into **one item per file** so parallel agents never fight over the same file.
 
+## Completion contract — the whole checklist in one run
+
+The build phase ends when **every item in scope** is implemented, built, self-tested and
+marked to-verify in the Status Table — or carries an explicit `[INFRA BLOCKER]` /
+`[EXTERNAL BLOCKER]` note naming what is missing and who supplies it. Handing back
+"run `/implement` again for the remaining items" is a phase violation: if the work does
+not fit, the orchestrator plans **more waves** with smaller slices and keeps going. The
+handoff to [Phase 5 — Verify](05-verify.md) happens once, with every item accounted for.
+
+## YOLO mode — unattended build
+
+Add the token `YOLO` to the command (`/implement YOLO @<checklist>`), set a Claude Code
+`/goal`, or run under `scripts/playbook-yolo.mjs` (which sets `PLAYBOOK_YOLO=1`). Every
+approval gate in this phase — the wave plan, the smoke-test start, deployment steps,
+deletions — is then pre-approved; the orchestrator records each decision under
+`## YOLO Decisions` in the checklist and does not stop until the completion contract is
+met. Git history writes stay denied mechanically. Provider usage limits (5-hour / weekly)
+are waited out by the supervisor, which resumes the same session after the reset plus a
+15-minute buffer. Rules: `AGENTS.md` → "YOLO mode"; operator guide:
+[`docs/YOLO-Mode-Guide.md`](../docs/YOLO-Mode-Guide.md).
+
 ## Standing obligations while building
 
 - Match the mockup **exactly**; implement into the existing UI/component structure —

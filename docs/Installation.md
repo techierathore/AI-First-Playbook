@@ -50,17 +50,38 @@ as for OpenCode. If the target already has a `.claude/settings.json`, merge the 
 block into it by hand. Both harnesses can coexist in one repository — OpenCode reads
 `AGENTS.md` and ignores `CLAUDE.md`.
 
-## Model tiers (both harnesses)
+## YOLO mode (both harnesses)
 
-Commands ship tier-stamped: planning on the frontier model, build/verify on standard,
-mechanical commands on economy (`playbook/model-tiers.yml`). To substitute your own models:
+Nothing extra to install: the OpenCode plugin (`.opencode/plugin/yolo.ts`) and the Claude
+Code hook (`.claude/hooks/yolo-hook.mjs`) ship with the packs above and stay inert until
+`PLAYBOOK_YOLO=1` is set. For unattended runs use the supervisor from the clone:
 
 ```bash
-# edit playbook/model-tiers.yml, then
-node scripts/apply-model-tiers.mjs              # restamps the OpenCode frontmatter
-node scripts/harness-install.mjs claude-code    # regenerates the Claude Code pack
-node scripts/apply-model-tiers.mjs --check      # CI-friendly consistency check
+node ai-first-playbook/scripts/playbook-yolo.mjs --harness=claude-code --cwd="/absolute/path/to/project" \
+     --prompt "/implement docs/<Feature>-Implementation-Checklist.md"
 ```
+
+Claude Code: if the target already had a `.claude/settings.json`, merge the pack's
+`PreToolUse` **and** `PermissionRequest` hook entries, and make sure no `permissions.ask`
+rule covers tools you want unattended. Details: [`YOLO-Mode-Guide.md`](YOLO-Mode-Guide.md).
+
+## Model tiers (both harnesses)
+
+Routing ships **OFF** — phases run on your session model until you turn it on. The tier map
+(`playbook/model-tiers.yml`: planning on frontier, build/verify on standard, mechanical
+commands on economy) is operated through one script:
+
+```bash
+node scripts/playbook-routing.mjs status                          # what routing is / would be doing
+node scripts/playbook-routing.mjs on                              # stamp model: into the OpenCode frontmatter
+node scripts/playbook-routing.mjs set-model standard opencode myprovider/my-model
+node scripts/playbook-routing.mjs set-tier verify economy
+node scripts/playbook-routing.mjs off                             # remove every stamp again
+node scripts/harness-install.mjs claude-code --target=<project>   # regenerate the Claude Code pack after any change
+node scripts/apply-model-tiers.mjs --check                        # CI-friendly consistency check
+```
+
+Details and every case: [`Model-Routing-Guide.md`](Model-Routing-Guide.md) §5.
 
 ## Windows
 

@@ -1,6 +1,5 @@
 ---
 description: Plan a new feature - produces the full verifiable document set
-model: opus
 ---
 **IMPORTANT**: Before starting, you MUST activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and

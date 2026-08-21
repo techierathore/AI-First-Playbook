@@ -16,7 +16,16 @@
  *
  * Emits one NDJSON record per phase execution on stdout:
  *   {"phase","model","tier","tokens_in","tokens_out","cost_usd","attempt",
- *    "gate_verdict","project_type","timestamp","session_id","harness","granularity"}
+ *    "gate_verdict","project_type","timestamp","session_id","harness","granularity",
+ *    "turns","tokens_scope","subagents"}
+ *
+ * Subagent accounting: every turn row between phase-start and phase-end is
+ * summed into the totals regardless of sessionID, so child (subagent) session
+ * tokens are always included. `tokens_scope` says whether that happened
+ * ("tree" — at least one child-session turn was summed; "main" — only the
+ * phase's own session) and `subagents` rolls the child share up as
+ * {count, tokens_out, cost_usd}. A turn is a child turn when its `parentID`
+ * is set (plugin-recorded) or its sessionID differs from the phase session.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -97,15 +106,26 @@ let anon = 0;
 function finalize(p) {
   p.models = {};
   p.tokens_in = 0; p.tokens_out = 0; p.cost_usd = 0; p.turns = 0;
+  const childSessions = new Set();
+  let sub_tokens_out = 0, sub_cost = 0;
   for (const e of p.byMessage.values()) {
     const t = e.tokens ?? {};
     const cache = t.cache ?? {};
+    const out = (t.output ?? 0) + (t.reasoning ?? 0);
     p.turns++;
     p.tokens_in += (t.input ?? 0) + (cache.read ?? 0) + (cache.write ?? 0);
-    p.tokens_out += (t.output ?? 0) + (t.reasoning ?? 0);
+    p.tokens_out += out;
     p.cost_usd += e.cost ?? 0;
     if (e.model) p.models[e.model] = (p.models[e.model] ?? 0) + 1;
+    const isChild = (e.parentID != null) || (e.sessionID != null && p.session_id != null && e.sessionID !== p.session_id);
+    if (isChild) {
+      childSessions.add(e.sessionID ?? e.parentID);
+      sub_tokens_out += out;
+      sub_cost += e.cost ?? 0;
+    }
   }
+  p.tokens_scope = childSessions.size ? "tree" : "main";
+  p.subagents = { count: childSessions.size, tokens_out: sub_tokens_out, cost_usd: Number(sub_cost.toFixed(6)) };
   delete p.byMessage;
   phases.push(p);
 }
@@ -140,5 +160,7 @@ for (const p of phases) {
     harness: "opencode",
     granularity: "message",
     turns: p.turns,
+    tokens_scope: p.tokens_scope,
+    subagents: p.subagents,
   }));
 }

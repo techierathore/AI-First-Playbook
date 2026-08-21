@@ -1,6 +1,5 @@
 ---
 description: Analyze a user story or bug report and fold the findings into the existing implementation checklist
-model: opus
 ---
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and

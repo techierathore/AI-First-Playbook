@@ -1,6 +1,5 @@
 ---
 description: Produce a Developer Flow Guide (code-flow per screen/tab, OR per service/package/job) and/or a Business Verification Reference (plain-English sources/calculation/mapping) for an EXISTING feature, function, or service — derived from the real code
-model: sonnet
 ---
 **IMPORTANT**: Before starting, activate the Analyst persona. See
 `harness/README.md` → Personas. On a BMAD install that means reading and

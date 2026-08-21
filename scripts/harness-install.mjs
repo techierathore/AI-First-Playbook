@@ -19,11 +19,12 @@
  *     (documented), so routing survives even if command-level stamping stops
  *     working — see docs/Adapter-Design.md.
  *   - The guardrail is a PreToolUse hook consuming the same write-policy.mjs
- *     as the OpenCode plugin.
+ *     as the OpenCode plugin; the YOLO carrier (PreToolUse + PermissionRequest
+ *     hook) consumes the same yolo-policy.mjs as the OpenCode yolo.ts plugin.
  */
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, cpSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { parseTiersYaml, resolveModel, splitMarkdown } from "./tier-lib.mjs";
+import { parseTiersYaml, resolveModel, splitMarkdown, routingEnabled, UNROUTED_TIERS } from "./tier-lib.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const [harness] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
@@ -36,6 +37,8 @@ if (!["claude-code", "opencode"].includes(harness ?? "")) {
 }
 
 const tiers = parseTiersYaml(readFileSync(join(root, "playbook/model-tiers.yml"), "utf8"));
+// Routing is OFF by default (model-tiers.yml `enabled:`); when off the pack carries no model: stamps.
+const routed = (tier) => routingEnabled(tiers) && tier && !UNROUTED_TIERS.has(tier);
 const packDir = join(root, "harness/claude-code");
 
 // ── Claude Code pack generation ─────────────────────────────────────────────
@@ -69,7 +72,7 @@ function generateClaudeCodePack() {
     const tier = tiers.commands?.[name];
     const head = ["---"];
     if (fields.description) head.push(`description: ${fields.description}`);
-    if (tier) head.push(`model: ${resolveModel(tiers.tiers, tier, "claude-code")}`);
+    if (routed(tier)) head.push(`model: ${resolveModel(tiers.tiers, tier, "claude-code")}`);
     head.push("---", "");
     let preamble = "";
     if (fields.agent === "verifier" || fields.subtask === "true") preamble += VERIFY_PREAMBLE;
@@ -89,25 +92,39 @@ function generateClaudeCodePack() {
     const head = ["---", `name: ${name}`];
     head.push(`description: ${(fields.description ?? name).replace(/\s+/g, " ").trim()}`);
     if (AGENT_TOOLS[name]) head.push(`tools: ${AGENT_TOOLS[name]}`);
-    if (tier) head.push(`model: ${resolveModel(tiers.tiers, tier, "claude-code")}`);
+    if (routed(tier)) head.push(`model: ${resolveModel(tiers.tiers, tier, "claude-code")}`);
     head.push("---", "");
     writeFileSync(join(packDir, "agents", file), head.join("\n") + body);
   }
 
   // guardrail carrier + shared policy
   cpSync(join(root, "harness/opencode/plugin/write-policy.mjs"), join(packDir, "hooks/write-policy.mjs"));
-  // spec-guardrails-hook.mjs is authored, not generated — keep the existing one.
-  if (!existsSync(join(packDir, "hooks/spec-guardrails-hook.mjs"))) {
-    throw new Error("harness/claude-code/hooks/spec-guardrails-hook.mjs missing — it is authored, not generated");
+  cpSync(join(root, "harness/opencode/plugin/yolo-policy.mjs"), join(packDir, "hooks/yolo-policy.mjs"));
+  // the two hook carriers are authored, not generated — keep the existing ones.
+  for (const authored of ["hooks/spec-guardrails-hook.mjs", "hooks/yolo-hook.mjs"]) {
+    if (!existsSync(join(packDir, authored))) throw new Error(`harness/claude-code/${authored} missing — it is authored, not generated`);
   }
 
-  // settings: PreToolUse guardrail registration
+  // settings: PreToolUse guardrail registration + the YOLO carrier (inert unless PLAYBOOK_YOLO=1).
+  // Order matters: spec-guardrails runs first so a forbidden write is blocked before YOLO can allow it.
   writeFileSync(join(packDir, "settings.json"), JSON.stringify({
     hooks: {
-      PreToolUse: [{
-        matcher: "Write|Edit|NotebookEdit|Bash",
-        hooks: [{ type: "command", command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/spec-guardrails-hook.mjs"' }],
-      }],
+      PreToolUse: [
+        {
+          matcher: "Write|Edit|NotebookEdit|Bash",
+          hooks: [{ type: "command", command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/spec-guardrails-hook.mjs"' }],
+        },
+        {
+          matcher: "",
+          hooks: [{ type: "command", command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/yolo-hook.mjs"' }],
+        },
+      ],
+      PermissionRequest: [
+        {
+          matcher: "",
+          hooks: [{ type: "command", command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/yolo-hook.mjs"' }],
+        },
+      ],
     },
   }, null, 2) + "\n");
 
@@ -132,7 +149,7 @@ function generateClaudeCodePack() {
     "`scripts/harness-install.mjs claude-code` — do not hand-edit generated files\n" +
     "(`commands/`, `agents/`, `hooks/write-policy.mjs`, `settings.json`,\n" +
     "`CLAUDE.md`, `mcp.json`); edit the sources and regenerate.\n" +
-    "`hooks/spec-guardrails-hook.mjs` is authored and maintained here.\n\n" +
+    "`hooks/spec-guardrails-hook.mjs` and `hooks/yolo-hook.mjs` are authored and maintained here.\n\n" +
     "## Install\n\n" +
     "```bash\n" +
     "node scripts/harness-install.mjs claude-code --target=/path/to/your-repo\n" +
@@ -143,7 +160,18 @@ function generateClaudeCodePack() {
     "from this pack's settings.json into it by hand.\n\n" +
     "Smoke-test the guardrail exactly as harness/README.md describes: plant a\n" +
     "bug, run /verify, confirm the FAIL lands inline in the checklist and that\n" +
-    "writing `Anything-Gap-Report.md` is blocked.\n");
+    "writing `Anything-Gap-Report.md` is blocked.\n\n" +
+    "## YOLO (unattended) mode\n\n" +
+    "`hooks/yolo-hook.mjs` is registered for PreToolUse and PermissionRequest but does\n" +
+    "nothing unless `PLAYBOOK_YOLO=1` is set. With it set, every tool call is\n" +
+    "auto-approved except git history/index/ref writes, which are blocked (exit 2).\n" +
+    "Run unattended with the supervisor, which sets the variable, waits out usage\n" +
+    "limits and resumes the session:\n\n" +
+    "```bash\n" +
+    "node scripts/playbook-yolo.mjs --harness=claude-code --cwd=/path/to/your-repo \\\n" +
+    "     --prompt \"/implement docs/<Feature>-Implementation-Checklist.md\"\n" +
+    "```\n\n" +
+    "See docs/YOLO-Mode-Guide.md.\n");
 
   console.log(`generated ${packDir.replace(root, "")}`);
 }
