@@ -4,7 +4,7 @@
 
 ## Prepare
 
-1. Install with `npx @ai-first/playbook@latest --target="/path/to/demo"`.
+1. Install with `npx @techierathore/ai-first-playbook@latest --target="/path/to/demo"`.
 2. Configure the demo profile with a local synthetic database and no credentials in files.
 3. Seed a Team Inventory app: React UI, API, database, authentication, audit logging and CSV
    import. Plant a duplicate-asset-tag defect that reports success but writes zero rows.

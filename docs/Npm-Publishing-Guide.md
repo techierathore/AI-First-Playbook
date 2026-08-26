@@ -1,80 +1,183 @@
-# Npm Publishing Guide
+# npm Publishing Guide
 
-This is for the person who owns the public package. Regular users only need
-[`Installation.md`](Installation.md).
+Package: [`@techierathore/ai-first-playbook`](https://www.npmjs.com/package/@techierathore/ai-first-playbook)
 
-## One-Time Setup In A Browser
+The package manifest is the `package.json` file at the **repository root**:
 
-### Create The npm Account
+- Repository path: [`/package.json`](../package.json)
+- Path on the current Windows checkout:
+  `C:\3AIGenCode\AI-First-Playbook\package.json`
 
-1. Open <https://www.npmjs.com/signup>.
-2. Create the account with your email address and a strong password.
-3. Open the verification email and confirm the account.
-4. Open your npm profile, choose **Access Tokens**, and choose **Generate New Token**.
-5. Create a granular token with package publish permission. Give it the shortest practical
-   expiry and restrict it to the `@ai-first/playbook` package after the first publish if npm
-   offers that option.
-6. Copy the token once into your approved password manager. Do not put it in a document, URL,
-   screenshot, terminal command or chat message.
+Commands in this guide must be run from the repository root:
+`C:\3AIGenCode\AI-First-Playbook`.
 
-### Confirm The Package Name
+## Current State And What To Do Next
 
-1. Open <https://www.npmjs.com/package/@ai-first/playbook>.
-2. If the package does not exist and the `ai-first` scope belongs to your npm account or
-   organization, keep the name in `package.json`.
-3. If the scope is unavailable, change the `name` in `package.json` to a public name you control,
-   then use that same name in every install command and this guide.
+The one-time setup is complete after all of the following are true:
 
-### Add The GitHub Secret
+- version `0.1.0` has been published manually;
+- npm Trusted Publishing points to this repository and `release.yml`;
+- the GitHub `npm-release` environment exists; and
+- `.github/workflows/release.yml` is committed and present on GitHub.
 
-1. Open the GitHub repository in a browser.
-2. Choose **Settings -> Environments -> New environment**.
-3. Name it `npm-release`.
-4. Add required reviewers if another person must approve releases.
-5. Under **Environment secrets**, choose **Add secret**.
-6. Name the secret `NPM_TOKEN`, paste the npm token from the password manager, and save it.
-7. Never click a workflow log link that could print the token. The workflow uses the secret only
-   through `NODE_AUTH_TOKEN`.
+The **Prompt To Give An AI Agent is no longer needed** after repository preparation. It was a
+one-time prompt, not a release step. For every later version, follow
+[Publish Later Versions](#publish-later-versions) below. Do not create an npm token and do not run
+another manual `npm publish` once OIDC is working.
 
-## Publish A Release From GitHub
+## The Short Answer About Access Tokens
 
-1. In the repository, open `package.json` in the GitHub web editor.
-2. Change the `version`, for example from `0.1.0` to `0.1.1`.
-3. Choose **Commit changes** and commit to the default branch through the normal review process.
-4. Open **Releases -> Draft a new release**.
-5. In **Choose a tag**, type the matching version tag, such as `v0.1.1`, and choose **Create new
-   tag on publish**.
-6. Add release notes describing installer, command, agent or documentation changes.
-7. Choose **Publish release**.
-8. Open the **Actions** tab and select **Publish npm package**.
-9. Wait for the green workflow result. If GitHub pauses for approval, an environment reviewer
-   chooses **Review deployments -> Approve and deploy**.
-10. Open <https://www.npmjs.com/package/@ai-first/playbook> and confirm the new version appears.
+**Do not create an npm Access Token for this GitHub Actions pipeline.**
 
-The workflow validates the repository, checks guardrails, creates the package tarball and runs
-`npm publish --access public --provenance`. The release tag must match the package version.
+The recommended method is **Trusted Publishing (OIDC)**. GitHub and npm create a temporary
+credential automatically during each release. You will not copy or save a token.
 
-## Test The Published Package
+The [July 2026 announcement](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)
+says that old bypass-2FA access tokens are being restricted and are expected to stop direct
+publishing around January 2027. That is another reason not to start with one. The article's npm 12
+installation changes are unrelated to creating your publishing pipeline.
 
-Create or choose a disposable project folder, then open PowerShell, Terminal or Command Prompt:
+## Step 1: Confirm The Account You Created
 
-```text
-npx @ai-first/playbook@0.1.1 --target="C:\work\demo-project" --dry-run
+Your npm username is `techierathore`. Sign in at <https://www.npmjs.com/>, click your profile
+picture and confirm that the signed-in profile shows `techierathore`.
+
+## Step 2: Use The Correct Package Name
+
+The npm package will be named:
+
+```json
+"name": "@techierathore/ai-first-playbook"
 ```
 
-Replace the version and path for your machine. Review the listed files, then remove `--dry-run`.
-Open the target project in OpenCode, restart OpenCode, replace the environment-profile
-placeholders, and run the planted guardrail smoke test.
+Here is what that name means:
 
-## If Publishing Fails
+- `@techierathore` is your npm account and package scope.
+- `ai-first-playbook` is the descriptive package name.
 
-| Message | Action |
+The repository is configured with `@techierathore/ai-first-playbook`. Keep that name consistent
+in the repository-root [`/package.json`](../package.json) file and all documentation/install
+commands.
+
+The public package is available at
+<https://www.npmjs.com/package/@techierathore/ai-first-playbook>.
+
+## Step 3: Enable Two-Factor Authentication
+
+1. Open your npm account settings.
+2. Open **Two-Factor Authentication**.
+3. Follow npm's instructions to enable 2FA.
+4. Save the recovery codes in your password manager.
+
+You will need 2FA for the first manual publish. Never share the password, 2FA code or recovery
+codes with an AI agent.
+
+## Step 4: Prepare The Repository (One Time)
+
+Do this only before the first publish. The repository preparation updates the package name,
+repository metadata, documentation, validation scripts and OIDC workflow. It does not need to be
+repeated for later releases.
+
+Review the agent's changes and have a human commit and push them to GitHub. The workflow file
+`.github/workflows/release.yml` must be present on GitHub before you configure Trusted Publishing.
+
+## Step 5: Perform The First Publish
+
+The npm package must exist before its Trusted Publisher settings are available. Therefore, publish
+version `0.1.0` once from your own computer:
+
+1. Open a terminal in this repository.
+2. Run `npm login`.
+3. Complete npm's browser sign-in and 2FA prompt.
+4. Run `npm run validate`.
+5. Run `npm run test:guardrails`.
+6. Run `npm pack --dry-run` and review the displayed file list.
+7. Run `npm publish --access public`.
+8. Complete the 2FA prompt if npm asks for it.
+
+Do not add a token to the command. Do not paste a token, password or 2FA code into this document,
+GitHub, a screenshot or an AI chat.
+
+After the command succeeds, open
+<https://www.npmjs.com/package/@techierathore/ai-first-playbook>.
+
+## Step 6: Connect npm To GitHub Actions
+
+Now that the package exists:
+
+1. Open the package on npmjs.com.
+2. Click **Settings**.
+3. Find **Trusted publishing** and select **GitHub Actions**.
+4. Enter these values:
+
+| npm field | Value |
 |---|---|
-| `403` or not authorized | Confirm the npm account owns the package/scope and the token has publish permission. |
-| `402` or private package | Confirm `publishConfig.access` is `public`. |
-| `version already exists` | Increase `version`; npm versions cannot be overwritten. |
-| workflow waiting for approval | Approve the `npm-release` environment deployment. |
-| package name unavailable | Choose a name/scope controlled by your npm account and update `package.json`. |
-| token expired | Create a replacement token, update the GitHub environment secret, and revoke the old token. |
+| Organization or user | `techierathore` |
+| Repository | `AI-First-Playbook` |
+| Workflow filename | `release.yml` |
+| Environment name | `npm-release` |
+| Allowed action | `npm publish` |
 
-Never paste the token into an issue or workflow log. Rotate it immediately if it is exposed.
+Enter only `release.yml`, not `.github/workflows/release.yml`. Save the configuration.
+
+Official npm instructions: [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/).
+
+## Step 7: Create The GitHub Environment
+
+1. Open <https://github.com/techierathore/AI-First-Playbook>.
+2. Click **Settings -> Environments -> New environment**.
+3. Enter `npm-release` and click **Configure environment**.
+4. Optionally add yourself as a required reviewer.
+5. Do not create an `NPM_TOKEN` secret.
+
+## Publish Later Versions
+
+The next publish must use a new version because npm versions cannot be overwritten. For example,
+to release `0.1.1` after `0.1.0`:
+
+1. Start from the latest default branch and make the intended product/documentation changes.
+2. Open `C:\3AIGenCode\AI-First-Playbook\package.json` and change its top-level `version` value
+   from `0.1.0` to `0.1.1`.
+
+   Alternatively, PowerShell can update that same repository-root file automatically:
+
+   ```powershell
+   Set-Location C:\3AIGenCode\AI-First-Playbook
+   npm version patch --no-git-tag-version
+   ```
+
+   Confirm the result in PowerShell:
+
+   ```powershell
+   node --print "require('./package.json').version"
+   ```
+
+3. Have a human commit and push the version and release changes through the normal review process.
+4. On GitHub, open **Releases → Draft a new release**.
+5. Create tag `v0.1.1`, targeting the commit containing package version `0.1.1`.
+6. Add release notes and publish the GitHub Release.
+7. The **Publish npm package** workflow validates that tag `v0.1.1` exactly matches package
+   version `0.1.1`, runs repository validation, guardrail tests, `npm pack --dry-run`, and the Git
+   whitespace check, then publishes through OIDC with provenance. You do not need to run those
+   commands manually.
+8. Approve the `npm-release` environment if GitHub requests approval.
+9. Confirm the workflow is green and verify the version on the
+   [npm package page](https://www.npmjs.com/package/@techierathore/ai-first-playbook).
+
+Do not run another manual `npm publish` after Trusted Publishing is working.
+
+## Common Problems
+
+| Problem | Meaning and action |
+|---|---|
+| Package page says Not Found | Confirm the exact scoped name and check whether the first manual publish succeeded. |
+| npm says scope not found or forbidden | Confirm you are signed in as `techierathore` and the name is exactly `@techierathore/ai-first-playbook`. |
+| npm says package name is taken | Choose another package name; existing npm names cannot be claimed. |
+| npm returns `402` | Ensure the command includes `--access public`. |
+| npm returns `403` | Confirm you are signed in as `techierathore` and complete 2FA. |
+| GitHub workflow says `ENEEDAUTH` | Recheck all five Trusted Publisher values and confirm the workflow has `id-token: write`. |
+| Version already exists | Increase the version. npm versions cannot be overwritten. |
+| Workflow says the ref is not a tag | Publish a GitHub Release with tag `vX.Y.Z`; do not run the workflow from a branch. |
+| Tag does not match package version | Read the version from repository-root `/package.json` (`C:\3AIGenCode\AI-First-Playbook\package.json`) and make the tag exactly `v` plus that value, such as `v0.1.1`. |
+
+If any credential is exposed, revoke it immediately and review workflow logs for misuse.

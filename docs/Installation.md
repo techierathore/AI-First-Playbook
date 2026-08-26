@@ -1,20 +1,26 @@
 # Installation
 
+npm package: [`@techierathore/ai-first-playbook`](https://www.npmjs.com/package/@techierathore/ai-first-playbook)
+
+Requires Node.js 22.14.0 or later and npm 11.5.1 or later.
+
 ## From npm (OpenCode)
 
 ```bash
-npx @ai-first/playbook@latest --target="/absolute/path/to/project"
+npx @techierathore/ai-first-playbook@latest --target="/absolute/path/to/project"
 ```
 
 Preview first with `--dry-run`. Existing files are kept. To upgrade package-managed files:
 
 ```bash
-npx @ai-first/playbook@latest --target="/absolute/path/to/project" --force
+npx @techierathore/ai-first-playbook@latest --target="/absolute/path/to/project" --force
 ```
 
 The installer adds `.opencode/`, `opencode.json`, `AGENTS.md`, `Context-Prompt.md`,
 `playbook/environment-profile.yml`, docs and onboarding. Replace the profile placeholders, then
 restart OpenCode. It does not create secrets, start application services or guess commands.
+
+For command options, upgrading, uninstalling, and first-run usage, see [`Usage.md`](Usage.md).
 
 ## From A Clone (OpenCode)
 

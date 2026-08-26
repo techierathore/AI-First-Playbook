@@ -24,9 +24,10 @@
  */
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, cpSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseTiersYaml, resolveModel, splitMarkdown, routingEnabled, UNROUTED_TIERS } from "./tier-lib.mjs";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const [harness] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const targetArg = process.argv.find((a) => a.startsWith("--target="));
 const target = targetArg ? resolve(targetArg.slice("--target=".length)) : null;

@@ -1,5 +1,10 @@
 # AI-First Development Playbook — Team Edition
 
+[![npm version](https://img.shields.io/npm/v/%40techierathore%2Fai-first-playbook)](https://www.npmjs.com/package/@techierathore/ai-first-playbook)
+
+Published on npm as
+[`@techierathore/ai-first-playbook`](https://www.npmjs.com/package/@techierathore/ai-first-playbook).
+
 **Spec → Build → Verify.** A lean, repeatable process for spec-driven AI development in a
 team — engineered to close the verification gap, enforce cross-cutting rules, and make
 every document readable by both the model and the humans.
@@ -137,16 +142,24 @@ Supporting: `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`,
 
 ### Easiest: npm
 
-Open PowerShell, Command Prompt, Terminal, or a GUI terminal and run:
+Requires Node.js 22.14.0 or later and npm 11.5.1 or later. Open PowerShell, Command Prompt,
+Terminal, or a GUI terminal and preview the installation:
 
-```text
-npx @ai-first/playbook@latest --target="C:\work\my-project" --dry-run
-npx @ai-first/playbook@latest --target="C:\work\my-project"
+```powershell
+npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project" --dry-run
+```
+
+Then install:
+
+```powershell
+npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project"
 ```
 
 Use a normal macOS/Linux path instead of `C:\work\my-project`. The first command previews the
 files. The second installs them. Existing project files are preserved. Then open the project in
 OpenCode, restart OpenCode, and replace the placeholders in `playbook/environment-profile.yml`.
+See the [usage guide](docs/Usage.md) for upgrades, uninstalling, installed files, and first-run
+steps.
 
 ### From A Git Clone
 
@@ -156,8 +169,9 @@ node ai-first-playbook/scripts/install.mjs --target="C:\work\my-project"
 ```
 
 This also works in Terminal with a POSIX path. The installer creates the target folder if needed.
-Full details are in [docs/Installation.md](docs/Installation.md). Maintainers publishing the
-package should use [docs/Npm-Publishing-Guide.md](docs/Npm-Publishing-Guide.md).
+Full installation details are in [docs/Installation.md](docs/Installation.md), with day-to-day
+commands in [docs/Usage.md](docs/Usage.md). Maintainers publishing the package should use
+[docs/Npm-Publishing-Guide.md](docs/Npm-Publishing-Guide.md).
 
 ## Quickstart
 

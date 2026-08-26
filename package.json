@@ -1,12 +1,16 @@
 {
-  "name": "@ai-first/playbook",
+  "name": "@techierathore/ai-first-playbook",
   "version": "0.1.0",
   "description": "Installable AI-first development playbook for OpenCode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/techierathore/AI-First-Playbook"
+  },
   "private": false,
   "publishConfig": {"access": "public"},
   "type": "module",
   "bin": {"ai-first-playbook": "scripts/install.mjs"},
   "files": [".opencode", "harness", "docs", "onboarding", "phases", "playbook", "templates", "opencode.json", "AGENTS.md", "Context-Prompt.md", "scripts", "LICENSE", "README.md"],
   "scripts": {"validate": "node scripts/playbook-validate.mjs", "test:guardrails": "node scripts/test-guardrails.mjs", "routing": "node scripts/playbook-routing.mjs", "pack:check": "npm pack --dry-run", "prepublishOnly": "npm run validate && npm run test:guardrails && npm run pack:check"},
-  "engines": {"node": ">=20"}
+  "engines": {"node": ">=22.14.0", "npm": ">=11.5.1"}
 }

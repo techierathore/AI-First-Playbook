@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 const policyUrl = new URL("../harness/opencode/plugin/write-policy.mjs", import.meta.url);
 const source = readFileSync(policyUrl, "utf8");
 const required = ["normalizePath", "traverses the repository", "isSymbolicLink", "shellWriteTargets", "apply_patch", "verification/"];
@@ -80,7 +81,7 @@ console.log("guardrail policy coverage passed");
     ];
     writeFileSync(join(dir, "events.ndjson"), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
     const script = new URL("./playbook-telemetry.mjs", import.meta.url);
-    const out = execFileSync(process.execPath, [script.pathname, "--events=events.ndjson"], { cwd: dir, encoding: "utf8" });
+    const out = execFileSync(process.execPath, [fileURLToPath(script), "--events=events.ndjson"], { cwd: dir, encoding: "utf8" });
     const [verify, fix] = out.trim().split("\n").map((l) => JSON.parse(l));
     const fail = (msg) => { console.error(`telemetry subagent check failed: ${msg}\n${out}`); process.exit(1); };
     if (verify.phase !== "verify" || fix.phase !== "fix") fail("phase order");

@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const packageMetadata = JSON.parse(readFileSync(join(sourceRoot, "package.json"), "utf8"));
 const args = process.argv.slice(2);
 const targetArg = args.find((arg) => arg.startsWith("--target="));
 const target = resolve(targetArg ? targetArg.slice("--target=".length) : process.cwd());
@@ -16,7 +17,7 @@ if (includeDocs) copyItems.push("docs", "onboarding");
 const created = [];
 
 function usage() {
-  console.log(`AI-First Playbook installer\n\nUsage:\n  npx @ai-first/playbook --target=/path/to/repo [--dry-run] [--force]\n  npx @ai-first/playbook --uninstall --target=/path/to/repo\n\nBy default existing files are preserved. --force overwrites only files managed by this package.`);
+  console.log(`AI-First Playbook installer\n\nUsage:\n  npx @techierathore/ai-first-playbook --target=/path/to/repo [--dry-run] [--force]\n  npx @techierathore/ai-first-playbook --uninstall --target=/path/to/repo\n\nBy default existing files are preserved. --force overwrites only files managed by this package.`);
 }
 
 function ensureSafeTarget() {
@@ -49,7 +50,7 @@ function install() {
   ensureSafeTarget();
   for (const item of copyItems) copy(join(sourceRoot, item === ".opencode" ? "harness/opencode" : item), join(target, item));
   if (!dryRun) {
-    const marker = { package: "@ai-first/playbook", version: "0.1.0", created, installed_at: new Date().toISOString() };
+    const marker = { package: packageMetadata.name, version: packageMetadata.version, created, installed_at: new Date().toISOString() };
     mkdirSync(join(target, ".playbook"), { recursive: true });
     writeFileSync(join(target, ".playbook", "installation.json"), `${JSON.stringify(marker, null, 2)}\n`);
   }

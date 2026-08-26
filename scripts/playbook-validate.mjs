@@ -1,7 +1,8 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const errors = [];
 const read = (p) => readFileSync(p.startsWith(root) ? p : join(root, p), "utf8");
 const files = (dir, suffix) => readdirSync(join(root, dir)).filter((f) => f.endsWith(suffix));
