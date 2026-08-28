@@ -95,4 +95,5 @@ Run the harness inside WSL, not on Windows directly — step-by-step setup (lapt
 [OpenCode-Guide.md](OpenCode-Guide.md) for the full corporate deployment guide (SSL
 certificates, proxy, topology) and `scripts/provision-wsl.sh` for the scripted setup.
 
-Package maintainers should use the separate GUI-friendly [`Npm-Publishing-Guide.md`](Npm-Publishing-Guide.md).
+Package maintainers should use [`Npm-Release-Guide.md`](Npm-Release-Guide.md) for recurring version
+and package updates. [`Npm-Publishing-Guide.md`](Npm-Publishing-Guide.md) covers one-time setup only.

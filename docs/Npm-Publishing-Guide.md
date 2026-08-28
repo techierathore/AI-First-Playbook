@@ -1,17 +1,8 @@
-# npm Publishing Guide
+# npm Initial Publishing Setup
 
 Package: [`@techierathore/ai-first-playbook`](https://www.npmjs.com/package/@techierathore/ai-first-playbook)
 
-The package manifest is the `package.json` file at the **repository root**:
-
-- Repository path: [`/package.json`](../package.json)
-- Path on the current Windows checkout:
-  `C:\3AIGenCode\AI-First-Playbook\package.json`
-
-Commands in this guide must be run from the repository root:
-`C:\3AIGenCode\AI-First-Playbook`.
-
-## Current State And What To Do Next
+## Setup Status
 
 The one-time setup is complete after all of the following are true:
 
@@ -20,10 +11,9 @@ The one-time setup is complete after all of the following are true:
 - the GitHub `npm-release` environment exists; and
 - `.github/workflows/release.yml` is committed and present on GitHub.
 
-The **Prompt To Give An AI Agent is no longer needed** after repository preparation. It was a
-one-time prompt, not a release step. For every later version, follow
-[Publish Later Versions](#publish-later-versions) below. Do not create an npm token and do not run
-another manual `npm publish` once OIDC is working.
+The initial setup steps in this document do not need to be repeated. For every later version, use
+the separate [`Npm-Release-Guide.md`](Npm-Release-Guide.md). Do not create an npm token and do not
+run another manual `npm publish` once OIDC is working.
 
 ## The Short Answer About Access Tokens
 
@@ -130,43 +120,7 @@ Official npm instructions: [Trusted Publishing](https://docs.npmjs.com/trusted-p
 4. Optionally add yourself as a required reviewer.
 5. Do not create an `NPM_TOKEN` secret.
 
-## Publish Later Versions
-
-The next publish must use a new version because npm versions cannot be overwritten. For example,
-to release `0.1.1` after `0.1.0`:
-
-1. Start from the latest default branch and make the intended product/documentation changes.
-2. Open `C:\3AIGenCode\AI-First-Playbook\package.json` and change its top-level `version` value
-   from `0.1.0` to `0.1.1`.
-
-   Alternatively, PowerShell can update that same repository-root file automatically:
-
-   ```powershell
-   Set-Location C:\3AIGenCode\AI-First-Playbook
-   npm version patch --no-git-tag-version
-   ```
-
-   Confirm the result in PowerShell:
-
-   ```powershell
-   node --print "require('./package.json').version"
-   ```
-
-3. Have a human commit and push the version and release changes through the normal review process.
-4. On GitHub, open **Releases → Draft a new release**.
-5. Create tag `v0.1.1`, targeting the commit containing package version `0.1.1`.
-6. Add release notes and publish the GitHub Release.
-7. The **Publish npm package** workflow validates that tag `v0.1.1` exactly matches package
-   version `0.1.1`, runs repository validation, guardrail tests, `npm pack --dry-run`, and the Git
-   whitespace check, then publishes through OIDC with provenance. You do not need to run those
-   commands manually.
-8. Approve the `npm-release` environment if GitHub requests approval.
-9. Confirm the workflow is green and verify the version on the
-   [npm package page](https://www.npmjs.com/package/@techierathore/ai-first-playbook).
-
-Do not run another manual `npm publish` after Trusted Publishing is working.
-
-## Common Problems
+## Initial Setup Problems
 
 | Problem | Meaning and action |
 |---|---|
@@ -176,8 +130,5 @@ Do not run another manual `npm publish` after Trusted Publishing is working.
 | npm returns `402` | Ensure the command includes `--access public`. |
 | npm returns `403` | Confirm you are signed in as `techierathore` and complete 2FA. |
 | GitHub workflow says `ENEEDAUTH` | Recheck all five Trusted Publisher values and confirm the workflow has `id-token: write`. |
-| Version already exists | Increase the version. npm versions cannot be overwritten. |
-| Workflow says the ref is not a tag | Publish a GitHub Release with tag `vX.Y.Z`; do not run the workflow from a branch. |
-| Tag does not match package version | Read the version from repository-root `/package.json` (`C:\3AIGenCode\AI-First-Playbook\package.json`) and make the tag exactly `v` plus that value, such as `v0.1.1`. |
 
 If any credential is exposed, revoke it immediately and review workflow logs for misuse.

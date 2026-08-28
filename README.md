@@ -170,8 +170,9 @@ node ai-first-playbook/scripts/install.mjs --target="C:\work\my-project"
 
 This also works in Terminal with a POSIX path. The installer creates the target folder if needed.
 Full installation details are in [docs/Installation.md](docs/Installation.md), with day-to-day
-commands in [docs/Usage.md](docs/Usage.md). Maintainers publishing the package should use
-[docs/Npm-Publishing-Guide.md](docs/Npm-Publishing-Guide.md).
+commands in [docs/Usage.md](docs/Usage.md). Maintainers should use the
+[npm release guide](docs/Npm-Release-Guide.md) for version and package updates. The
+[initial publishing guide](docs/Npm-Publishing-Guide.md) is retained for one-time setup reference.
 
 ## Quickstart
 
