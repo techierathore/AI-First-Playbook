@@ -16,7 +16,7 @@ Read `templates/` first. Install from here.
 
 ```
 harness/opencode/
-  command/          14 command files — the slash commands (/feature-plan, /verify, /legacy-audit, …)
+  command/          15 command files — the slash commands (/feature-plan, /verify, /log-miss, …)
                     each stamped with a `model:` tier from playbook/model-tiers.yml
   agent/verifier.md the Verifier agent: 1,050 lines of anti-excuse rules and probes
   agent/builder.md  the wave worker /implement and /fix spawn — carries its own (cheaper)
@@ -99,6 +99,11 @@ Operator guide: `docs/YOLO-Mode-Guide.md`.
    planted, and confirm the Verifier annotates it `FAIL` **inline in the checklist**. If
    it produces a separate report file instead, the plugin isn't loading.
 
+The installer also places `scripts/playbook-miss.mjs`, `scripts/miss-lib.mjs`,
+`scripts/playbook-telemetry.mjs`, `playbook/model-tiers.yml` and the environment profile in
+the target. Preserve durable `verification/telemetry/misses.ndjson`; ignore only the transient
+`/verification/telemetry/events.ndjson`, never the whole telemetry directory.
+
 ## Install (Claude Code)
 
 ```bash
@@ -113,6 +118,10 @@ OpenCode plugin), `.claude/settings.json`, `CLAUDE.md` (imports `@AGENTS.md`) an
 smoke test. `/verify` delegates to the `verifier` subagent for its fresh-context
 guarantee; the hook enforces the verifier write-scope via the subagent's `agent_type`.
 Verified end-to-end on Claude Code 2.1.237 (`docs/Decisions.md`).
+The same telemetry scripts and profile/tier runtime are installed for Claude Code. Miss
+classifications remain usable without OpenCode events; model confidence and cost then degrade
+to inferred/unknown and null rather than being guessed. Existing target files are preserved by
+default; pass `--force` only after reviewing them.
 
 ## Personas
 

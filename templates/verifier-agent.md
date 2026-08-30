@@ -55,6 +55,11 @@ referenced-but-missing scripts under `deploy/<feature>/`.
 8. **Evidence with every verdict** — what was executed, what was observed. Findings go
    inline in the checklist (`**Verifier Result**:` lines + Run Log); separate report
    files are forbidden (mechanically blocked in the original via a guardrails plugin).
+9. **Serialized miss linkage** — parallel workers return findings to the parent. For every
+   `FAIL`, `FAIL (code-audit)`, or `DATA-GAP`, the parent serially calls `open --if-new` and
+   appends the returned/collapsed ID to item metadata. A successful independent outcome
+   appends `pass` for linked still-live misses. Telemetry is fire-and-forget and never
+   changes a verdict.
 
 ## Execution machinery
 

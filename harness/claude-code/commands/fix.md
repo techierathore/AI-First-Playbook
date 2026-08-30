@@ -251,6 +251,8 @@ Each sub-agent gets a subset of failing items and:
   after re-running `/verify`.
 - Does NOT create new fix-log, change-summary, or similar files. The
   checklist IS the fix log.
+- Reports any miss candidates to the Orchestrator; parallel builders never invoke the
+  miss CLI or write the stream/checklist to allocate telemetry IDs.
 - Updates sibling documents (verification guide, DB changes, architecture)
   in place ONLY if the fix requires changes to them.
 
@@ -328,6 +330,23 @@ For each fixed item:
 - Smoke failed: append `- **Self-test** (<date>): FAIL — <reason>` AND
   update Status Table to reflect it's still broken
 - Skipped: `- **Self-test** (<date>): SKIPPED — <reason>`
+
+### Step 3.6: Defer addressed linked misses — serially
+
+After an addressed item's self-test passes, read its append-only metadata `misses` IDs.
+For each linked miss that is still live, run one command at a time:
+
+```bash
+PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs close \
+  --miss-id=<MISS-id> --verdict-after=deferred --fix-phase=fix \
+  [--fix-run-id=<exact-current-fix-run-id>] [--actor=<token>]
+```
+
+Never append `pass` here: only the independent Verifier is authoritative. Supply
+`fix_run_id` only when it is the exact current `/fix` run ID; otherwise omit the flag,
+never infer or approximate it. Keep every ID in item metadata. These calls are
+fire-and-forget: record refusals in the checklist note and continue without changing the
+fix, self-test, Status Table, completion contract, or phase verdict.
 
 ---
 

@@ -2,18 +2,124 @@ import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 const policyUrl = new URL("../harness/opencode/plugin/write-policy.mjs", import.meta.url);
 const source = readFileSync(policyUrl, "utf8");
-const required = ["normalizePath", "traverses the repository", "isSymbolicLink", "shellWriteTargets", "apply_patch", "verification/"];
+const required = ["normalizePath", "traverses the repository", "isSymbolicLink", "shellWriteTargets", "apply_patch", "verification/", "playbook-miss.mjs"];
 const missing = required.filter((term) => !source.includes(term));
 if (missing.length) { console.error(`guardrail coverage missing: ${missing.join(", ")}`); process.exit(1); }
+for (const copy of ["../.opencode/plugin/write-policy.mjs", "../harness/claude-code/hooks/write-policy.mjs"]) {
+  const url = new URL(copy, import.meta.url);
+  if (!existsSync(url)) { console.error(`guardrail policy copy missing: ${copy}`); process.exit(1); }
+  if (readFileSync(url, "utf8") !== source) { console.error(`guardrail policy copy drift: ${copy}`); process.exit(1); }
+}
 for (const carrier of ["../harness/opencode/plugin/spec-guardrails.ts", "../harness/claude-code/hooks/spec-guardrails-hook.mjs"]) {
   const url = new URL(carrier, import.meta.url);
   if (!existsSync(url)) { console.error(`guardrail carrier missing: ${carrier}`); process.exit(1); }
   if (!readFileSync(url, "utf8").includes("write-policy.mjs")) { console.error(`guardrail carrier does not use shared policy: ${carrier}`); process.exit(1); }
 }
+for (const agent of ["analyst.md", "builder.md", "orchestrator.md", "verifier.md"]) {
+  const canonical = readFileSync(new URL(`../harness/opencode/agent/${agent}`, import.meta.url), "utf8");
+  const local = readFileSync(new URL(`../.opencode/agent/${agent}`, import.meta.url), "utf8");
+  if (local !== canonical) { console.error(`OpenCode agent copy drift: ${agent}`); process.exit(1); }
+}
+const harnessPromptFiles = [
+  "commands/verify.md",
+  "agents/verifier.md",
+  "commands/log-miss.md",
+  "commands/implement.md",
+  "commands/fix.md",
+  "commands/analyze-fix.md",
+];
+for (const relative of harnessPromptFiles) {
+  const canonicalRelative = relative.replace("commands/", "command/").replace("agents/", "agent/");
+  const canonical = readFileSync(new URL(`../harness/opencode/${canonicalRelative}`, import.meta.url), "utf8");
+  const generated = readFileSync(new URL(`../harness/claude-code/${relative}`, import.meta.url), "utf8");
+  if (canonical.includes("<current-harness>")) { console.error(`OpenCode prompt has unresolved harness placeholder: ${canonicalRelative}`); process.exit(1); }
+  if (generated.includes("<current-harness>") || generated.includes("--harness=opencode")) {
+    console.error(`Claude Code prompt has OpenCode or unresolved harness guidance: ${relative}`);
+    process.exit(1);
+  }
+  if (canonical.includes("--harness=opencode") && !generated.includes("--harness=claude-code")) {
+    console.error(`Claude Code prompt did not translate the emitter harness flag: ${relative}`);
+    process.exit(1);
+  }
+}
 const { evaluateToolCall } = await import(policyUrl);
-const blocked = evaluateToolCall({ tool: "write", args: { filePath: "Feature-Gap-Report.md" }, isVerifier: true });
-const allowed = evaluateToolCall({ tool: "write", args: { filePath: "verification/feature/run-1/probe.cs" }, isVerifier: true });
-if (!blocked || allowed) { console.error("guardrail policy behavioral check failed"); process.exit(1); }
+const guardrailFail = (message) => { console.error(`guardrail policy behavioral check failed: ${message}`); process.exit(1); };
+const decision = (tool, args, isVerifier = true) => evaluateToolCall({ tool, args, isVerifier });
+
+const allowedEmitterCalls = [
+  "node scripts/playbook-miss.mjs open --miss-class=partial-implementation --artifact=src --severity=major --found-by=verifier --found-phase=verify --found-phase-gate=FAIL --if-new",
+  [
+    "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \\",
+    "  --miss-class=wrong-behaviour --artifact=source-code \\",
+    "  --severity=major --item-id=REQ-014 --feature=checkout \\",
+    "  --why-missed=insufficient-verify-method --origin-phase=build \\",
+    "  --origin-agent=builder --origin-run-id=build-20260829-01 \\",
+    "  --found-by=verifier --found-phase=verification-results-gate \\",
+    '  --found-phase-gate="FAIL (code-audit)" --harness=opencode',
+  ].join("\n"),
+  "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs close --miss-id=MISS-20260829-01 --verdict-after=pass --fix-phase=fix",
+  "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs amend MISS-20260829-01 why_missed insufficient-verify-method",
+  "node scripts/playbook-miss.mjs list --item-id=REQ-014 --open",
+];
+for (const [gate, quote] of [
+  ["PASS", '"'],
+  ["FAIL", "'"],
+  ["PASS (code-audit)", '"'],
+  ["FAIL (code-audit)", "'"],
+  ["DATA-GAP", '"'],
+  ["BLOCKED", "'"],
+]) {
+  allowedEmitterCalls.push(`node scripts/playbook-miss.mjs open --found-phase-gate=${quote}${gate}${quote}`);
+}
+for (const command of allowedEmitterCalls) {
+  if (decision("Bash", { command })) guardrailFail(`approved miss emitter call was denied: ${command}`);
+}
+
+const deniedShellCalls = [
+  "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --miss-class=other --misses=tmp/misses.ndjson",
+  'node scripts/playbook-miss.mjs open --miss-class=other --found-phase-gate="BLOCKED by user"',
+  'node scripts/playbook-miss.mjs open --artifact="source-code" --found-phase-gate=FAIL',
+  'node scripts/playbook-miss.mjs open --found-phase-gate="FAIL"suffix',
+  "node scripts/playbook-miss.mjs list --misses=verification/telemetry/misses.ndjson",
+  "node scripts/playbook-miss.mjs open\n  --found-phase-gate=FAIL",
+  "node scripts/playbook-miss.mjs open \\ \n  --found-phase-gate=FAIL",
+  "node scripts/playbook-miss.mjs next-id && touch src/app.ts",
+  "node scripts/playbook-miss.mjs next-id; node scripts/anything.mjs",
+  "node scripts/playbook-miss.mjs next-id | tee verification/out.txt",
+  "node scripts/playbook-miss.mjs open --artifact=$(touch src/app.ts)",
+  "node scripts/playbook-miss.mjs open --artifact=${HOME}",
+  "node scripts/anything.mjs",
+  "node scripts/playbook-miss.mjs arbitrary-opaque-command",
+  "node ./scripts/playbook-miss.mjs next-id",
+];
+for (const command of deniedShellCalls) {
+  if (!decision("Bash", { command })) guardrailFail(`unsafe or opaque shell shape was allowed: ${command}`);
+}
+
+const previousChecklist = process.env.PLAYBOOK_CHECKLIST;
+process.env.PLAYBOOK_CHECKLIST = "docs/Feature-Implementation-Checklist.md";
+try {
+  const deniedWrites = [
+    "Feature-Gap-Report.md",
+    "src/app.ts",
+    "config/appsettings.json",
+    "verification/telemetry/misses.ndjson",
+    "docs/Other-Implementation-Checklist.md",
+  ];
+  for (const filePath of deniedWrites) {
+    if (!decision("write", { filePath })) guardrailFail(`verifier write was allowed: ${filePath}`);
+  }
+  for (const filePath of ["verification/feature/run-1/probe.cs", "docs/Feature-Implementation-Checklist.md", "deploy/feature/probe.sh"]) {
+    if (decision("write", { filePath })) guardrailFail(`existing permitted verifier write was denied: ${filePath}`);
+  }
+  if (decision("Bash", { command: "touch verification/feature/run-1/probe.txt" })) guardrailFail("permitted verification shell target was denied");
+  if (!decision("Bash", { command: "npm test" })) guardrailFail("opaque verifier shell command was allowed");
+  if (decision("write", { filePath: "src/app.ts" }, false)) guardrailFail("non-verifier source write was denied");
+  if (!decision("write", { filePath: "Feature-Gap-Report.md" }, false)) guardrailFail("forbidden report was allowed for non-verifier");
+} finally {
+  if (previousChecklist === undefined) delete process.env.PLAYBOOK_CHECKLIST;
+  else process.env.PLAYBOOK_CHECKLIST = previousChecklist;
+}
 console.log("guardrail policy coverage passed");
 
 // ── YOLO policy: git writes denied, everything else allowed, limit parsing ──

@@ -76,3 +76,26 @@ one parser. `model`, `tokens_in`, `tokens_out`, `cost` — harness-sourced via t
 paths above. That split is the whole trick: the fragile, harness-specific surface is reduced
 to three fields, and the fields that gate decisions (verdict, attempt) are read from durable
 framework artifacts that survive harness upgrades.
+
+## Miss stream — source and derived boundaries
+
+Miss telemetry uses the same boundary rather than extending harness authority. The plugin
+continues to write only transient phase events; it does **not** write durable miss records.
+`scripts/playbook-miss.mjs` appends classifications to
+`verification/telemetry/misses.ndjson`, and `scripts/playbook-telemetry.mjs --misses` joins
+that stream to event windows without mutating either input.
+
+| Data | Source / owner | Boundary |
+|---|---|---|
+| `miss_class`, `artifact`, `severity`, `origin_phase`, `origin_agent`, `why_missed`, `found_by` | Agent-authored classification at the phase/log-miss front door | Closed vocabularies only; an agent may classify but may not author a number or provenance verdict |
+| `item_id`, `found_phase`, `found_phase_gate`, lifecycle verdict | Framework/checklist context | Existing framework vocabulary; no harness inference |
+| `origin_model`, `origin_confidence` | Miss emitter lookup of the exact `origin_run_id` event window | Derived even if the caller supplies values; failed lookup forces model `null` and confidence `inferred`/`unknown` |
+| Fix model/tier, tokens, provider cost, token scope, subagent rollup | Joiner lookup of the exact `fix_run_id` event window | Read-time output only; never persisted back to `misses.ndjson` |
+| `cost_attribution` | Joiner count of closes sharing an exact fix window | `sole`, `shared:<n>`, or `none`; no window means null costs, never an estimate |
+| `miss-amend` | Later agent/human classification | May complete a null closed-vocabulary judgement only; cannot alter observed or derived facts |
+
+This also explains the harness difference. OpenCode's event carrier captures provider cost, so
+an exact linked fix window can produce measured `sole` cost. Claude Code still emits the same
+durable classifications, but without compatible `events.ndjson` rows, model provenance and
+cost degrade honestly to inferred/unknown and `null`/`none`; classification does not depend on
+cost capture.

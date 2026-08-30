@@ -21,12 +21,17 @@ User-reported bugs after deployment follow **exactly the same loop as
 for the same class of escape:
 
 1. Log the bug(s) in the tracker and optionally a transient Issues file (`/create-issue-list` can pull them straight
-   from Jira with full fields, parsing descriptions into Expected / Actual / Steps).
+   from Jira with full fields, parsing descriptions into Expected / Actual / Steps). Record
+   **every** production issue serially with `open --if-new`, normally including the
+   `why_missed` classification, and link the returned or collapsed `MISS-*` ID to the
+   corresponding checklist item metadata.
 2. `/analyze-fix` — root cause, why verification missed it, checklist patch.
 3. Human review → `/fix` → `/verify` until ALL PASS.
 4. Pass the release readiness and post-deploy validation gates, then redeploy. Delete the
    transient file only after copying the tracker key/link, severity, impact, timestamps,
-   root cause and regression-test reference into the checklist.
+   root cause and regression-test reference into the checklist and confirming every issue
+   has a linked miss ID. `instruction-ignored` is agent-origin-only. Telemetry is
+   fire-and-forget and never changes incident, verification, release, or redeploy verdicts.
 
 ## The long game
 

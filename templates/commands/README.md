@@ -1,6 +1,6 @@
 # The Command Library
 
-Thirteen commands: **four carry the daily loop**, nine support it. Each has a spec file
+Fifteen commands: **four carry the daily loop**, eleven support it. Each has a spec file
 here — and a **runnable counterpart** in
 [`harness/opencode/command/`](../../harness/opencode/command/), which is the actual file
 the harness loads. Read the specs here to understand the process; install from `harness/`.
@@ -29,6 +29,7 @@ Two universal rules:
 | [`/create-issue-list`](create-issue-list.md) | Analyst | Pull Jira tickets into a structured transient Issues file |
 | [`/generate-html`](generate-html.md) | none (mechanical) | Render human docs to standalone HTML via the doc-shell template |
 | [`/amend-checklist`](amend-checklist.md) | none (mechanical) | Surgical checklist edit when you know exactly what to add |
+| [`/log-miss`](log-miss.md) | Analyst | Classify a one-line miss between phases; append the durable record without booting or reproducing the app |
 
 ## Admin commands (process-owner, not daily)
 
@@ -38,6 +39,7 @@ Two universal rules:
 | [`/refresh-doc`](refresh-doc.md) | Analyst | Re-sync docs with the current code (Mode A: shared docs; Mode B: whole feature) |
 | [`/archive-checklist`](archive-checklist.md) | none | Rotate PASS items into Verified History past ~2,000 lines |
 | [`/update-context`](update-context.md) | none | Keep the cold-start Context-Prompt current |
+| [`/legacy-audit`](legacy-audit.md) | Analyst | Discover and document an uncharacterised legacy codebase |
 
 ## Token-cost cheat sheet (🟢 low · 🟡 medium · 🔴 high)
 
@@ -46,7 +48,7 @@ Two universal rules:
 | `/feature-plan` | 🔴 | One Business-Verification-Reference (not two docs); no HTML for the checklist |
 | `/implement`, `/verify` | 🔴 | Archive the checklist first; give each sub-agent only its slice |
 | `/fix`, `/add-doc`, `/refresh-doc` B | 🟡–🔴 | FAIL items only; grep-to-target, map not code-dump |
-| `/analyze-fix`, `/create-issue-list`, `/refresh-doc` A | 🟡 | Prefer `/amend-checklist` for known edits |
+| `/analyze-fix`, `/create-issue-list`, `/refresh-doc` A, `/log-miss` | 🟡 | Prefer `/amend-checklist` for known edits; `/log-miss` never boots or reproduces the app |
 | `/amend-checklist`, `/archive-checklist`, `/update-context`, `/generate-html` | 🟢 | Mechanical; no persona; cheapest model tier |
 
 The mechanical commands deliberately activate **no persona** — don't "upgrade" them.

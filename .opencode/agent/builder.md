@@ -32,6 +32,11 @@ Rules:
   anything discovered that belongs in `## Deployment Steps` or
   `## Infrastructure Requirements` — the orchestrator aggregates these into
   the checklist; do not edit the checklist yourself.
+- Report any genuine plan/checklist omission as a telemetry **candidate** to the
+  orchestrator: related item ID (if any), artifact `plan` or `checklist`, severity, and
+  one-line reason. Never invoke `playbook-miss.mjs`, allocate a `MISS-*` ID, write the
+  miss stream, or edit checklist metadata from a parallel builder; the orchestrator
+  deduplicates and records candidates serially.
 - Report honestly. An item you could not complete is reported as incomplete
   with the reason — never described as done.
 - If your brief says `YOLO` (or `PLAYBOOK_YOLO=1` is set): never stop to ask

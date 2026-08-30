@@ -28,6 +28,7 @@ The single source of truth is [`playbook/model-tiers.yml`](../playbook/model-tie
 | `implement` | P3 | standard | Wave planning over an explicit checklist — the judgement already lives in the spec |
 | `verify` | P5 | standard | Prescriptive evidence gathering; the gates themselves are deterministic |
 | `fix` | P7 | standard | Targeted fixes — with escalation to frontier after repeated failures (§4) |
+| `log-miss` | between phases | standard | One-line closed-vocabulary classification; reasoning, but no app boot or implementation |
 | `create-issue-list` | — | economy | Tracker-to-markdown transcription |
 | `amend-checklist` / `archive-checklist` | — | economy | Mechanical in-place edits / rotation |
 | `update-context` / `generate-html` | — | economy | Mechanical sync / conversion |
@@ -43,6 +44,27 @@ Command tier outranks agent tier (in both harnesses the command's `model:` front
 | `builder` | standard | **The big leak plug** — `/implement` and `/fix` spawn many builder subagents, and without a stamp each one runs on whatever the session uses. Standard, not economy, deliberately: a cheap builder that ships broken work costs a full verify → fix cycle, which dwarfs the per-token saving. |
 | `verifier` | standard | Evidence gathering plus judgement on what the evidence means |
 | your default chat | **never routed** | Routing stamps the playbook's commands and named agents only — your day-to-day conversation stays on the model you picked |
+
+### Use linked miss rate as the quality signal
+
+Attempt count says how often a phase repeated; the durable miss stream says what escaped it.
+Review both by observed `tier` **and** `model`:
+
+```text
+linked miss rate = linked misses attributed to tier/model
+                   ÷ eligible completed phase runs on that tier/model
+```
+
+Only records with `origin_confidence: "linked"` and a non-null observed model belong in this
+rate. Exclude `inferred` and `unknown` from both numerator and model/tier attribution—placing
+them in an “unknown model” bucket would turn missing provenance into a model result. Segment
+the numerator by `miss_class`, `why_missed` and escape source so a cheap builder defect is not
+confused with a weak Verify method.
+
+Keep economics equally honest: compare measured cost per repaired miss using
+`cost_attribution: "sole"` only. Show `shared:<n>` equal apportionments in a separate labelled
+series and keep `none` out of cost denominators. A tier is a false economy when its lower phase
+cost is outweighed by a higher linked miss rate and sole-attributed rework cost.
 
 ## 4. Escalation — when standard isn't cutting it
 
@@ -77,7 +99,7 @@ After `on` you keep typing the same commands (`/verify`, `/implement`, …); the
 
 ```
 $ node scripts/playbook-routing.mjs status
-Routing: OFF   (model: stamps on disk: 0/22 mapped files)
+Routing: OFF   (model: stamps on disk: 0/19 mapped files)
 
 Tier models:
   frontier  opencode: anthropic/claude-opus-5        claude-code: opus
@@ -86,7 +108,7 @@ Tier models:
 
 Commands by tier:
   frontier  analyze-fix, feature-plan, legacy-audit
-  standard  add-doc, fix, implement, refresh-doc, upgrade-docs, verify
+  standard  add-doc, fix, implement, log-miss, refresh-doc, upgrade-docs, verify
   economy   amend-checklist, archive-checklist, create-issue-list, generate-html, update-context
 Agents:    analyst=frontier, builder=standard, orchestrator=standard, verifier=standard
 
@@ -176,4 +198,5 @@ node scripts/harness-install.mjs claude-code --target=/path/to/project
 | A phase ran on the wrong model | Invoked outside a stamped command (typed at the raw agent), or the Claude pack wasn't regenerated after a map change → §5.7 |
 | Follow-up chat runs on the command's model (OpenCode) | Verified behavior (§6) — re-pick your model or start a new session |
 | Fix keeps failing on standard | That's what escalation is for (§4) — relaunch on frontier after `after_attempts`; tune with `set-escalation` (§5.5) |
+| Misses appear under an unknown/inferred model | Expected when the origin event window has rotated or Claude classification has no compatible event capture. Exclude these from per-tier/model miss rates; do not guess attribution. |
 | "Which models can I even use?" | `opencode models` (OpenCode) · alias envs or full ids (Claude Code) |

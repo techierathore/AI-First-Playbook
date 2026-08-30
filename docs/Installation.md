@@ -16,9 +16,12 @@ Preview first with `--dry-run`. Existing files are kept. To upgrade package-mana
 npx @techierathore/ai-first-playbook@latest --target="/absolute/path/to/project" --force
 ```
 
-The installer adds `.opencode/`, `opencode.json`, `AGENTS.md`, `Context-Prompt.md`,
-`playbook/environment-profile.yml`, docs and onboarding. Replace the profile placeholders, then
+The installer adds `.opencode/`, `opencode.json`, `AGENTS.md`, `Context-Prompt.md`, docs,
+onboarding and the telemetry runtime: `scripts/{playbook-miss,miss-lib,playbook-telemetry}.mjs`
+plus `playbook/{environment-profile,model-tiers}.yml`. Replace the profile placeholders, then
 restart OpenCode. It does not create secrets, start application services or guess commands.
+Existing files are preserved unless `--force` is explicit; the installation marker retains the
+created-file ownership list across upgrades.
 
 For command options, upgrading, uninstalling, and first-run usage, see [`Usage.md`](Usage.md).
 
@@ -54,7 +57,23 @@ This installs `.claude/commands/`, `.claude/agents/`, `.claude/hooks/`,
 from `templates/agents-md-template.md` and fill in `playbook/environment-profile.yml`, exactly
 as for OpenCode. If the target already has a `.claude/settings.json`, merge the pack's `hooks`
 block into it by hand. Both harnesses can coexist in one repository — OpenCode reads
-`AGENTS.md` and ignores `CLAUDE.md`.
+`AGENTS.md` and ignores `CLAUDE.md`. The harness installer also delivers the three telemetry
+scripts and the profile/tier files named above. It preserves every existing target file by
+default; use `--force` only after reviewing the target diff (notably settings files).
+
+## Telemetry retention rule
+
+If the target uses Git, add this exact repository-root ignore rule:
+
+```gitignore
+/verification/telemetry/events.ndjson
+```
+
+Do not ignore `verification/telemetry/` or `*.ndjson`:
+`verification/telemetry/misses.ndjson` is the committed, append-only miss history. OpenCode
+captures provider cost when telemetry events are available; Claude Code classifications still
+work without them and honestly degrade model/cost attribution to inferred/unknown and null.
+See [`Telemetry-Guide.md`](Telemetry-Guide.md) §7.
 
 ## YOLO mode (both harnesses)
 

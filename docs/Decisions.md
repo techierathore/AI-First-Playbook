@@ -237,3 +237,57 @@ waves, never by handing work back.
   denial, allow-list, limit parsing and sentinels.
 - Unchanged: the guardrail, verifier write scope, verdict tiers, secrets rules, and "agents
   never commit" — now enforced mechanically in YOLO instead of by prose.
+
+## 2026-08-29 — Durable miss telemetry
+
+**Status:** implemented and independently verified in the working tree. Two fresh-context,
+read-only audits covered lifecycle and provenance semantics, concurrent session accounting,
+harness parity, privacy boundaries and installer delivery. Repository validation, 16 focused miss
+tests, guardrail tests, package dry-run and diff checks pass; rollout remains an owner decision.
+
+### Decision 1 — misses use a separate durable stream
+
+Miss lifecycle records append to committed `verification/telemetry/misses.ndjson`.
+`verification/telemetry/events.ndjson` remains transient and rotatable because it is high-volume
+harness capture. The repository ignores only `/verification/telemetry/events.ndjson`; ignoring
+the directory or all NDJSON would destroy durable history. Alternatives rejected: adding miss
+kinds to `events.ndjson` (retention semantics conflict) and persisting joined costs into the miss
+stream (would mutate history when transient windows disappear or pricing changes).
+
+### Decision 2 — agents classify; emitters and joiners derive facts
+
+An agent may choose closed-vocabulary `miss_class`, artifact, severity, origin/found context and
+`why_missed`. It may not author model provenance, confidence, tokens, dollars or cost attribution.
+`origin_model`/`origin_confidence` come from an exact origin-window lookup, while fix model,
+tier, usage and `sole | shared:<n> | none` attribution are joined from the exact fix window at
+read time. A missing window yields null/none, never a plausible estimate. This preserves the
+existing “never self-reported numbers” rule: classification is a constrained judgement; usage
+and provenance are observations.
+
+### Decision 3 — append-only correction is `miss-amend`
+
+The stream has three kinds from day one: `miss`, `miss-fix`, and `miss-amend`. An amend can
+complete a still-null, closed-vocabulary judgement (`why_missed`) and can never overwrite a
+value. Observations and derived facts are not amendable. Rejected: editing old lines (breaks
+append-only auditability) or leaving pre-schema nulls permanently unclassifiable.
+
+### Decision 4 — backlog and live-defect predicates deliberately diverge
+
+Backlog means latest `verdict_after` is neither `pass` nor `abandoned`; it answers how much work
+is outstanding. The `open --if-new` collapse check treats only `pass` as no longer live; an
+abandoned defect that appears again is the same defect, not a new record. `deferred` remains open
+under both predicates. The two definitions must not be “simplified” into one.
+
+### Decision 5 — `instruction-ignored` is agent-origin only
+
+The seventh `why_missed` value is adopted only for a written instruction that an **agent had
+loaded and did not follow**. It must not classify a human's behaviour and must not become a proxy
+performance judgement. Human/process gaps use the other causal vocabulary or remain unassessed.
+
+### Decision 6 — actor is aggregate-only
+
+`actor` may support aggregate team/context analysis, but no report, export or dashboard may
+group miss, amendment, escape, rework, time or cost figures by actor. “Who amended whom” is also
+forbidden. Per-actor reporting would discourage recording and destroy both the data and the
+learning loop; closed vocabularies and this reporting ban are the privacy controls for the
+committed stream.

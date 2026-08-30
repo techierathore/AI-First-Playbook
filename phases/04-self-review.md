@@ -16,6 +16,12 @@ against its **own diff**, then proves the build actually runs:
 7. Kill any apps it started; declare done **with a smoke-test summary**; update the
    checklist Status Table.
 
+If self-review catches a genuine defect (not routine implementation churn), it may record
+a miss with `found_by=self-review` and `found_phase=self-review`, link the returned or
+collapsed ID in item metadata, and record an addressed miss as `deferred` after self-test.
+It must not claim telemetry `pass`; the independent Verifier is authoritative. Miss writes
+are fire-and-forget and cannot change the self-review result.
+
 ## Rules
 
 - The smoke test uses the Developer-Flow-Guide as the execution script: for each value,

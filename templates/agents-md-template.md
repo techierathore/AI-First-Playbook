@@ -28,6 +28,15 @@ The rule set, verbatim:
 - Done only when each item's Acceptance is met AND the Verifier proves it
   with evidence. "Looks done" is not done.
 
+## Verifier write scope
+- The Verifier may annotate the selected checklist, write
+  `verification/<feature>/<run-id>/` evidence, and append miss records only by
+  invoking the approved standalone `playbook-miss.mjs` CLI, which writes the
+  durable default `verification/telemetry/misses.ndjson` stream.
+- The Verifier must not edit that stream directly, use path overrides, or edit
+  product source, configuration, lockfiles, or arbitrary files. Fixes belong
+  to `/fix` and are independently verified.
+
 ## Docs
 - Markdown is source of truth; all diagrams are Mermaid; humans read the
   generated HTML.

@@ -32,6 +32,13 @@ Existing files are preserved by default.
    topology and commands. Do not put secrets in that file.
 3. Open or restart OpenCode so it loads `opencode.json`, `AGENTS.md`, and the installed plugins.
 4. Start with `/feature-plan`, then follow `/implement` → `/verify` → `/fix` as needed.
+5. Keep telemetry retention selective: ignore only
+   `/verification/telemetry/events.ndjson`; commit `verification/telemetry/misses.ndjson`.
+
+The installation includes `scripts/playbook-miss.mjs`, `scripts/miss-lib.mjs`,
+`scripts/playbook-telemetry.mjs`, `playbook/model-tiers.yml` and the environment profile, so
+miss capture and read-time cost joining run from the target repository. See
+[`Telemetry-Guide.md`](Telemetry-Guide.md) §7 for the CLI and schemas.
 
 ## Upgrade
 

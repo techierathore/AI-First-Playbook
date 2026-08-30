@@ -18,6 +18,21 @@ live inline, in the one place both agents and humans already look:
   deployment-step outcomes, chosen frontend environment (so verdicts have DB context),
   and the overall verdict. History is preserved across runs — a clean audit trail.
 
+## Miss telemetry at the gate
+
+- For every `FAIL`, `FAIL (code-audit)`, and `DATA-GAP`, the parent Verifier runs
+  `PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new ...` **serially**.
+  It appends the returned new ID, or the still-live collapsed ID, to the item's required
+  append-only metadata `misses` array before moving to the next item.
+- For `PASS` and `PASS (code-audit)`, after the independent check succeeds, the Verifier
+  appends a `miss-fix` with `verdict_after=pass` for every linked still-live miss. IDs stay
+  in item metadata forever. An exact run ID is supplied when known; otherwise it is
+  omitted, never guessed.
+- Parallel sub-verifiers return findings and telemetry candidates to the parent; they do
+  not allocate IDs or write the stream concurrently.
+- Every telemetry command is fire-and-forget. A refusal, malformed stream, or write error
+  is logged in the Run Log but **never changes the item outcome or phase verdict**.
+
 ## Routing
 
 `DATA-GAP` is an outcome, not a verdict tier. It means the behavior could not be

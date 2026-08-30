@@ -10,7 +10,7 @@ don't just fix the bug — **fix the checklist that let it escape.**
 1. **Log the bugs** in a transient Issues markdown file — pulled from your tracker via
    `/create-issue-list`, or written manually
    ([template](../templates/issues-file-template.md): per-issue Expected / Actual /
-   Steps / Severity).
+   Steps / Severity / linked Miss ID).
 2. **`/analyze-fix`** with the Issues file + the existing checklist + the associated
    projects. Tell the analyst these bugs **escaped the Verifier**. For each bug it
    produces:
@@ -25,7 +25,13 @@ don't just fix the bug — **fix the checklist that let it escape.**
 4. **`/fix`** → **`/verify`** (now includes the new items) → loop until ALL PASS.
 5. Re-test manually, accept, and delete the transient Issues file only after its tracker key,
    reporter, severity, customer impact, timestamps, reproduction, root cause and regression
-   reference are copied into the checklist.
+   reference are copied into the checklist **and every issue has a `MISS-*` ID linked in the
+   corresponding checklist item metadata**.
+
+Every issue is recorded serially with `open --if-new`; `why_missed` is normally populated
+from the Verification Gap Analysis. `instruction-ignored` is legal only when the origin was
+an agent that had loaded the ignored written rule, never for a human. Telemetry is
+fire-and-forget and never changes analysis, fix, verification, or release verdicts.
 
 ## Why this makes the process better over time
 

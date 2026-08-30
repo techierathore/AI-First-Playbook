@@ -15,7 +15,9 @@ node scripts/harness-install.mjs claude-code --target=/path/to/your-repo
 Then add `AGENTS.md` (from templates/agents-md-template.md) and
 `playbook/environment-profile.yml` to the target, as for OpenCode.
 If the target already has `.claude/settings.json`, merge the `hooks` block
-from this pack's settings.json into it by hand.
+from this pack's settings.json into it by hand. Target files are preserved
+unless `--force` is explicit. The installer also delivers the miss/telemetry
+scripts plus the environment profile and model-tier runtime.
 
 Smoke-test the guardrail exactly as harness/README.md describes: plant a
 bug, run /verify, confirm the FAIL lands inline in the checklist and that

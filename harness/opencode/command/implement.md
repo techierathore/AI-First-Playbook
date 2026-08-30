@@ -279,10 +279,35 @@ following constraints:
 - **Error handling** is non-negotiable: no silent failures.
 - Follow the coding standards document for naming, formatting, and patterns.
 - Return a structured summary: files created, files modified, build status.
+- If the approved plan or checklist left behavior required by the slice unspecified,
+  return a **miss candidate** with related item ID (if any), artifact `plan` or
+  `checklist`, severity, and a one-line reason. Do not invoke `playbook-miss.mjs`, edit
+  the checklist, or write the stream from a parallel worker.
 
 After each wave finishes, **aggregate** the sub-agents' results before
 launching the next wave. If any sub-agent failed, decide whether to
 proceed or stop.
+
+### Centralized miss recording for builder-discovered specification gaps
+
+After each wave returns, the Orchestrator deduplicates genuine miss candidates. Record
+only required behavior that the plan/checklist left unspecified, not ordinary coding
+questions or implementation churn. Process candidates **serially**, never from builders:
+
+```bash
+PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
+  --miss-class=unspecified-gap --artifact=<plan|checklist> --severity=<blocker|major|minor> \
+  --found-by=agent-review --found-phase=build [--item-id=<id>] [--feature=<token>] \
+  [--origin-phase=<plan|plan-review-gate>] [--origin-agent=<token>] \
+  [--origin-run-id=<exact-id>] --harness=opencode
+```
+
+The harness flag is mandatory and set explicitly above as `--harness=opencode`; never rely
+on the CLI default. Capture either `opened MISS-*` or
+`collapsed: MISS-*` and append that ID once to the related item's metadata `misses` array.
+Never remove IDs. If there is no related item, retain the ID in the wave summary / Run Log.
+The CLI is fire-and-forget and exits zero on refusal: note a telemetry refusal and continue;
+it must never change implementation, build, self-test, Status Table, or phase outcome.
 
 ---
 
@@ -386,6 +411,13 @@ For each item:
   annotate `- **Self-test** (<date>): SKIPPED — user requested`.
 - "Environment can't support it" is NOT a valid skip reason here — if you
   believe that, you haven't tried the headless path in "NO EXCUSES".
+
+If this self-review catches a genuine defect rather than routine implementation churn,
+the Orchestrator may serially open/link it with `found-by=self-review` and
+`found-phase=self-review`. If repaired and self-tested, append a close with
+`--verdict-after=deferred --fix-phase=self-review`; never claim `pass` before independent
+verification. Include a run ID only when exact. All calls use `PLAYBOOK_TELEMETRY=1` and
+the harness-specific flag above and remain fire-and-forget.
 
 ---
 

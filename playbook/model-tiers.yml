@@ -42,6 +42,7 @@ commands:
   verify: standard              # P5 - prescriptive evidence gathering
   fix: standard                 # P7 - targeted fixes; escalate per `escalation`
   analyze-fix: frontier         # P9/P10 - root cause + verification-gap reasoning
+  log-miss: standard            # one-line closed-vocabulary miss classification
   legacy-audit: frontier        # discovery over uncharacterised code
   create-issue-list: economy    # mechanical tracker-to-markdown transcription
   amend-checklist: economy      # mechanical in-place edits

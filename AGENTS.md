@@ -7,8 +7,11 @@ running commands. Never guess topology, ports, config files, migration tools or 
 Secrets use an approved secret manager, environment reference, protected stdin or protected
 temporary file. Never put values in command arguments, Markdown, logs, URLs or evidence.
 
-The Verifier may annotate the selected checklist and write `verification/<feature>/<run-id>/`
-evidence only. It must not edit product source, configuration, lockfiles or arbitrary files.
+The Verifier may annotate the selected checklist, write `verification/<feature>/<run-id>/`
+evidence, and append miss records by invoking the approved standalone
+`playbook-miss.mjs` CLI, which writes the durable default
+`verification/telemetry/misses.ndjson` stream. It must not edit that stream directly or use
+path overrides, and must not edit product source, configuration, lockfiles or arbitrary files.
 Fixes are made by `/fix` and then independently verified.
 
 Every gate persists a handoff packet with producer, consumer, accountable approver, identity,

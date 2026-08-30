@@ -12,6 +12,7 @@
  *   node scripts/harness-install.mjs claude-code                  # (re)generate harness/claude-code/
  *   node scripts/harness-install.mjs claude-code --target=/repo   # generate + install into /repo/.claude
  *   node scripts/harness-install.mjs opencode --target=/repo      # install harness/opencode into /repo/.opencode
+ *   Add --force to overwrite existing target files; default is preserve.
  *
  * Claude Code notes:
  *   - Command `model:` frontmatter is honored (verified live on Claude Code
@@ -22,8 +23,8 @@
  *     as the OpenCode plugin; the YOLO carrier (PreToolUse + PermissionRequest
  *     hook) consumes the same yolo-policy.mjs as the OpenCode yolo.ts plugin.
  */
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, cpSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, cpSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseTiersYaml, resolveModel, splitMarkdown, routingEnabled, UNROUTED_TIERS } from "./tier-lib.mjs";
 
@@ -31,9 +32,10 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const [harness] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const targetArg = process.argv.find((a) => a.startsWith("--target="));
 const target = targetArg ? resolve(targetArg.slice("--target=".length)) : null;
+const force = process.argv.includes("--force");
 
 if (!["claude-code", "opencode"].includes(harness ?? "")) {
-  console.error("usage: node scripts/harness-install.mjs <claude-code|opencode> [--target=/path/to/repo]");
+  console.error("usage: node scripts/harness-install.mjs <claude-code|opencode> [--target=/path/to/repo] [--force]");
   process.exit(1);
 }
 
@@ -81,7 +83,8 @@ function generateClaudeCodePack() {
     const translated = body
       .replaceAll(".opencode/agent/", ".claude/agents/")
       .replaceAll(".opencode/plugin/", ".claude/hooks/")
-      .replaceAll("spec-guardrails.ts", "spec-guardrails-hook.mjs");
+      .replaceAll("spec-guardrails.ts", "spec-guardrails-hook.mjs")
+      .replaceAll("--harness=opencode", "--harness=claude-code");
     writeFileSync(join(packDir, "commands", file), head.join("\n") + preamble + translated);
   }
 
@@ -95,7 +98,8 @@ function generateClaudeCodePack() {
     if (AGENT_TOOLS[name]) head.push(`tools: ${AGENT_TOOLS[name]}`);
     if (routed(tier)) head.push(`model: ${resolveModel(tiers.tiers, tier, "claude-code")}`);
     head.push("---", "");
-    writeFileSync(join(packDir, "agents", file), head.join("\n") + body);
+    const translated = body.replaceAll("--harness=opencode", "--harness=claude-code");
+    writeFileSync(join(packDir, "agents", file), head.join("\n") + translated);
   }
 
   // guardrail carrier + shared policy
@@ -158,7 +162,9 @@ function generateClaudeCodePack() {
     "Then add `AGENTS.md` (from templates/agents-md-template.md) and\n" +
     "`playbook/environment-profile.yml` to the target, as for OpenCode.\n" +
     "If the target already has `.claude/settings.json`, merge the `hooks` block\n" +
-    "from this pack's settings.json into it by hand.\n\n" +
+    "from this pack's settings.json into it by hand. Target files are preserved\n" +
+    "unless `--force` is explicit. The installer also delivers the miss/telemetry\n" +
+    "scripts plus the environment profile and model-tier runtime.\n\n" +
     "Smoke-test the guardrail exactly as harness/README.md describes: plant a\n" +
     "bug, run /verify, confirm the FAIL lands inline in the checklist and that\n" +
     "writing `Anything-Gap-Report.md` is blocked.\n\n" +
@@ -179,29 +185,54 @@ function generateClaudeCodePack() {
 
 // ── install into a target repo ──────────────────────────────────────────────
 
+function ensureSafeInstallTarget(targetRoot) {
+  if (targetRoot === resolve(root)) throw new Error("Refusing to install a generated pack into the framework source directory");
+  if (targetRoot === "/" || targetRoot === resolve(process.env.HOME || "/")) throw new Error("Refusing to install into a filesystem or home root");
+  if (existsSync(targetRoot) && !statSync(targetRoot).isDirectory()) throw new Error(`Target is not a directory: ${targetRoot}`);
+}
+
 function installInto(targetRoot) {
-  const put = (src, dst, { skipIfExists = false } = {}) => {
-    if (skipIfExists && existsSync(dst)) { console.log(`preserve ${dst}`); return; }
-    mkdirSync(join(dst, ".."), { recursive: true });
-    cpSync(src, dst, { recursive: true, force: true });
-    console.log(`install  ${dst}`);
+  const runtime = [
+    "scripts/playbook-miss.mjs",
+    "scripts/miss-lib.mjs",
+    "scripts/playbook-telemetry.mjs",
+    "playbook/model-tiers.yml",
+    "playbook/environment-profile.yml",
+  ];
+  const missingSources = runtime.filter((item) => !existsSync(join(root, item)));
+  if (missingSources.length) throw new Error(`Package is missing required telemetry runtime: ${missingSources.join(", ")}`);
+
+  const put = (src, dst) => {
+    if (statSync(src).isDirectory()) {
+      if (!existsSync(dst)) mkdirSync(dst, { recursive: true });
+      for (const child of readdirSync(src)) put(join(src, child), join(dst, child));
+      return;
+    }
+    const exists = existsSync(dst);
+    if (exists && !force) { console.log(`preserve ${dst}`); return; }
+    mkdirSync(dirname(dst), { recursive: true });
+    cpSync(src, dst, { force: true });
+    console.log(`${exists ? "overwrite" : "install  "} ${dst}`);
   };
   if (harness === "opencode") {
     put(join(root, "harness/opencode"), join(targetRoot, ".opencode"));
-    put(join(root, "opencode.json"), join(targetRoot, "opencode.json"), { skipIfExists: true });
+    put(join(root, "opencode.json"), join(targetRoot, "opencode.json"));
   } else {
     put(join(packDir, "commands"), join(targetRoot, ".claude/commands"));
     put(join(packDir, "agents"), join(targetRoot, ".claude/agents"));
     put(join(packDir, "hooks"), join(targetRoot, ".claude/hooks"));
-    put(join(packDir, "settings.json"), join(targetRoot, ".claude/settings.json"), { skipIfExists: true });
-    put(join(packDir, "CLAUDE.md"), join(targetRoot, "CLAUDE.md"), { skipIfExists: true });
-    put(join(packDir, "mcp.json"), join(targetRoot, ".mcp.json"), { skipIfExists: true });
+    put(join(packDir, "settings.json"), join(targetRoot, ".claude/settings.json"));
+    put(join(packDir, "CLAUDE.md"), join(targetRoot, "CLAUDE.md"));
+    put(join(packDir, "mcp.json"), join(targetRoot, ".mcp.json"));
   }
-  put(join(root, "playbook/model-tiers.yml"), join(targetRoot, "playbook/model-tiers.yml"), { skipIfExists: true });
-  put(join(root, "playbook/environment-profile.yml"), join(targetRoot, "playbook/environment-profile.yml"), { skipIfExists: true });
+  for (const item of runtime) put(join(root, item), join(targetRoot, item));
+  const missing = runtime.filter((item) => !existsSync(join(targetRoot, item)));
+  if (missing.length) throw new Error(`Telemetry runtime verification failed; missing: ${missing.join(", ")}`);
+  console.log(`verified telemetry runtime (${runtime.length} files)`);
   console.log(`installed ${harness} pack into ${targetRoot}`);
   console.log("Next: add AGENTS.md at the target root (templates/agents-md-template.md) and fill in playbook/environment-profile.yml.");
 }
 
+if (target) ensureSafeInstallTarget(target);
 if (harness === "claude-code") generateClaudeCodePack();
 if (target) installInto(target);

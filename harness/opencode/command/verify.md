@@ -54,3 +54,11 @@ Table, and append a run entry to `## Verifier Run Log` — all inside the
 checklist the user pointed you at. Creating a `*-Gap-Report.md` (or any
 other separate report file) violates Rule 6 of the verifier agent and is
 blocked at the tool level by `.opencode/plugin/spec-guardrails.ts`.
+
+The parent Verifier also owns miss telemetry. Parallel workers return findings; they do
+not write the stream. For each `FAIL`, `FAIL (code-audit)`, or `DATA-GAP`, the parent
+serially runs `open --if-new` and appends the returned/collapsed ID to the item's required
+metadata `misses` array. After a successful independent `PASS` or `PASS (code-audit)`, it
+appends `verdict_after=pass` for linked still-live misses. Telemetry is fire-and-forget and
+never changes an item outcome or the verification verdict. Use `--harness=opencode` and
+never rely on the CLI default.

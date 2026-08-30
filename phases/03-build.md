@@ -18,7 +18,8 @@ architecture) are read automatically.
    B → #9–#10, …") before spawning anything.
 3. Spawn the wave's sub-agents in parallel; each gets **only its slice** of the
    checklist, not the whole thing (token discipline).
-4. Aggregate results back into the checklist.
+4. Aggregate results back into the checklist. Builders report telemetry candidates to
+   the orchestrator; they never write the miss stream or checklist concurrently.
 
 Cross-cutting edits (DI registration, `Program.cs`, `appsettings.json`) are consolidated
 into **one item per file** so parallel agents never fight over the same file.
@@ -53,5 +54,12 @@ are waited out by the supervisor, which resumes the same session after the reset
 - Populate the checklist's `## Deployment Steps` (Automated with runnable commands /
   Manual) and `## Infrastructure Requirements` sections as work creates them.
 - Update the checklist's Status Table when done.
+- When a builder discovers that the approved plan or checklist left required behavior
+  unspecified, it reports an `unspecified-gap` candidate with artifact `plan` or
+  `checklist`. The orchestrator records candidates **serially** with
+  `PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new ...`, captures either
+  the opened or collapsed `MISS-*` ID, and appends that ID to the related item's metadata
+  `misses` array. These calls are fire-and-forget: refusal or telemetry failure is noted
+  but never changes build, self-test, or phase status.
 
 **Next:** [Phase 4 — Self-review](04-self-review.md) (mandatory before declaring done)

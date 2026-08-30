@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readMisses, validateMisses } from "./miss-lib.mjs";
+import { parseTiersYaml, resolveModel, routingEnabled, splitMarkdown, UNROUTED_TIERS } from "./tier-lib.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const errors = [];
@@ -85,6 +87,89 @@ if (!existsSync(pack)) {
     errors.push("claude-code pack: commands/verify.md is missing the verifier-delegation preamble — regenerate the pack");
   }
   if (existsSync(join(pack, "mcp.json"))) JSON.parse(read("harness/claude-code/mcp.json"));
+}
+
+// ── miss stream (verification/telemetry/misses.ndjson — durable, committed) ─
+// Vocabulary and linkage checks run whenever the stream exists (absent is a
+// valid opt-in state). The §0.2 reporting judgements — why_missed "n of N
+// assessed" (null is "not assessed", never a zero), FIELD_SINCE drops and
+// escapes_missing_why — plus orphan miss-fix / miss-amend detection and the
+// append-only amend invariant all live in miss-lib.mjs, so the emitter, the
+// joiner and this validator can never disagree on a definition.
+const missRuntime = ["scripts/miss-lib.mjs", "scripts/playbook-miss.mjs", "scripts/playbook-telemetry.mjs"];
+const missCommands = ["harness/opencode/command/log-miss.md", "templates/commands/log-miss.md", "harness/claude-code/commands/log-miss.md"];
+for (const f of [...missRuntime, ...missCommands]) {
+  if (!existsSync(join(root, f))) errors.push(`missing ${f} — the miss-stream contract (docs/Miss-Telemetry-AI-First-Playbook.md)`);
+}
+for (const f of ["scripts/playbook-miss.mjs", "scripts/playbook-telemetry.mjs", "scripts/playbook-validate.mjs"]) {
+  if (existsSync(join(root, f)) && !/from\s+["']\.\/miss-lib\.mjs["']/.test(read(f))) {
+    errors.push(`${f}: miss stream logic must flow through scripts/miss-lib.mjs`);
+  }
+}
+
+const itemTemplate = read("templates/checklist-item-template.md");
+if (!/"misses"\s*:\s*\[\s*\]/.test(itemTemplate)) errors.push("templates/checklist-item-template.md: metadata example must include a misses array");
+const metadata = read("templates/checklist-metadata.yml");
+const metadataRequired = metadata.match(/^required:\s*\[([^\]]*)\]/m)?.[1] ?? "";
+if (!/(^|,)\s*misses\s*(,|$)/.test(metadataRequired) || !/^misses:\s*$/m.test(metadata)) {
+  errors.push("templates/checklist-metadata.yml: required item metadata must define misses");
+}
+
+const ignoreLines = read(".gitignore").split("\n")
+  .map((line) => line.trim()).filter((line) => line && !line.startsWith("#"))
+  .map((line) => line.replace(/^\//, ""));
+if (!ignoreLines.includes("verification/telemetry/events.ndjson")) {
+  errors.push(".gitignore: ignore verification/telemetry/events.ndjson selectively");
+}
+if (ignoreLines.some((line) => /^verification\/telemetry\/(?:\*{1,2})?\/?$/.test(line))) {
+  errors.push(".gitignore: do not ignore the broad verification/telemetry directory; misses.ndjson is durable");
+}
+if (ignoreLines.includes("verification/telemetry/misses.ndjson")) {
+  errors.push(".gitignore: verification/telemetry/misses.ndjson must remain durable and committable");
+}
+
+const tierConfig = parseTiersYaml(read("playbook/model-tiers.yml"));
+if (!tierConfig.commands?.["log-miss"]) errors.push("playbook/model-tiers.yml: commands must assign log-miss a tier");
+
+// Check the generated log-miss command byte-for-byte against the same adapter
+// transformation used by harness-install.mjs. This catches stale content, not
+// merely a missing filename.
+if (missCommands.every((f) => existsSync(join(root, f)))) {
+  const { fields, body } = splitMarkdown(read("harness/opencode/command/log-miss.md"));
+  const tier = tierConfig.commands?.["log-miss"];
+  const head = ["---"];
+  if (fields.description) head.push(`description: ${fields.description}`);
+  if (routingEnabled(tierConfig) && tier && !UNROUTED_TIERS.has(tier)) head.push(`model: ${resolveModel(tierConfig.tiers, tier, "claude-code")}`);
+  head.push("---", "");
+  let preamble = "";
+  if (fields.agent === "verifier" || fields.subtask === "true") {
+    preamble += "**IMPORTANT — independence gate:** delegate ALL of the work below to the\n" +
+      "`verifier` subagent in a single Agent call (fresh, isolated context — it must\n" +
+      "have no memory of the build). Pass it the user's input verbatim plus the full\n" +
+      "instructions below. Do NOT verify inline in this session; if the Agent tool is\n" +
+      "unavailable, stop and tell the user instead of proceeding inline.\n\n";
+  }
+  if (body.includes("`task`")) {
+    preamble += "> Harness note (Claude Code): where this prompt says the `task` tool, use the\n" +
+      "> `Agent` tool; spawn the named subagent types it asks for. Parallel means\n" +
+      "> multiple Agent calls in one message.\n\n";
+  }
+  const translated = body
+    .replaceAll(".opencode/agent/", ".claude/agents/")
+    .replaceAll(".opencode/plugin/", ".claude/hooks/")
+    .replaceAll("spec-guardrails.ts", "spec-guardrails-hook.mjs")
+    .replaceAll("--harness=opencode", "--harness=claude-code");
+  if (read("harness/claude-code/commands/log-miss.md") !== head.join("\n") + preamble + translated) {
+    errors.push("claude-code pack: commands/log-miss.md differs from generated OpenCode source — regenerate the pack");
+  }
+}
+const missesPath = join(root, "verification/telemetry/misses.ndjson");
+if (existsSync(missesPath)) {
+  const { records, malformed } = readMisses(missesPath);
+  for (const line of malformed) errors.push(`misses.ndjson: unparseable line: ${line.slice(0, 80)} — the stream is append-only; correct forward with a new record, never an edit`);
+  const { errors: missErrors, notes } = validateMisses(records);
+  for (const e of missErrors) errors.push(`misses.ndjson: ${e}`);
+  for (const n of notes) console.log(`misses: ${n}`);
 }
 
 if (errors.length) { console.error(errors.map((e) => `ERROR ${e}`).join("\n")); process.exit(1); }

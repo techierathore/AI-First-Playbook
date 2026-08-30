@@ -72,6 +72,78 @@ export const FILE_WRITING_TOOLS = new Set([
 /** Tool names that reach the shell. */
 export const SHELL_TOOLS = new Set(["bash", "shell", "run", "Bash"]);
 
+const MISS_EMITTER = "scripts/playbook-miss.mjs";
+const MISS_STREAM = "verification/telemetry/misses.ndjson";
+const MISS_VALUE_FLAGS = {
+  open: new Set([
+    "miss-class", "artifact", "severity", "why-missed", "item-id", "feature",
+    "origin-phase", "origin-agent", "origin-run-id", "found-by", "found-phase",
+    "found-phase-gate", "actor", "verdict-after", "fix-run-id", "fix-phase", "harness",
+  ]),
+  close: new Set(["miss-id", "item-id", "verdict-after", "fix-run-id", "fix-phase", "actor"]),
+  list: new Set(["item-id"]),
+};
+const MISS_BOOLEAN_FLAGS = {
+  open: new Set(["if-new", "fixed"]),
+  list: new Set(["open"]),
+};
+const MISS_PHASE_GATE_TOKENS = new Map([
+  ["PASS", "PASS"],
+  ["FAIL", "FAIL"],
+  ["PASS (code-audit)", "PASS_CODE_AUDIT"],
+  ["FAIL (code-audit)", "FAIL_CODE_AUDIT"],
+  ["DATA-GAP", "DATA_GAP"],
+  ["BLOCKED", "BLOCKED"],
+]);
+
+/**
+ * The sole verifier shell exception. It intentionally recognises a narrow
+ * token grammar rather than trying to parse arbitrary shell: one optional
+ * telemetry opt-in assignment, `node`, the exact repository-relative emitter
+ * path, and one supported CLI shape. Path overrides and shell syntax are not
+ * part of the grammar, so the emitter can only append its default stream.
+ */
+export function isApprovedMissEmitterCommand(command) {
+  if (typeof command !== "string") return false;
+  const trimmed = command.trim();
+  // Shell line continuations are the only raw line breaks accepted. Collapse
+  // exactly backslash + newline + indentation; an unescaped newline remains
+  // visible to the deny-list below. Then remove quoting only for exact values
+  // from the closed phase-gate vocabulary. All other quoting stays denied.
+  const continued = trimmed.replace(/\\(?:\r\n|\n)[ \t]*/g, " ");
+  const normalized = continued.replace(
+    /--found-phase-gate=(["'])(PASS \(code-audit\)|FAIL \(code-audit\)|DATA-GAP|BLOCKED|PASS|FAIL)\1(?=\s|$)/g,
+    (_match, _quote, value) => `--found-phase-gate=${MISS_PHASE_GATE_TOKENS.get(value)}`,
+  );
+  if (!normalized || /[;&|<>`$()'"\\\r\n]/.test(normalized)) return false;
+  const tokens = normalized.split(/\s+/);
+  if (tokens[0] === "PLAYBOOK_TELEMETRY=1") tokens.shift();
+  if (tokens.shift() !== "node" || tokens.shift() !== MISS_EMITTER) return false;
+
+  const verb = tokens.shift();
+  if (verb === "next-id" || verb === "help") return tokens.length === 0;
+  if (verb === "amend") {
+    return tokens.length === 3 && tokens.every((token) => !token.startsWith("--"));
+  }
+  if (!Object.hasOwn(MISS_VALUE_FLAGS, verb)) return false;
+
+  const valueFlags = MISS_VALUE_FLAGS[verb];
+  const booleanFlags = MISS_BOOLEAN_FLAGS[verb] ?? new Set();
+  for (const token of tokens) {
+    const match = token.match(/^--([a-z][a-z0-9-]*)(?:=(.+))?$/);
+    if (!match) return false;
+    const [, name, value] = match;
+    if (valueFlags.has(name)) {
+      if (value == null) return false;
+    } else if (booleanFlags.has(name)) {
+      if (value != null) return false;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Extract the file path from a tool input, if any. Handles the differing
  * parameter names used by write/edit/patch across harnesses.
@@ -147,6 +219,9 @@ export function checkWritePolicy(path, verifier = true) {
   if (!normalized) return "target path is absolute, traverses the repository, is a symlink, or cannot be determined";
   const forbidden = checkForbidden(normalized);
   if (forbidden) return forbidden;
+  if (verifier && normalized === MISS_STREAM) {
+    return `The durable miss stream is append-only; invoke the approved ${MISS_EMITTER} CLI without a --misses override`;
+  }
   if (verifier && !(isSelectedChecklist(normalized) || /^verification\//.test(normalized) || /^deploy\/[^/]+\//.test(normalized))) {
     return "Verifier writes are limited to the selected implementation checklist, verification/**, or explicitly referenced deploy/<feature>/** helpers";
   }
@@ -163,8 +238,18 @@ export function evaluateToolCall({ tool, args, isVerifier }) {
   const shell = SHELL_TOOLS.has(tool);
   if (!FILE_WRITING_TOOLS.has(tool) && !shell) return null;
 
+  const command = args?.command ?? args?.cmd;
+  if (shell && isVerifier && isApprovedMissEmitterCommand(command)) return null;
+  if (shell && isVerifier && typeof command === "string" && command.includes(MISS_EMITTER)) {
+    return {
+      reason: "miss emitter invocation is not the approved standalone command shape",
+      paths: [],
+      message: `BLOCKED by spec-guardrails: invoke node ${MISS_EMITTER} as a standalone command without path overrides or shell operators`,
+    };
+  }
+
   const paths = shell
-    ? shellWriteTargets(args?.command ?? args?.cmd)
+    ? shellWriteTargets(command)
     : [extractPath(tool, args), ...pathsInPatch(args?.patch), ...pathsInPatch(args?.patchText)].filter(Boolean);
 
   if (shell && !paths.length && isVerifier) {

@@ -12,7 +12,14 @@ const dryRun = args.includes("--dry-run");
 const force = args.includes("--force");
 const uninstall = args.includes("--uninstall");
 const includeDocs = !args.includes("--no-docs");
-const copyItems = [".opencode", "opencode.json", "Context-Prompt.md", "playbook/environment-profile.yml", "AGENTS.md"];
+const telemetryRuntime = [
+  "scripts/playbook-miss.mjs",
+  "scripts/miss-lib.mjs",
+  "scripts/playbook-telemetry.mjs",
+  "playbook/model-tiers.yml",
+  "playbook/environment-profile.yml",
+];
+const copyItems = [".opencode", "opencode.json", "Context-Prompt.md", "AGENTS.md", ...telemetryRuntime];
 if (includeDocs) copyItems.push("docs", "onboarding");
 const created = [];
 
@@ -48,11 +55,28 @@ function copy(source, destination) {
 
 function install() {
   ensureSafeTarget();
+  for (const item of telemetryRuntime) {
+    if (!existsSync(join(sourceRoot, item))) throw new Error(`Package is missing required telemetry runtime: ${item}`);
+  }
+  const markerPath = join(target, ".playbook", "installation.json");
+  let previouslyCreated = [];
+  if (existsSync(markerPath)) {
+    try { previouslyCreated = JSON.parse(readFileSync(markerPath, "utf8")).created ?? []; }
+    catch { throw new Error("Existing .playbook/installation.json is invalid; refusing to replace its ownership record"); }
+  }
   for (const item of copyItems) copy(join(sourceRoot, item === ".opencode" ? "harness/opencode" : item), join(target, item));
   if (!dryRun) {
-    const marker = { package: packageMetadata.name, version: packageMetadata.version, created, installed_at: new Date().toISOString() };
+    const marker = {
+      package: packageMetadata.name,
+      version: packageMetadata.version,
+      created: [...new Set([...previouslyCreated, ...created])],
+      installed_at: new Date().toISOString(),
+    };
     mkdirSync(join(target, ".playbook"), { recursive: true });
-    writeFileSync(join(target, ".playbook", "installation.json"), `${JSON.stringify(marker, null, 2)}\n`);
+    writeFileSync(markerPath, `${JSON.stringify(marker, null, 2)}\n`);
+    const missing = telemetryRuntime.filter((item) => !existsSync(join(target, item)));
+    if (missing.length) throw new Error(`Telemetry runtime verification failed; missing: ${missing.join(", ")}`);
+    console.log(`verified telemetry runtime (${telemetryRuntime.length} files)`);
   }
   console.log(`${dryRun ? "Would install" : "Installed"} AI-First Playbook in ${target}`);
   console.log("Next: replace placeholders in playbook/environment-profile.yml, run the smoke test in docs/Troubleshooting.md, and restart OpenCode.");

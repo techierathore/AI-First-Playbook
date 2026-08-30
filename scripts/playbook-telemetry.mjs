@@ -13,22 +13,27 @@
  * Usage:
  *   node scripts/playbook-telemetry.mjs --checklist=path/to/Checklist.md \
  *        [--events=verification/telemetry/events.ndjson] [--tiers=playbook/model-tiers.yml]
+ *   node scripts/playbook-telemetry.mjs --misses \
+ *        [--misses-file=verification/telemetry/misses.ndjson] [--events=...]
  *
  * Emits one NDJSON record per phase execution on stdout:
  *   {"phase","model","tier","tokens_in","tokens_out","cost_usd","attempt",
  *    "gate_verdict","project_type","timestamp","session_id","harness","granularity",
  *    "turns","tokens_scope","subagents"}
  *
- * Subagent accounting: every turn row between phase-start and phase-end is
- * summed into the totals regardless of sessionID, so child (subagent) session
- * tokens are always included. `tokens_scope` says whether that happened
+ * Subagent accounting: every turn in the active phase session tree is summed,
+ * including child sessions linked through their recorded parent chain while
+ * excluding unrelated interleaved roots. `tokens_scope` says whether that happened
  * ("tree" — at least one child-session turn was summed; "main" — only the
  * phase's own session) and `subagents` rolls the child share up as
- * {count, tokens_out, cost_usd}. A turn is a child turn when its `parentID`
- * is set (plugin-recorded) or its sessionID differs from the phase session.
+ * {count, tokens_out, cost_usd}. A turn is a child turn when its session's
+ * recorded parent chain resolves to the active phase root.
  */
 import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { resolve } from "node:path";
+import {
+  readMisses, readEvents, foldAmends, phaseWindows, enrichFixes, validateMisses, defaultMissesPath,
+} from "./miss-lib.mjs";
 
 const root = process.cwd();
 const args = Object.fromEntries(process.argv.slice(2).filter((a) => a.startsWith("--")).map((a) => {
@@ -36,17 +41,19 @@ const args = Object.fromEntries(process.argv.slice(2).filter((a) => a.startsWith
   return i === -1 ? [a.slice(2), true] : [a.slice(2, i), a.slice(i + 1)];
 }));
 
-const eventsPath = join(root, args.events ?? "verification/telemetry/events.ndjson");
-const checklistPath = args.checklist ? join(root, args.checklist) : null;
-const profilePath = join(root, "playbook/environment-profile.yml");
-const tiersPath = join(root, args.tiers ?? "playbook/model-tiers.yml");
+const inputPath = (value, fallback) => resolve(root, typeof value === "string" && value.length ? value : fallback);
+const eventsPath = inputPath(args.events, "verification/telemetry/events.ndjson");
+const checklistPath = typeof args.checklist === "string" && args.checklist.length ? resolve(root, args.checklist) : null;
+const profilePath = resolve(root, "playbook/environment-profile.yml");
+const tiersPath = inputPath(args.tiers, "playbook/model-tiers.yml");
 
 // ── framework-sourced fields ────────────────────────────────────────────────
 
 function projectType() {
   if (!existsSync(profilePath)) return null;
   const m = readFileSync(profilePath, "utf8").match(/^project_type:\s*["']?([^"'\n#]+)/m);
-  return m ? m[1].trim() : null;
+  const value = m ? m[1].trim() : null;
+  return value && !/^<replace(?:[:>])/i.test(value) ? value : null;
 }
 
 function checklistFacts() {
@@ -83,6 +90,35 @@ function tierForModel(model) {
   return null;
 }
 
+// ── miss mode: join the durable miss stream with the transient windows ──────
+// The joiner only ever reads. misses.ndjson is append-only and events.ndjson
+// is transient/rotatable, so numbers are joined at read time and never
+// written back. cost_attribution is derived here (sole / shared:<n> from how
+// many closes resolve to the same exact phase window) and downgraded to
+// "none" when no window resolves — missing beats invented.
+
+if (args.misses) {
+  const missesPath = inputPath(args["misses-file"], defaultMissesPath(root));
+  if (!existsSync(missesPath)) {
+    console.error(`no miss stream at ${missesPath} — open one with scripts/playbook-miss.mjs (docs/Telemetry-Guide.md §7)`);
+    process.exit(1);
+  }
+  const raw = readMisses(missesPath);
+  if (raw.malformed.length) console.error(`warning: ${raw.malformed.length} malformed line(s) skipped in ${missesPath}`);
+  const { folded, applied } = foldAmends(raw.records);
+  const windows = phaseWindows(readEvents(eventsPath));
+  const enriched = enrichFixes(folded, windows);
+  for (const r of enriched) {
+    const output = r.kind === "miss-fix" ? { ...r, tier: r.model ? tierForModel(r.model) : null } : r;
+    console.log(JSON.stringify(output));
+  }
+  const { errors, notes } = validateMisses(raw.records);
+  for (const n of notes) console.error(`  ${n}`);
+  for (const e of errors) console.error(`  INVALID: ${e}`);
+  console.error(`misses: ${folded.length} record(s) from ${missesPath} (${applied} amendment(s) applied, ${errors.length} invalid)`);
+  process.exit(0);
+}
+
 // ── harness-sourced fields ──────────────────────────────────────────────────
 
 if (!existsSync(eventsPath)) {
@@ -90,68 +126,24 @@ if (!existsSync(eventsPath)) {
   process.exit(1);
 }
 
-const events = readFileSync(eventsPath, "utf8").split("\n").filter(Boolean).map((l) => {
-  try { return JSON.parse(l); } catch { return null; }
-}).filter(Boolean);
+const events = readEvents(eventsPath);
 
 const { attempt, gate_verdict } = checklistFacts();
 const project_type = projectType();
 
-// One phase execution = a phase-start row plus every turn row for its session.
-// message.updated fires repeatedly per message while it streams, so keep only
-// the LAST turn row per messageID — its tokens/cost are the final values.
-const phases = [];
-let current = null;
-let anon = 0;
-function finalize(p) {
-  p.models = {};
-  p.tokens_in = 0; p.tokens_out = 0; p.cost_usd = 0; p.turns = 0;
-  const childSessions = new Set();
-  let sub_tokens_out = 0, sub_cost = 0;
-  for (const e of p.byMessage.values()) {
-    const t = e.tokens ?? {};
-    const cache = t.cache ?? {};
-    const out = (t.output ?? 0) + (t.reasoning ?? 0);
-    p.turns++;
-    p.tokens_in += (t.input ?? 0) + (cache.read ?? 0) + (cache.write ?? 0);
-    p.tokens_out += out;
-    p.cost_usd += e.cost ?? 0;
-    if (e.model) p.models[e.model] = (p.models[e.model] ?? 0) + 1;
-    const isChild = (e.parentID != null) || (e.sessionID != null && p.session_id != null && e.sessionID !== p.session_id);
-    if (isChild) {
-      childSessions.add(e.sessionID ?? e.parentID);
-      sub_tokens_out += out;
-      sub_cost += e.cost ?? 0;
-    }
-  }
-  p.tokens_scope = childSessions.size ? "tree" : "main";
-  p.subagents = { count: childSessions.size, tokens_out: sub_tokens_out, cost_usd: Number(sub_cost.toFixed(6)) };
-  delete p.byMessage;
-  phases.push(p);
-}
-for (const e of events) {
-  if (e.kind === "phase-start") {
-    if (current) finalize(current);
-    current = { command: e.command, session_id: e.sessionID, started: e.ts, byMessage: new Map() };
-  } else if (e.kind === "turn" && current) {
-    current.byMessage.set(e.messageID ?? `anon-${anon++}`, e);
-  } else if (e.kind === "phase-end" && current && e.sessionID === current.session_id) {
-    current.ended = e.ts;
-    finalize(current);
-    current = null;
-  }
-}
-if (current) finalize(current);
+// Reuse the miss joiner's phase windows so message de-duplication, phase
+// boundaries and subagent accounting cannot drift between the two outputs.
+const phases = phaseWindows(events).all;
 
 for (const p of phases) {
-  const model = Object.entries(p.models).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const model = p.model;
   console.log(JSON.stringify({
     phase: p.command,
     model,
     tier: tierForModel(model),
     tokens_in: p.tokens_in,
     tokens_out: p.tokens_out,
-    cost_usd: Number(p.cost_usd.toFixed(6)),
+    cost_usd: p.cost_usd,
     attempt,
     gate_verdict,
     project_type,

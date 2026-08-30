@@ -48,7 +48,7 @@ make commands demand their inputs.
   so planning runs on a frontier model while mechanical phases run on cheap ones — the
   dominant cost lever. Ships off; `node scripts/playbook-routing.mjs on|off|status` operates it. Operator guide: [`docs/Model-Routing-Guide.md`](docs/Model-Routing-Guide.md);
   design rationale: [`docs/Adapter-Design.md`](docs/Adapter-Design.md). Per-phase cost
-  capture (model, tokens, cost, attempt, verdict): [`docs/Telemetry-Guide.md`](docs/Telemetry-Guide.md).
+  capture plus committed miss/escape/rework history: [`docs/Telemetry-Guide.md`](docs/Telemetry-Guide.md).
 - **YOLO mode — unattended end-to-end runs:** add `YOLO` to any command, set a `/goal`, or
   run `node scripts/playbook-yolo.mjs --goal "…"` on a VM. Every permission prompt is
   auto-approved mechanically (except git history, which stays denied), every in-command
@@ -123,7 +123,7 @@ probes, anti-excuse rules, and verdict discipline — is
 
 ## The command library
 
-**Four commands carry the daily loop**; ten more support it. Specs (one file per
+**Four commands carry the daily loop**; eleven more support it. Specs (one file per
 command) live in [`templates/commands/`](templates/commands/); the **runnable command
 files** are in [`harness/opencode/command/`](harness/opencode/command/).
 
@@ -136,7 +136,8 @@ files** are in [`harness/opencode/command/`](harness/opencode/command/).
 
 Supporting: `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`,
 `/create-issue-list`, `/amend-checklist`, `/archive-checklist`, `/generate-html`,
-`/update-context`, `/legacy-audit`.
+`/update-context`, `/legacy-audit`, `/log-miss`. `/log-miss` is the quick between-phase
+front door: classify and append a durable record without booting or reproducing the app.
 
 ## Installation
 
@@ -237,7 +238,7 @@ onboarding/
 phases/                    ← one file per lifecycle step (01–10)
 diagrams/                  ← Mermaid sources for every diagram
 templates/                 ← what each part does (specs, one page each)
-  commands/                ← one spec per command (14)
+  commands/                ← one spec per command (15)
   verifier-agent.md        ← the Verifier agent spec
   checklist-item-template.md
   deployment-steps-template.md
@@ -245,11 +246,14 @@ templates/                 ← what each part does (specs, one page each)
   issues-file-template.md
 harness/                   ← what actually runs (install these)
   README.md                ← install, personas, environment assumptions, porting
-  opencode/command/        ← the 14 runnable command files (tier-stamped models)
+  opencode/command/        ← the 15 runnable command files (tier-stamped models)
   opencode/agent/          ← verifier.md — the real 1,050-line agent — plus builder.md
   opencode/plugin/         ← spec-guardrails.ts + write-policy.mjs + telemetry.ts
                              + yolo.ts + yolo-policy.mjs (unattended-mode permissions)
 scripts/
+  playbook-miss.mjs        ← append-only miss lifecycle CLI
+  miss-lib.mjs             ← shared schemas, validation and event-window joining
+  playbook-telemetry.mjs   ← per-phase output + miss cost/provenance joiner
   playbook-yolo.mjs        ← YOLO supervisor: auto-approve, wait out usage limits, resume
   opencode/templates/      ← doc-shell.html
   claude-code/             ← generated Claude Code pack (same bodies, PreToolUse guardrail)

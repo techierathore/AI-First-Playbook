@@ -18,6 +18,11 @@ explicitly provide). Then loops back to [Verify](05-verify.md) until the report 
   requirements.
 - Never creates a new checklist file — the implementation checklist is the single
   source of truth.
+- After a linked miss is addressed and its self-test passes, append a `miss-fix` with
+  `verdict_after=deferred`; never `pass`. Only independent `/verify` may append `pass`.
+  Include `fix_run_id` only when it is the exact current fix run ID; otherwise omit it.
+  Process linked IDs serially. Telemetry is fire-and-forget and cannot alter the fix or
+  self-test result.
 
 ## The loop
 

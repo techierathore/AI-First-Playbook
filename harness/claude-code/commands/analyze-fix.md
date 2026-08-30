@@ -188,6 +188,31 @@ For each bug:
 - UPDATE the existing item's Verify method to be more rigorous (e.g., upgrade
   from "code-audit" to "integration test that asserts row count per cloud
   provider" or "Playwright check with filter applied").
+- Record every issue as miss telemetry and link its ID as described below; this is not
+  optional merely because several issues share one root cause.
+
+#### Record every escaped issue — serially
+
+After classifying each issue, run `open --if-new` one issue at a time. Normally populate
+`why_missed` from the Verification Gap Analysis; omission means genuinely not assessed,
+not "other". Use only CLI closed vocabularies:
+
+```bash
+PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
+  --miss-class=<closed-value> --artifact=<closed-value> --severity=<blocker|major|minor> \
+  --why-missed=<closed-value> --item-id=<id> --feature=<token> \
+  --found-by=<human|production> --found-phase=<post-verification-bugs|production-bugs> \
+  [--origin-phase=<closed-value>] [--origin-agent=<token>] \
+  [--origin-run-id=<exact-id>] --harness=claude-code
+```
+
+The harness flag is mandatory and set explicitly above as `--harness=claude-code`; never rely
+on the CLI default. `instruction-ignored` is allowed only when
+the origin was an agent that had loaded the ignored written rule; never use it for a human
+origin. Capture either the opened ID or the still-live collapsed ID and append it once to
+the corresponding item's required metadata `misses` array. IDs are append-only.
+Telemetry is fire-and-forget: note refusal/pending linkage and continue. It never changes
+the analysis, checklist status, fix, verification, incident, or release verdict.
 
 Use this expanded Status Table for these bugs:
 | # | Issue | Root Cause | Why Verifier Missed | Checklist Patch | Status |
@@ -291,6 +316,8 @@ After you have merged content from the source files into the checklist:
 
 2. **Do NOT delete them yourself.** The user should verify the merge first
    and confirm fixes are complete before removing the source files.
+   An Issues file is not deletion-ready until every issue has a `MISS-*` ID linked in the
+   corresponding checklist item metadata; a telemetry refusal remains visibly pending.
 
 3. **Files that should never be deleted**:
    - The implementation checklist itself (it is the source of truth)
@@ -314,6 +341,8 @@ After you have merged content from the source files into the checklist:
 5. The Status Table reflects all changes.
 6. Sibling documents that need updates are flagged (not silently changed).
 7. Source files that can be deleted post-fix are explicitly listed.
+8. Every post-verification/production issue has a linked miss ID and normally a
+   `why_missed` classification before its Issues file is called deletion-ready.
 
 ## Finally
 **Do NOT generate or regenerate HTML for the checklist.** The Implementation
