@@ -7,8 +7,7 @@ Package: [`@techierathore/ai-first-playbook`](https://www.npmjs.com/package/@tec
 The one-time setup is complete after all of the following are true:
 
 - version `0.1.0` has been published manually;
-- npm Trusted Publishing points to this repository and `release.yml`;
-- the GitHub `npm-release` environment exists; and
+- npm Trusted Publishing points to this repository and `release.yml`, with no environment name;
 - `.github/workflows/release.yml` is committed and present on GitHub.
 
 The initial setup steps in this document do not need to be repeated. For every later version, use
@@ -105,20 +104,22 @@ Now that the package exists:
 | Organization or user | `techierathore` |
 | Repository | `AI-First-Playbook` |
 | Workflow filename | `release.yml` |
-| Environment name | `npm-release` |
+| Environment name | Leave blank |
 | Allowed action | `npm publish` |
 
 Enter only `release.yml`, not `.github/workflows/release.yml`. Save the configuration.
 
 Official npm instructions: [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/).
 
-## Step 7: Create The GitHub Environment
+## Step 7: Keep Publishing Unattended
 
-1. Open <https://github.com/techierathore/AI-First-Playbook>.
-2. Click **Settings -> Environments -> New environment**.
-3. Enter `npm-release` and click **Configure environment**.
-4. Optionally add yourself as a required reviewer.
-5. Do not create an `NPM_TOKEN` secret.
+Do not bind the npm Trusted Publisher to a GitHub environment. The environment field is optional;
+leaving it blank allows `release.yml` to publish without a deployment approval while still using
+short-lived OIDC credentials. Do not create an `NPM_TOKEN` secret.
+
+If the publisher was previously configured with `npm-release`, edit the package's Trusted
+Publishing settings once and clear **Environment name**. The unused GitHub environment can then be
+deleted or left in place; the workflow no longer references it.
 
 ## Initial Setup Problems
 

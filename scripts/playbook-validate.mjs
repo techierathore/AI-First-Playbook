@@ -14,6 +14,27 @@ if (!statSync(join(root, "opencode.json"))) errors.push("missing opencode.json")
 for (const required of ["docs/Installation.md", "docs/Getting-Started.md", "docs/Greenfield-Case-Study.md", "docs/Brownfield-Case-Study.md", "scripts/install.mjs"]) {
   if (!statSync(join(root, required), { throwIfNoEntry: false })) errors.push(`missing ${required}`);
 }
+for (const required of [".github/workflows/release.yml", ".github/workflows/validate.yml"]) {
+  if (!existsSync(join(root, required))) errors.push(`missing ${required}`);
+}
+if (existsSync(join(root, ".github/workflows/release.yml"))) {
+  const releaseWorkflow = read(".github/workflows/release.yml");
+  const releaseContract = [
+    ["release:\n    types: [published]", "published GitHub Release trigger"],
+    ["workflow_dispatch:", "manual recovery trigger"],
+    ["github.event.release.tag_name || inputs.tag", "release-tag source"],
+    ['npm version "$release_version" --no-git-tag-version --allow-same-version', "tag-derived package version"],
+    ["id-token: write", "npm OIDC permission"],
+    ["npm publish --access public --provenance --tag", "public npm publish step"],
+  ];
+  for (const [text, purpose] of releaseContract) {
+    if (!releaseWorkflow.includes(text)) errors.push(`release.yml: missing ${purpose}`);
+  }
+  if (/^\s*environment:/m.test(releaseWorkflow)) errors.push("release.yml: environment gates make npm publication wait for approval");
+}
+if (existsSync(join(root, ".github/workflows/validate.yml")) && !read(".github/workflows/validate.yml").includes("npm run test:misses")) {
+  errors.push("validate.yml: missing miss-telemetry tests");
+}
 for (const name of readdirSync(join(root, "docs"))) {
   if (/^[A-Z0-9_-]+\.md$/.test(name)) errors.push(`docs/${name}: use Pascal/kebab-case, not all caps`);
 }

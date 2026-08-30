@@ -17,51 +17,37 @@ GitHub Actions through npm Trusted Publishing (OIDC).
 
 npm versions cannot be overwritten. Choose the increment based on the change:
 
-| Change | Example | Command |
-|---|---|---|
-| Patch: backward-compatible fix | `0.1.0` → `0.1.1` | `npm version patch --no-git-tag-version` |
-| Minor: backward-compatible feature | `0.1.1` → `0.2.0` | `npm version minor --no-git-tag-version` |
-| Major: breaking change | `0.2.0` → `1.0.0` | `npm version major --no-git-tag-version` |
+| Change | Example release tag |
+|---|---|
+| Patch: backward-compatible fix | `v0.1.1` |
+| Minor: backward-compatible feature | `v0.2.0` |
+| Major: breaking change | `v1.0.0` |
 
-## 2. Update `/package.json`
+## 2. Do Not Update `/package.json`
 
-Open PowerShell and run the chosen version command from the repository root. For a patch release:
-
-```powershell
-Set-Location C:\3AIGenCode\AI-First-Playbook
-npm version patch --no-git-tag-version
-```
-
-This updates the top-level `version` field in
-`C:\3AIGenCode\AI-First-Playbook\package.json`. It does not create a Git tag.
-
-Confirm the version:
-
-```powershell
-node --print "require('./package.json').version"
-```
-
-Use the printed value for the GitHub Release tag. For example, version `0.1.1` requires tag
-`v0.1.1`.
+The GitHub Release tag is the release version source of truth. The workflow checks out that tag
+and runs `npm version <tag-without-v> --no-git-tag-version` only inside its temporary runner.
+There is no release-only manifest commit and nothing to synchronize by hand.
 
 ## 3. Commit And Push The Package Update
 
-Review the product, documentation, and `/package.json` changes. A human then commits and pushes
-them through the repository's normal review process. Agents do not stage, commit, push, or tag.
-
-The commit used for the GitHub Release must contain the new `/package.json` version.
+Review and commit the product and documentation changes through the repository's normal process.
+Agents do not stage, commit, push, or tag. No version-only commit is required.
 
 ## 4. Publish The GitHub Release
 
 1. Open <https://github.com/techierathore/AI-First-Playbook/releases>.
 2. Select **Draft a new release**.
-3. Create a tag equal to `v` plus the `/package.json` version, such as `v0.1.1`.
-4. Target the commit containing that version.
+3. Create a new semantic-version tag beginning with `v`, such as `v0.1.1`.
+4. Target the commit containing the package changes.
 5. Add release notes describing the package changes.
 6. Select **Publish release**.
 
 Publishing the GitHub Release starts `.github/workflows/release.yml`. Merely pushing a tag does
 not publish the npm package.
+
+The release tag supplies the npm version. The workflow validates the derived version and rejects a
+version that already exists before publishing.
 
 ## 5. What CI/CD Does Automatically
 
@@ -69,30 +55,36 @@ The **Publish npm package** workflow:
 
 1. Checks out the exact GitHub Release tag.
 2. Installs Node.js 22.14.0 and npm 11.5.1.
-3. Verifies that tag `vX.Y.Z` exactly matches `/package.json` version `X.Y.Z`.
-4. Runs repository validation.
-5. Runs guardrail tests.
+3. Validates the `vX.Y.Z` release tag and applies `X.Y.Z` to the runner's package manifest.
+4. Verifies that `X.Y.Z` does not already exist on npm.
+5. Runs repository validation, guardrail tests and miss-telemetry tests.
 6. Runs `npm pack --dry-run`.
 7. Checks the release commit for whitespace errors.
-8. Publishes the public package through OIDC with npm provenance.
+8. Publishes stable versions under npm tag `latest` and prereleases under `next`, through OIDC
+   with npm provenance.
 
 You do not need to run those validation commands manually. A failed check stops publication.
 
-## 6. Approve And Confirm
+## 6. Confirm
 
 1. Open the repository's **Actions** tab and select **Publish npm package**.
-2. If GitHub pauses at the `npm-release` environment, approve the deployment.
-3. Wait for the workflow to finish successfully.
-4. Confirm the new version on the
+2. Wait for the workflow to finish successfully; no environment approval is required.
+3. Confirm the new version on the
    [npm package page](https://www.npmjs.com/package/@techierathore/ai-first-playbook).
 
 ## Release Problems
 
 | Problem | Action |
 |---|---|
-| Version already exists | Increment `/package.json`; npm versions cannot be overwritten. |
-| Tag/version check fails | Make the GitHub Release tag exactly `v` plus the version in `C:\3AIGenCode\AI-First-Playbook\package.json`. |
+| Version already exists | Create the next semantic-version GitHub Release; npm versions cannot be overwritten. |
+| Release tag is invalid | Use a semantic version beginning with `v`, such as `v0.2.0`. |
 | Workflow does not start | Confirm you published a GitHub Release; pushing a tag alone is not the configured trigger. |
 | Workflow says `ENEEDAUTH` | Recheck npm Trusted Publisher values and confirm the workflow has `id-token: write`. Do not add a token. |
-| Workflow waits for approval | Open the deployment and approve the `npm-release` environment. |
 | npm page still shows the old version | Wait for the workflow to pass, then reload the npm package page. |
+
+## Recovering From The `v0.1.1` Release
+
+After committing this pipeline fix and clearing the npm Trusted Publisher's environment field,
+cancel the old waiting run. Open **Actions -> Publish npm package -> Run workflow**, enter
+`v0.1.1`, and run it once. The recovery trigger checks out the existing release tag and derives
+npm version `0.1.1`; future GitHub Releases trigger automatically and do not use this manual path.
