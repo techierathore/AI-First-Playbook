@@ -87,4 +87,6 @@ You do not need to run those validation commands manually. A failed check stops 
 After committing this pipeline fix and clearing the npm Trusted Publisher's environment field,
 cancel the old waiting run. Open **Actions -> Publish npm package -> Run workflow**, enter
 `v0.1.1`, and run it once. The recovery trigger checks out the existing release tag and derives
-npm version `0.1.1`; future GitHub Releases trigger automatically and do not use this manual path.
+npm version `0.1.1`. It skips only the immutable tag's historical commit-diff whitespace check;
+all package validation and tests still run. Future GitHub Releases trigger automatically, enforce
+the whitespace check, and do not use this manual path.

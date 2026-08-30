@@ -106,7 +106,7 @@ function opencode-docker {
     Runs OpenCode (Linux) in Docker with .NET 10 + Playwright + SSL Fix.
     Uses Host Networking for simplicity.
     #>
-    
+
     # Define Host Paths (Windows)
     $HostAuthPath   = "$env:USERPROFILE\.local\share\opencode"
     $HostConfigPath = "$env:USERPROFILE\.config\opencode"
@@ -120,7 +120,7 @@ function opencode-docker {
     if (-not (Test-Path $HostConfigPath)) { New-Item -ItemType Directory -Force -Path $HostConfigPath | Out-Null }
 
     # Run Container
-    # --network host: Shares host networking stack. 
+    # --network host: Shares host networking stack.
     # NOTE: Idle connections >30 mins may still time out. Restart if frozen.
     docker run --rm -it `
         -v "${PWD}:/app" `

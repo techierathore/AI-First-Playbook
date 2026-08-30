@@ -279,19 +279,19 @@ proceed with this case:
    first, then edits):
    ```
    ## Gap Analysis: <area>
-   
+
    ### Missing from the checklist
    - <thing>: why it should be there, where it fits
-   
+
    ### Missing from sibling docs
    - <DB Changes>: <what's missing>
    - <Architecture>: <what's missing>
-   
+
    ### Suggested edits
    - Add item #N+1: ...
    - Add deployment step: ...
    - Update item #X to include Logging field
-   
+
    Proceed with these edits? (yes/no, or refine)
    ```
 4. After user confirms, apply the edits to the EXISTING checklist in place.

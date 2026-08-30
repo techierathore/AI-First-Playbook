@@ -26,6 +26,7 @@ if (existsSync(join(root, ".github/workflows/release.yml"))) {
     ['npm version "$release_version" --no-git-tag-version --allow-same-version', "tag-derived package version"],
     ["id-token: write", "npm OIDC permission"],
     ["npm publish --access public --provenance --tag", "public npm publish step"],
+    ["if: github.event_name == 'release'", "release-only whitespace check that does not block historical recovery"],
   ];
   for (const [text, purpose] of releaseContract) {
     if (!releaseWorkflow.includes(text)) errors.push(`release.yml: missing ${purpose}`);

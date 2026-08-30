@@ -57,6 +57,10 @@ jobs:
           npm run test:guardrails
           npm run test:misses
           npm pack --dry-run
+
+      - name: Check release commit whitespace
+        if: github.event_name == 'release'
+        run: |
           if git rev-parse HEAD^ >/dev/null 2>&1; then
             git diff --check HEAD^ HEAD
           else
