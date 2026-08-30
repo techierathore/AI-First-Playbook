@@ -27,6 +27,8 @@ if (existsSync(join(root, ".github/workflows/release.yml"))) {
     ["id-token: write", "npm OIDC permission"],
     ["npm publish --access public --provenance --tag", "public npm publish step"],
     ["if: github.event_name == 'release'", "release-only whitespace check that does not block historical recovery"],
+    ["actions/checkout@v7", "Node.js 24-compatible checkout action"],
+    ["actions/setup-node@v7", "Node.js 24-compatible setup-node action"],
   ];
   for (const [text, purpose] of releaseContract) {
     if (!releaseWorkflow.includes(text)) errors.push(`release.yml: missing ${purpose}`);
@@ -35,6 +37,12 @@ if (existsSync(join(root, ".github/workflows/release.yml"))) {
 }
 if (existsSync(join(root, ".github/workflows/validate.yml")) && !read(".github/workflows/validate.yml").includes("npm run test:misses")) {
   errors.push("validate.yml: missing miss-telemetry tests");
+}
+if (existsSync(join(root, ".github/workflows/validate.yml"))) {
+  const validationWorkflow = read(".github/workflows/validate.yml");
+  for (const action of ["actions/checkout@v7", "actions/setup-node@v7"]) {
+    if (!validationWorkflow.includes(action)) errors.push(`validate.yml: missing Node.js 24-compatible ${action}`);
+  }
 }
 for (const name of readdirSync(join(root, "docs"))) {
   if (/^[A-Z0-9_-]+\.md$/.test(name)) errors.push(`docs/${name}: use Pascal/kebab-case, not all caps`);
