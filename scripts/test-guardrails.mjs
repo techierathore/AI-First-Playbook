@@ -20,6 +20,15 @@ for (const agent of ["analyst.md", "builder.md", "orchestrator.md", "verifier.md
   const local = readFileSync(new URL(`../.opencode/agent/${agent}`, import.meta.url), "utf8");
   if (local !== canonical) { console.error(`OpenCode agent copy drift: ${agent}`); process.exit(1); }
 }
+{
+  const canonical = readFileSync(new URL("../harness/opencode/plugin/telemetry.ts", import.meta.url), "utf8");
+  const local = readFileSync(new URL("../.opencode/plugin/telemetry.ts", import.meta.url), "utf8");
+  if (local !== canonical) { console.error("OpenCode telemetry plugin copy drift"); process.exit(1); }
+  for (const requiredTerm of ["randomUUID()", 'kind: "subagent-start"', 'kind: "subagent-end"', 'kind: "tool-start"', 'kind: "tool-end"', "activeMs"]) {
+    if (!canonical.includes(requiredTerm)) { console.error(`OpenCode telemetry plugin missing schema-2 capture: ${requiredTerm}`); process.exit(1); }
+  }
+  if (canonical.includes("input.arguments")) { console.error("OpenCode telemetry plugin persists raw command arguments"); process.exit(1); }
+}
 const harnessPromptFiles = [
   "commands/verify.md",
   "agents/verifier.md",
@@ -184,11 +193,13 @@ console.log("guardrail policy coverage passed");
       { kind: "phase-start", command: "fix", sessionID: "ses_parent", ts: "2026-08-21T00:01:00Z" },
       { kind: "turn", sessionID: "ses_parent", parentID: null, messageID: "m4", model: "anthropic/claude-sonnet-5", tokens: { input: 10, output: 1, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0.001, ts: "2026-08-21T00:01:01Z" },
       { kind: "phase-end", sessionID: "ses_parent", ts: "2026-08-21T00:01:02Z" },
+      // third phase reaches EOF without idle — elapsed remains unknown
+      { kind: "phase-start", command: "implement", sessionID: "ses_parent", ts: "2026-08-21T00:02:00Z" },
     ];
     writeFileSync(join(dir, "events.ndjson"), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
     const script = new URL("./playbook-telemetry.mjs", import.meta.url);
     const out = execFileSync(process.execPath, [fileURLToPath(script), "--events=events.ndjson"], { cwd: dir, encoding: "utf8" });
-    const [verify, fix] = out.trim().split("\n").map((l) => JSON.parse(l));
+    const [verify, fix, eof] = out.trim().split("\n").map((l) => JSON.parse(l));
     const fail = (msg) => { console.error(`telemetry subagent check failed: ${msg}\n${out}`); process.exit(1); };
     if (verify.phase !== "verify" || fix.phase !== "fix") fail("phase order");
     if (verify.tokens_out !== 40) fail(`total tokens_out ${verify.tokens_out} (expected 40: parent 30 + child 10, last row per messageID)`);
@@ -201,6 +212,12 @@ console.log("guardrail policy coverage passed");
     for (const k of ["phase", "model", "tier", "tokens_in", "tokens_out", "cost_usd", "attempt", "gate_verdict", "project_type", "timestamp", "session_id", "harness", "granularity", "turns"]) {
       if (!(k in verify)) fail(`existing field missing: ${k}`);
     }
+    for (const k of ["schema", "kind", "phase_execution_id", "started_at", "ended_at", "elapsed_ms", "complete", "end_reason", "tokens", "models", "observed_active_effort", "data_quality"]) {
+      if (!(k in verify)) fail(`schema-2 field missing: ${k}`);
+    }
+    if (verify.timestamp !== verify.ended_at || !verify.complete) fail(`completed timestamp ${verify.timestamp}`);
+    if (eof.complete || eof.end_reason !== "eof" || eof.ended_at !== null || eof.elapsed_ms !== null) fail(`EOF metric ${JSON.stringify(eof)}`);
+    if (eof.timestamp !== eof.started_at) fail(`EOF timestamp ${eof.timestamp}`);
     console.log("telemetry subagent accounting passed");
   } finally {
     rmSync(dir, { recursive: true, force: true });

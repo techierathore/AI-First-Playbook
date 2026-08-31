@@ -2,7 +2,7 @@
 
 **Status:** IMPLEMENTED AND INDEPENDENTLY VERIFIED in the 2026-08-30 working tree. The implementation is `scripts/playbook-miss.mjs` + `scripts/miss-lib.mjs`, the `--misses` mode in `scripts/playbook-telemetry.mjs`, phase/command integration and the committed `verification/telemetry/misses.ndjson` contract. Independent read-only audits verified the lifecycle, provenance, concurrent-session accounting, harness parity, privacy boundaries and installer delivery; `validate`, 16 miss tests, guardrail tests and package dry-run pass. The solo edition remains the working cross-edition reference: `.tfcore/telemetry/SCHEMA.md` §5.5, `.tfcore/utils/tf-emit.sh`, `.tfcore/telemetry/tf-metrics.sh`.
 **Target repo:** `/mnt/c/3AIGenCode/AI-First-Playbook` (public team edition; source of truth is the private source repo).
-**Siblings:** `docs/Miss-Telemetry-TechieFlow.md` (the solo edition's version — read it first, especially its §0 implementation status) · `docs/Miss-Telemetry-TfLens.md`.
+**Siblings:** `docs/Miss-Telemetry-TechieFlow.md` (the solo edition's version — read it first, especially its §0 implementation status) · `docs/Miss-Telemetry-TfLens-From-AIFP.md`.
 
 ---
 

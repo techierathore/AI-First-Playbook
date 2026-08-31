@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   FIELD_SINCE, buildAmendRecord, buildFixRecord, buildMissRecord, enrichFixes,
   findLiveDuplicate, fixesByMiss, foldAmends, isBacklog, isLive, nextMissId,
-  phaseWindows, resolveOrigin, validateMisses,
+  phaseWindows, readEventsWithDiagnostics, resolveOrigin, validateMisses,
 } from "./miss-lib.mjs";
 
 const now = new Date("2026-08-29T12:00:00.000Z");
@@ -171,6 +171,207 @@ check("phaseWindows isolates interleaved roots, follows recursive parents and de
   assert.equal(windows.all.reduce((sum, w) => sum + w.tokens_out, 0), 20);
 });
 
+check("schema-2 windows report elapsed time, overlap-safe active time, model mix, token breakdown and child lifecycle", () => {
+  const events = [
+    { schema: 2, kind: "phase-start", phaseExecutionID: "phase-execution-1", command: "verify", sessionID: "root", ts: "2026-08-29T10:00:00.000Z" },
+    { schema: 2, kind: "subagent-start", sessionID: "child", parentID: "root", agent: "explore", ts: "2026-08-29T10:00:00.100Z" },
+    { schema: 2, kind: "subagent-start", sessionID: "grandchild", parentID: "child", ts: "2026-08-29T10:00:00.200Z" },
+    { schema: 2, kind: "subagent-start", sessionID: "failed-child", parentID: "root", ts: "2026-08-29T10:00:00.300Z" },
+    { schema: 2, kind: "turn", sessionID: "root", parentID: null, messageID: "root-turn", model: "model/z",
+      activeStartedAt: "2026-08-29T10:00:00.400Z", activeEndedAt: "2026-08-29T10:00:01.100Z", activeMs: 700,
+      tokens: { input: 10, output: 2, reasoning: 1, cache: { read: 3, write: 4 } }, cost: 0.01, ts: "2026-08-29T10:00:00.400Z" },
+    { schema: 2, kind: "turn", sessionID: "child", parentID: "root", messageID: "child-turn", model: "model/a",
+      activeStartedAt: "2026-08-29T10:00:00.500Z", activeEndedAt: "2026-08-29T10:00:01.000Z", activeMs: 500,
+      tokens: { input: 5, output: 6, reasoning: 2, cache: { read: 7, write: 8 } }, cost: 0.02, ts: "2026-08-29T10:00:00.500Z" },
+    { schema: 2, kind: "tool-start", sessionID: "root", callID: "tool-1", tool: "bash", ts: "2026-08-29T10:00:00.250Z" },
+    { schema: 2, kind: "tool-end", sessionID: "root", callID: "tool-1", tool: "bash", ts: "2026-08-29T10:00:01.750Z" },
+    { schema: 2, kind: "tool-start", sessionID: "grandchild", parentID: "child", callID: "tool-2", tool: "read", ts: "2026-08-29T10:00:00.600Z" },
+    { schema: 2, kind: "tool-end", sessionID: "grandchild", parentID: "child", callID: "tool-2", tool: "read", ts: "2026-08-29T10:00:01.100Z" },
+    { schema: 2, kind: "subagent-end", sessionID: "grandchild", parentID: "child", ts: "2026-08-29T10:00:01.800Z" },
+    { schema: 2, kind: "subagent-end", sessionID: "failed-child", parentID: "root", ts: "2026-08-29T10:00:01.850Z" },
+    { schema: 2, kind: "subagent-end", sessionID: "child", parentID: "root", agent: "explore", ts: "2026-08-29T10:00:01.900Z" },
+    { schema: 2, kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:02.000Z" },
+  ];
+  const metric = phaseWindows(events).all[0];
+  assert.deepEqual(
+    [metric.schema, metric.kind, metric.phase_execution_id, metric.complete, metric.end_reason, metric.elapsed_ms],
+    [2, "phase-metric", "phase-execution-1", true, "idle", 2000],
+  );
+  assert.deepEqual(metric.tokens, { input: 15, output: 8, reasoning: 3, cache_read: 10, cache_write: 12 });
+  assert.deepEqual([metric.tokens_in, metric.tokens_out, metric.cost_usd], [37, 11, 0.03]);
+  assert.equal(metric.model, "model/a", "equal-turn dominant model ties must resolve lexically");
+  assert.deepEqual(metric.models.map((model) => [model.model, model.turns, model.active_ms]), [
+    ["model/a", 1, 500],
+    ["model/z", 1, 700],
+  ]);
+  assert.deepEqual(metric.observed_active_effort, {
+    assistant_elapsed_ms: 1200,
+    tool_elapsed_ms: 2000,
+    observed_active_ms: 1500,
+    coverage: "complete",
+  });
+  assert.ok(metric.observed_active_effort.observed_active_ms <= metric.elapsed_ms, "overlapping assistant/tool intervals must be counted once");
+  assert.deepEqual(
+    [metric.subagents.spawned, metric.subagents.contributors, metric.subagents.count, metric.subagents.tokens_in, metric.subagents.tokens_out],
+    [3, 1, 1, 20, 8],
+  );
+  assert.deepEqual(metric.subagents.sessions.map((session) => session.session_id), ["child", "failed-child", "grandchild"]);
+  assert.equal(metric.subagents.sessions.find((session) => session.session_id === "child").agent, "explore");
+  assert.equal(Object.hasOwn(metric.subagents.sessions.find((session) => session.session_id === "grandchild"), "agent"), false);
+  assert.equal(metric.subagents.sessions.find((session) => session.session_id === "failed-child").turns, 0);
+  assert.equal(metric.subagents.sessions.every((session) => session.complete), true);
+});
+
+check("EOF windows remain incomplete with null elapsed and deterministic legacy execution ids", () => {
+  const events = [
+    { kind: "phase-start", command: "implement", sessionID: "legacy-root", ts: "2026-08-29T10:00:00Z" },
+    { kind: "turn", sessionID: "legacy-root", messageID: "m1", model: "model/legacy", tokens: { output: 1 }, cost: 0 },
+  ];
+  const first = phaseWindows(events).all[0];
+  const second = phaseWindows(events).all[0];
+  assert.match(first.phase_execution_id, /^legacy-[a-f0-9]{32}$/);
+  assert.equal(first.phase_execution_id, second.phase_execution_id);
+  assert.deepEqual(
+    [first.started_at, first.ended_at, first.elapsed_ms, first.complete, first.end_reason],
+    ["2026-08-29T10:00:00Z", null, null, false, "eof"],
+  );
+  assert.equal(first.data_quality.token_status, "incomplete");
+  assert.equal(first.data_quality.cost_status, "partial");
+  assert.deepEqual(first.observed_active_effort, {
+    assistant_elapsed_ms: 0,
+    tool_elapsed_ms: 0,
+    observed_active_ms: 0,
+    coverage: "unavailable",
+  });
+
+  const timedEof = phaseWindows([
+    { schema: 2, kind: "phase-start", phaseExecutionID: "timed-eof", command: "verify", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { schema: 2, kind: "turn", sessionID: "root", parentID: null, messageID: "turn", model: "model/a",
+      activeStartedAt: "2026-08-29T10:00:00.100Z", activeEndedAt: "2026-08-29T10:00:00.900Z",
+      tokens: { input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0.01 },
+  ]).all[0];
+  assert.equal(timedEof.observed_active_effort.coverage, "partial");
+});
+
+check("active effort coverage is partial when any finalized turn or started tool lacks a duration", () => {
+  const metric = phaseWindows([
+    { kind: "phase-start", command: "fix", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { kind: "turn", sessionID: "root", messageID: "observed", model: "model/a",
+      activeStartedAt: "2026-08-29T10:00:00.250Z", activeEndedAt: "2026-08-29T10:00:00.500Z", activeMs: 250, tokens: {} },
+    { kind: "turn", sessionID: "root", messageID: "missing", model: "model/a", tokens: {} },
+    { kind: "tool-start", sessionID: "root", callID: "unfinished", tool: "bash", ts: "2026-08-29T10:00:01Z" },
+    { kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:02Z" },
+  ]).all[0];
+  assert.deepEqual(metric.observed_active_effort, {
+    assistant_elapsed_ms: 250,
+    tool_elapsed_ms: 0,
+    observed_active_ms: 250,
+    coverage: "partial",
+  });
+});
+
+check("source timestamps and sequence recover delayed append order", () => {
+  const metric = phaseWindows([
+    { schema: 2, captureID: "capture", seq: 0, kind: "phase-start", phaseExecutionID: "ordered", command: "verify", sessionID: "root", ts: "2026-08-29T10:00:00.000Z" },
+    { schema: 2, captureID: "capture", seq: 2, kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:02.000Z" },
+    { schema: 2, captureID: "capture", seq: 1, kind: "turn", sessionID: "root", parentID: null, messageID: "late-write", model: "model/a",
+      activeStartedAt: "2026-08-29T10:00:00.500Z", activeEndedAt: "2026-08-29T10:00:01.000Z",
+      tokens: { input: 1, output: 2, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0.01, ts: "2026-08-29T10:00:01.000Z" },
+  ]).all[0];
+  assert.deepEqual([metric.complete, metric.turns, metric.tokens_out], [true, 1, 2]);
+});
+
+check("schema-2 zero-turn windows are invalid rather than free runs", () => {
+  const metric = phaseWindows([
+    { schema: 2, kind: "phase-start", phaseExecutionID: "empty", command: "verify", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { schema: 2, kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:01Z" },
+  ]).all[0];
+  assert.equal(metric.data_quality.valid, false);
+  assert.equal(metric.data_quality.token_status, "incomplete");
+  assert.equal(metric.data_quality.cost_status, "unavailable");
+  assert.equal(metric.cost_usd, null);
+  assert.match(metric.data_quality.issues.join("\n"), /no finalized assistant turns/);
+});
+
+check("non-zero-token zero cost is unverified and excluded from measured cost", () => {
+  const metric = phaseWindows([
+    { schema: 2, kind: "phase-start", phaseExecutionID: "zero-cost", command: "fix", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { schema: 2, kind: "turn", sessionID: "root", parentID: null, messageID: "turn", model: "model/a",
+      activeStartedAt: "2026-08-29T10:00:00.100Z", activeEndedAt: "2026-08-29T10:00:00.900Z",
+      tokens: { input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0 },
+    { schema: 2, kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:01Z" },
+  ]).all[0];
+  assert.equal(metric.cost_usd, 0);
+  assert.equal(metric.data_quality.cost_status, "zero-unverified");
+
+  const mixed = phaseWindows([
+    { schema: 2, kind: "phase-start", phaseExecutionID: "mixed-cost", command: "verify", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { schema: 2, kind: "turn", sessionID: "root", parentID: null, messageID: "paid", model: "model/paid",
+      activeStartedAt: "2026-08-29T10:00:00.100Z", activeEndedAt: "2026-08-29T10:00:00.400Z",
+      tokens: { input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0.01 },
+    { schema: 2, kind: "turn", sessionID: "root", parentID: null, messageID: "hardcoded-zero", model: "model/v2",
+      activeStartedAt: "2026-08-29T10:00:00.500Z", activeEndedAt: "2026-08-29T10:00:00.900Z",
+      tokens: { input: 1, output: 1, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0 },
+    { schema: 2, kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:01Z" },
+  ]).all[0];
+  assert.equal(mixed.cost_usd, null);
+  assert.equal(mixed.data_quality.cost_status, "partial");
+  assert.deepEqual(mixed.models.map((model) => [model.model, model.cost_usd, model.cost_status]), [
+    ["model/paid", 0.01, "complete"],
+    ["model/v2", 0, "zero-unverified"],
+  ]);
+});
+
+check("invalid numeric events are quarantinable and unavailable cost is null", () => {
+  const metric = phaseWindows([
+    { kind: "phase-start", command: "verify", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { kind: "turn", sessionID: "root", messageID: "bad", model: "model/a", tokens: { input: -1, output: 2 }, cost: "free" },
+    { kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:01Z" },
+  ]).all[0];
+  assert.equal(metric.data_quality.valid, false);
+  assert.equal(metric.data_quality.token_status, "invalid");
+  assert.equal(metric.data_quality.cost_status, "invalid");
+  assert.equal(metric.cost_usd, null);
+  assert.match(metric.data_quality.issues.join("\n"), /invalid tokens.input/);
+  assert.match(metric.data_quality.issues.join("\n"), /invalid cost/);
+
+  const missingCost = phaseWindows([
+    { kind: "phase-start", command: "fix", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { kind: "turn", sessionID: "root", messageID: "no-cost", model: "model/a", tokens: { output: 1 } },
+    { kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:01Z" },
+  ]).all[0];
+  assert.equal(missingCost.cost_usd, null);
+  assert.equal(missingCost.data_quality.valid, true);
+  assert.equal(missingCost.data_quality.token_status, "legacy-unverified");
+  assert.equal(missingCost.data_quality.cost_status, "unavailable");
+
+  const missingTokens = phaseWindows([
+    { schema: 2, kind: "phase-start", command: "fix", sessionID: "root", ts: "2026-08-29T10:00:00Z" },
+    { schema: 2, kind: "turn", sessionID: "root", messageID: "missing", model: "model/a", tokens: {}, cost: 0 },
+    { schema: 2, kind: "phase-end", sessionID: "root", ts: "2026-08-29T10:00:01Z" },
+  ]).all[0];
+  assert.equal(missingTokens.data_quality.valid, false);
+  assert.equal(missingTokens.data_quality.token_status, "incomplete");
+  assert.match(missingTokens.data_quality.issues.join("\n"), /missing tokens.input/);
+});
+
+check("event reader reports malformed lines without exposing their content", () => {
+  const dir = mkdtempSync(join(tmpdir(), "playbook-events-"));
+  try {
+    const path = join(dir, "events.ndjson");
+    writeFileSync(path, `${JSON.stringify({ kind: "phase-start", sessionID: "root" })}\nnot-json\n[]\n`);
+    const result = readEventsWithDiagnostics(path);
+    assert.equal(result.events.length, 1);
+    assert.equal(result.malformed.length, 2);
+    const cliResult = run(telemetryCli, [`--events=${path}`], { cwd: dir });
+    assert.equal(cliResult.status, 0);
+    assert.match(cliResult.stderr, /warning: 2 malformed event line\(s\) skipped/);
+    assert.doesNotMatch(cliResult.stderr, /not-json/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 check("assessment and escape notes are computed after amendments and respect FIELD_SINCE", () => {
   const current = miss({ found_by: "human" });
   const old = { ...miss({ item_id: "REQ-old", found_by: "human" }, { now: new Date("2026-08-27T12:00:00Z") }), miss_id: "MISS-20260827-01" };
@@ -215,6 +416,7 @@ check("shared fix windows are divided equally and missing windows enrich as none
   const f1 = fix(one, { fix_run_id: "run-shared" });
   const f2 = fix(two, { fix_run_id: "run-shared" }, [one, two]);
   const sharedWindow = {
+    complete: true,
     tokens_in: 101, tokens_out: 41, cost_usd: 0.3, tokens_scope: "tree", model: "model/fix",
     subagents: { count: 1, tokens_out: 9, cost_usd: 0.06 },
   };
@@ -233,6 +435,29 @@ check("shared fix windows are divided equally and missing windows enrich as none
   assert.equal(none.cost_attribution, "none");
   assert.equal(none.tokens_out, null);
   assert.equal(none.subagents, null);
+
+  const invalidWindow = {
+    ...sharedWindow,
+    data_quality: { valid: false, issues: ["invalid tokens.input"], token_status: "invalid", cost_status: "complete" },
+  };
+  const quarantined = enrichFixes([fix(one, { fix_run_id: "run-invalid" })], {
+    pick: (id) => id === "run-invalid" ? invalidWindow : null,
+  })[0];
+  assert.equal(quarantined.cost_attribution, "none");
+  assert.equal(quarantined.tokens_in, null);
+  assert.equal(quarantined.cost_usd, null);
+  assert.equal(quarantined.data_quality, null);
+
+  const incomplete = enrichFixes([fix(one, { fix_run_id: "run-incomplete" })], {
+    pick: () => ({ ...sharedWindow, complete: false }),
+  })[0];
+  assert.equal(incomplete.cost_attribution, "none");
+  assert.equal(incomplete.tokens_in, null);
+
+  const nullChildCost = enrichFixes([fix(one, { fix_run_id: "run-null-child" })], {
+    pick: () => ({ ...sharedWindow, subagents: { count: 1, tokens_out: 9, cost_usd: null } }),
+  })[0];
+  assert.equal(nullChildCost.subagents.cost_usd, null);
 });
 
 check("fix enrichment honors fix_phase, timestamp and exact repeated window identity", () => {

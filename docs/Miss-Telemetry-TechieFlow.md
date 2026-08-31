@@ -2,7 +2,7 @@
 
 **Status: IMPLEMENTED — shipped 2026-08-28**, plus the `miss-amend` follow-up the same day (§0.35). Everything in §4–§8 below is built, deployed and verified end to end in this repo. **`.tfcore/telemetry/SCHEMA.md` §5.5 is now the authoritative field reference**; this document is the design record and the *why*, kept because the reasoning behind the three provenance rules is the part that will be re-litigated, not the field list.
 **Audience:** the framework owner + whichever agent extends it.
-**Siblings:** `docs/Miss-Telemetry-TfLens.md` (how the numbers get displayed — **not implemented**) · `docs/Miss-Telemetry-AI-First-Playbook.md` (the team edition's version of the same idea — **not implemented**).
+**Siblings:** `docs/Miss-Telemetry-TfLens-From-AIFP.md` (the AIFP producer contract for TfLens) · `docs/Miss-Telemetry-AI-First-Playbook.md` (the team edition's version of the same idea).
 **Reference:** `.tfcore/telemetry/SCHEMA.md` §5.5 · `.tfcore/tasks/_metrics-emit-gate.md` constraint 10 · `docs/TechieFlow-Telemetry-Guide.md` §3.5 · `WORKFLOW.html` §17 · `WorkFlow-Context.md` §5 (2026-08-28 entries).
 
 ---
@@ -34,7 +34,7 @@
 
 ### 0.2 What is NOT implemented
 
-- **TfLens** — the sixth report page, the three-kinds parser (`miss` / `miss-fix` / `miss-amend`), the two provenance guards. See `docs/Miss-Telemetry-TfLens.md`. No coordination window exists: TfLens ignores stream files it does not know, so `misses.jsonl` is simply unread until it ships.
+- **TfLens** — the sixth report page, the three-kinds parser (`miss` / `miss-fix` / `miss-amend`), the two provenance guards. See `docs/Miss-Telemetry-TfLens-From-AIFP.md` for the AIFP-facing consumer contract. No coordination window exists: TfLens ignores stream files it does not know, so `misses.jsonl` is simply unread until it ships.
 - **AI-First Playbook** — `misses.ndjson`, `playbook-miss.mjs`, the Phase 6/9/10 emits. See `docs/Miss-Telemetry-AI-First-Playbook.md`.
 - **App-repo rollout** — `update-framework.sh <repo>` per app **per machine**. TfLens was the first refreshed (and its refresh exposed the `docs`-classification defect below).
 
@@ -289,7 +289,7 @@ Any figure with fewer than 3 supporting records prints as `insufficient data (n=
 ## 7. Rollout order
 
 1. **TechieFlow first** — schema, emitter, tasks, report. Streams begin filling. ✅ **Done 2026-08-28** (§0.1).
-2. **TfLens second.** TfLens ignores files it does not know about, so an un-updated TfLens sees a repo emitting `misses.jsonl` and simply does not read it. No crash, no wrong number, no coordination window. See `docs/Miss-Telemetry-TfLens.md`.
+2. **TfLens second.** TfLens ignores files it does not know about, so an un-updated TfLens sees a repo emitting `misses.jsonl` and simply does not read it. No crash, no wrong number, no coordination window. See `docs/Miss-Telemetry-TfLens-From-AIFP.md` for the AIFP integration boundary.
 3. **AI-First-Playbook third**, on its own schedule — it is OpenCode-only and its stream shape differs. See `docs/Miss-Telemetry-AI-First-Playbook.md`.
 
 Deploy to app repos with `update-framework.sh <repo>` per app per machine, as usual.

@@ -20,7 +20,7 @@
  *     (§6.2): no titles, no repro steps, no free text.
  */
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { dirname, join } from "node:path";
 
 export const MISS_SCHEMA = 1;
@@ -88,7 +88,7 @@ export function commandForPhase(phase) {
 const TOKEN_RE = /^[a-z0-9][a-z0-9._-]*$/i;
 const MISS_ID_RE = /^MISS-\d{8}-\d{2,}$/;
 const ISO_TS_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
-const ENRICHED_FIELDS = ["tokens_in", "tokens_out", "cost_usd", "tokens_scope", "subagents", "model", "tier"];
+const ENRICHED_FIELDS = ["tokens_in", "tokens_out", "cost_usd", "tokens_scope", "subagents", "model", "tier", "data_quality"];
 const MISS_FIELDS = [
   "kind", "ts", "schema", "miss_id", "item_id", "feature", "miss_class", "artifact", "severity",
   "why_missed", "origin_phase", "origin_agent", "origin_run_id", "origin_confidence", "origin_model",
@@ -234,10 +234,24 @@ export function nextMissId(records, now = new Date(), { entropy = () => randomBy
 
 // ── events.ndjson windows (the only source of numbers; transient by design) ─
 export function readEvents(path) {
-  if (!existsSync(path)) return [];
-  return readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => {
-    try { return JSON.parse(l); } catch { return null; }
-  }).filter(Boolean);
+  return readEventsWithDiagnostics(path).events;
+}
+
+export function readEventsWithDiagnostics(path) {
+  if (!existsSync(path)) return { events: [], malformed: [] };
+  const events = [];
+  const malformed = [];
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line);
+      if (event && typeof event === "object" && !Array.isArray(event)) events.push(event);
+      else malformed.push(line);
+    } catch {
+      malformed.push(line);
+    }
+  }
+  return { events, malformed };
 }
 
 /** One window = a phase-start plus every turn in that session tree until its
@@ -249,6 +263,14 @@ export function readEvents(path) {
  *  has its own active window, and a child turn is routed only through its
  *  recursively known parent chain. */
 export function phaseWindows(events) {
+  const orderedEvents = events.map((event, index) => ({ event, index })).sort((a, b) => {
+    const aTime = typeof a.event?.ts === "string" ? Date.parse(a.event.ts) : NaN;
+    const bTime = typeof b.event?.ts === "string" ? Date.parse(b.event.ts) : NaN;
+    if (!Number.isNaN(aTime) && !Number.isNaN(bTime) && aTime !== bTime) return aTime - bTime;
+    if (a.event?.captureID === b.event?.captureID
+      && Number.isInteger(a.event?.seq) && Number.isInteger(b.event?.seq)) return a.event.seq - b.event.seq;
+    return a.index - b.index;
+  }).map(({ event }) => event);
   const windows = new Map();
   const all = [];
   const active = new Map();
@@ -256,39 +278,306 @@ export function phaseWindows(events) {
   const order = new WeakMap();
   let anon = 0;
   let phaseOrder = 0;
+  const tokenBreakdown = (event, quality) => {
+    const tokens = event?.tokens ?? {};
+    const cache = tokens.cache ?? {};
+    const component = (value, name) => {
+      if (value == null) {
+        if (event?.schema === 2) quality.issues.push(`missing ${name} on turn ${event?.sessionID ?? "unknown"}/${event?.messageID ?? "unknown"}`);
+        else quality.legacyMissing = true;
+        return 0;
+      }
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+      quality.issues.push(`invalid ${name} on turn ${event?.sessionID ?? "unknown"}/${event?.messageID ?? "unknown"}`);
+      return 0;
+    };
+    return {
+      input: component(tokens.input, "tokens.input"),
+      output: component(tokens.output, "tokens.output"),
+      reasoning: component(tokens.reasoning, "tokens.reasoning"),
+      cache_read: component(tokens.cache_read ?? cache.read, "tokens.cache_read"),
+      cache_write: component(tokens.cache_write ?? cache.write, "tokens.cache_write"),
+    };
+  };
+  const emptyTokens = () => ({ input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 });
+  const addTokens = (target, source) => {
+    for (const key of Object.keys(target)) target[key] += source[key];
+  };
+  const tokensIn = (tokens) => tokens.input + tokens.cache_read + tokens.cache_write;
+  const tokensOut = (tokens) => tokens.output + tokens.reasoning;
+  const totalTokens = (tokens) => tokensIn(tokens) + tokensOut(tokens);
+  const roundedCost = (cost) => Number(cost.toFixed(6));
+  const timeMs = (value) => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value !== "string") return null;
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+  const elapsed = (started, ended) => {
+    const startMs = timeMs(started);
+    const endMs = timeMs(ended);
+    return startMs != null && endMs != null && endMs >= startMs ? endMs - startMs : null;
+  };
+  const interval = (started, ended) => {
+    const startMs = timeMs(started);
+    const endMs = timeMs(ended);
+    return startMs != null && endMs != null && endMs >= startMs ? [startMs, endMs] : null;
+  };
+  const unionMs = (intervals) => {
+    const sorted = intervals.filter(Boolean).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    let total = 0;
+    let current = null;
+    for (const next of sorted) {
+      if (!current || next[0] > current[1]) {
+        if (current) total += current[1] - current[0];
+        current = [...next];
+      } else if (next[1] > current[1]) current[1] = next[1];
+    }
+    if (current) total += current[1] - current[0];
+    return total;
+  };
+  const legacyExecutionId = (phase) => `legacy-${createHash("sha256")
+    .update(JSON.stringify([phase.session_id ?? null, phase.command ?? null, phase.started_at ?? null, phase.order]))
+    .digest("hex").slice(0, 32)}`;
+  const summarizeTurns = (turns) => {
+    const tokens = emptyTokens();
+    const models = new Map();
+    const quality = { issues: [], legacyMissing: false };
+    let cost = 0;
+    let observedCost = 0;
+    let missingCost = 0;
+    let invalidCost = 0;
+    let zeroUnverifiedCost = 0;
+    let activeMs = 0;
+    let observedActive = 0;
+    let missingActive = 0;
+    const activeIntervals = [];
+    for (const event of turns) {
+      const eventTokens = tokenBreakdown(event, quality);
+      addTokens(tokens, eventTokens);
+      if (event.cost == null) missingCost++;
+      else if (typeof event.cost === "number" && Number.isFinite(event.cost) && event.cost >= 0) {
+        cost += event.cost;
+        observedCost++;
+        if (event.cost === 0 && totalTokens(eventTokens) > 0) zeroUnverifiedCost++;
+      } else {
+        invalidCost++;
+        quality.issues.push(`invalid cost on turn ${event?.sessionID ?? "unknown"}/${event?.messageID ?? "unknown"}`);
+      }
+      const eventInterval = interval(event.activeStartedAt, event.activeEndedAt);
+      const eventActive = eventInterval ? eventInterval[1] - eventInterval[0] : null;
+      if (eventActive == null) missingActive++;
+      else {
+        activeMs += eventActive;
+        activeIntervals.push(eventInterval);
+        observedActive++;
+      }
+      if (typeof event.model !== "string" || !event.model.length) continue;
+      if (!models.has(event.model)) {
+        models.set(event.model, {
+          model: event.model, turns: 0, tokens: emptyTokens(), cost: 0,
+          observedCost: 0, missingCost: 0, invalidCost: 0, zeroUnverifiedCost: 0,
+          activeMs: 0, observedActive: 0,
+        });
+      }
+      const model = models.get(event.model);
+      model.turns++;
+      addTokens(model.tokens, eventTokens);
+      if (event.cost == null) model.missingCost++;
+      else if (typeof event.cost === "number" && Number.isFinite(event.cost) && event.cost >= 0) {
+        model.cost += event.cost;
+        model.observedCost++;
+        if (event.cost === 0 && totalTokens(eventTokens) > 0) model.zeroUnverifiedCost++;
+      } else model.invalidCost++;
+      if (eventActive != null) { model.activeMs += eventActive; model.observedActive++; }
+    }
+    const statusForCost = ({ turns: count, invalid, missing, observed, zeroUnverified, total }) => !count
+      ? "unavailable"
+      : (invalid
+        ? "invalid"
+        : (missing
+          ? (observed ? "partial" : "unavailable")
+          : (zeroUnverified ? (total === 0 ? "zero-unverified" : "partial") : "complete")));
+    const modelRows = [...models.values()].sort((a, b) => a.model.localeCompare(b.model)).map((model) => {
+      const costStatus = statusForCost({
+        turns: model.turns,
+        invalid: model.invalidCost,
+        missing: model.missingCost,
+        observed: model.observedCost,
+        zeroUnverified: model.zeroUnverifiedCost,
+        total: model.cost,
+      });
+      return {
+        model: model.model,
+        turns: model.turns,
+        tokens: model.tokens,
+        tokens_in: tokensIn(model.tokens),
+        tokens_out: tokensOut(model.tokens),
+        cost_usd: ["complete", "zero-unverified"].includes(costStatus) ? roundedCost(model.cost) : null,
+        cost_status: costStatus,
+        active_ms: model.observedActive ? model.activeMs : null,
+      };
+    });
+    const dominant = [...modelRows].sort((a, b) => b.turns - a.turns || a.model.localeCompare(b.model))[0]?.model ?? null;
+    const costStatus = statusForCost({
+      turns: turns.length,
+      invalid: invalidCost,
+      missing: missingCost,
+      observed: observedCost,
+      zeroUnverified: zeroUnverifiedCost,
+      total: cost,
+    });
+    return {
+      turns: turns.length,
+      tokens,
+      tokens_in: tokensIn(tokens),
+      tokens_out: tokensOut(tokens),
+      cost_usd: ["complete", "zero-unverified"].includes(costStatus) ? roundedCost(cost) : null,
+      costStatus,
+      issues: quality.issues,
+      legacyMissing: quality.legacyMissing,
+      activeMs,
+      activeIntervals,
+      observedActive,
+      missingActive,
+      models: modelRows,
+      model: dominant,
+    };
+  };
   // Parent rows can arrive after an earlier child update in a merged event
   // stream. Learn every non-null edge first so routing is deterministic.
-  for (const e of events) {
-    if (e.kind === "turn" && e.sessionID != null && e.parentID != null) parents.set(e.sessionID, e.parentID);
+  for (const e of orderedEvents) {
+    if (["turn", "subagent-start", "subagent-end", "tool-start", "tool-end"].includes(e.kind) && e.sessionID != null && e.parentID != null) {
+      parents.set(e.sessionID, e.parentID);
+    }
   }
-  const finalize = (p) => {
-    p.models = {};
-    p.tokens_in = 0; p.tokens_out = 0; p.cost_usd = 0; p.turns = 0;
-    const childSessions = new Set();
-    let sub_tokens_out = 0, sub_cost = 0;
-    for (const e of p.byMessage.values()) {
-      const t = e.tokens ?? {};
-      const cache = t.cache ?? {};
-      const out = (t.output ?? 0) + (t.reasoning ?? 0);
-      p.turns++;
-      p.tokens_in += (t.input ?? 0) + (cache.read ?? 0) + (cache.write ?? 0);
-      p.tokens_out += out;
-      p.cost_usd += e.cost ?? 0;
-      if (e.model) p.models[e.model] = (p.models[e.model] ?? 0) + 1;
-      const isChild = e.sessionID != null && p.session_id != null && e.sessionID !== p.session_id;
-      if (isChild) {
-        childSessions.add(e.sessionID ?? e.parentID);
-        sub_tokens_out += out;
-        sub_cost += e.cost ?? 0;
+  const childFor = (p, event) => {
+    const sessionID = event.sessionID;
+    if (sessionID == null || sessionID === p.session_id) return null;
+    if (!p.children.has(sessionID)) {
+      p.children.set(sessionID, {
+        session_id: sessionID,
+        parent_id: event.parentID ?? parents.get(sessionID) ?? null,
+        started_at: null,
+        ended_at: null,
+        agent: null,
+      });
+    }
+    const child = p.children.get(sessionID);
+    if (child.parent_id == null && event.parentID != null) child.parent_id = event.parentID;
+    if (child.agent == null && typeof event.agent === "string") child.agent = event.agent;
+    return child;
+  };
+  const finalize = (p, endReason, endedAt = null) => {
+    const turns = [...p.byMessage.values()];
+    const summary = summarizeTurns(turns);
+    const childTurns = new Map();
+    for (const event of turns) {
+      const child = childFor(p, event);
+      if (!child) continue;
+      if (!childTurns.has(event.sessionID)) childTurns.set(event.sessionID, []);
+      childTurns.get(event.sessionID).push(event);
+    }
+    const childTokenSummary = summarizeTurns([...childTurns.values()].flat());
+    const sessions = [...p.children.values()].sort((a, b) => String(a.session_id).localeCompare(String(b.session_id))).map((child) => {
+      const childSummary = summarizeTurns(childTurns.get(child.session_id) ?? []);
+      const childElapsed = elapsed(child.started_at, child.ended_at);
+      return {
+        session_id: child.session_id,
+        parent_id: child.parent_id,
+        ...(child.agent == null ? {} : { agent: child.agent }),
+        started_at: child.started_at,
+        ended_at: child.ended_at,
+        elapsed_ms: childElapsed,
+        complete: child.started_at != null && child.ended_at != null && childElapsed != null,
+        turns: childSummary.turns,
+        tokens: childSummary.tokens,
+        tokens_in: childSummary.tokens_in,
+        tokens_out: childSummary.tokens_out,
+        cost_usd: childSummary.cost_usd,
+        cost_status: childSummary.costStatus,
+        models: childSummary.models,
+      };
+    });
+    const contributorIds = new Set(sessions.filter((session) => totalTokens(session.tokens) > 0).map((session) => session.session_id));
+    let observedTools = 0;
+    let incompleteTools = 0;
+    const toolIntervals = [];
+    for (const tool of p.tools.values()) {
+      const toolInterval = interval(tool.started_at, tool.ended_at);
+      if (toolInterval == null) incompleteTools++;
+      else {
+        toolIntervals.push(toolInterval);
+        observedTools++;
       }
     }
-    const model = Object.entries(p.models).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    const observed = summary.observedActive + observedTools;
+    const incomplete = summary.missingActive > 0 || incompleteTools > 0;
+    const coverage = observed === 0 ? "unavailable" : (incomplete || endReason === "eof" ? "partial" : "complete");
+    const complete = endReason !== "eof";
+    const phaseElapsed = complete ? elapsed(p.started_at, endedAt) : null;
+    const issues = [...summary.issues];
+    if (p.source_schema === 2 && summary.turns === 0) issues.push("no finalized assistant turns observed");
+    const phaseStartMs = timeMs(p.started_at);
+    const phaseEndMs = complete ? timeMs(endedAt) : null;
+    const clipToPhase = ([start, end]) => {
+      const clippedStart = phaseStartMs == null ? start : Math.max(start, phaseStartMs);
+      const clippedEnd = phaseEndMs == null ? end : Math.min(end, phaseEndMs);
+      return clippedEnd >= clippedStart ? [clippedStart, clippedEnd] : null;
+    };
+    const assistantIntervals = summary.activeIntervals.map(clipToPhase).filter(Boolean);
+    const clippedToolIntervals = toolIntervals.map(clipToPhase).filter(Boolean);
+    const assistantElapsedMs = assistantIntervals.reduce((sum, current) => sum + current[1] - current[0], 0);
+    const clippedToolElapsedMs = clippedToolIntervals.reduce((sum, current) => sum + current[1] - current[0], 0);
+    const observedActiveMs = unionMs([...assistantIntervals, ...clippedToolIntervals]);
     const w = {
-      command: p.command, session_id: p.session_id, started: p.started, ended: p.ended ?? p.started,
-      model, tokens_in: p.tokens_in, tokens_out: p.tokens_out, cost_usd: Number(p.cost_usd.toFixed(6)),
-      turns: p.turns,
-      tokens_scope: childSessions.size ? "tree" : "main",
-      subagents: { count: childSessions.size, tokens_out: sub_tokens_out, cost_usd: Number(sub_cost.toFixed(6)) },
+      schema: 2,
+      kind: "phase-metric",
+      phase_execution_id: p.phase_execution_id ?? legacyExecutionId(p),
+      command: p.command,
+      session_id: p.session_id,
+      started_at: p.started_at,
+      ended_at: complete ? endedAt : null,
+      elapsed_ms: phaseElapsed,
+      complete,
+      end_reason: endReason,
+      model: summary.model,
+      models: summary.models,
+      tokens: summary.tokens,
+      tokens_in: summary.tokens_in,
+      tokens_out: summary.tokens_out,
+      cost_usd: summary.cost_usd,
+      turns: summary.turns,
+      observed_active_effort: {
+        assistant_elapsed_ms: assistantElapsedMs,
+        tool_elapsed_ms: clippedToolElapsedMs,
+        observed_active_ms: observedActiveMs,
+        coverage,
+      },
+      data_quality: {
+        valid: issues.length === 0,
+        issues: [...new Set(issues)],
+        token_status: issues.some((issue) => issue.startsWith("invalid tokens."))
+          ? "invalid"
+          : (!complete || issues.some((issue) => issue.startsWith("missing tokens.") || issue === "no finalized assistant turns observed")
+            ? "incomplete"
+            : (summary.legacyMissing ? "legacy-unverified" : "complete")),
+        cost_status: !complete && ["complete", "zero-unverified"].includes(summary.costStatus)
+          ? "partial"
+          : summary.costStatus,
+      },
+      tokens_scope: contributorIds.size ? "tree" : "main",
+      subagents: {
+        count: contributorIds.size,
+        spawned: sessions.length,
+        contributors: contributorIds.size,
+        tokens: childTokenSummary.tokens,
+        tokens_in: childTokenSummary.tokens_in,
+        tokens_out: childTokenSummary.tokens_out,
+        cost_usd: childTokenSummary.cost_usd,
+        cost_status: childTokenSummary.costStatus,
+        sessions,
+      },
     };
     if (!windows.has(p.session_id)) windows.set(p.session_id, []);
     windows.get(p.session_id).push(w);
@@ -306,13 +595,22 @@ export function phaseWindows(events) {
     }
     return null;
   };
-  for (const e of events) {
+  for (const e of orderedEvents) {
     if (e.kind === "phase-start") {
       const prior = active.get(e.sessionID);
-      if (prior) finalize(prior);
+      if (prior) finalize(prior, "superseded", e.ts ?? null);
       active.set(e.sessionID, {
-        command: e.command, session_id: e.sessionID, started: e.ts,
-        byMessage: new Map(), order: phaseOrder++,
+        command: e.command,
+        session_id: e.sessionID,
+        phase_execution_id: typeof e.phaseExecutionID === "string" && e.phaseExecutionID.length
+          ? e.phaseExecutionID
+          : (typeof e.phase_execution_id === "string" && e.phase_execution_id.length ? e.phase_execution_id : null),
+        started_at: e.ts ?? null,
+        source_schema: e.schema ?? null,
+        byMessage: new Map(),
+        children: new Map(),
+        tools: new Map(),
+        order: phaseOrder++,
       });
     } else if (e.kind === "turn") {
       const owner = ownerFor(e.sessionID);
@@ -322,15 +620,33 @@ export function phaseWindows(events) {
         const key = e.messageID == null ? `anon-${anon++}` : JSON.stringify([e.sessionID ?? null, e.messageID]);
         owner.byMessage.set(key, e);
       }
+    } else if (e.kind === "subagent-start" || e.kind === "subagent-end") {
+      const owner = ownerFor(e.sessionID);
+      if (owner) {
+        const child = childFor(owner, e);
+        if (child && e.kind === "subagent-start" && child.started_at == null) child.started_at = e.ts ?? null;
+        if (child && e.kind === "subagent-end" && child.ended_at == null) child.ended_at = e.ts ?? null;
+      }
+    } else if (e.kind === "tool-start") {
+      const owner = ownerFor(e.sessionID);
+      if (owner) {
+        childFor(owner, e);
+        const key = e.callID == null ? `anon-${anon++}` : JSON.stringify([e.sessionID ?? null, e.callID]);
+        if (!owner.tools.has(key)) owner.tools.set(key, { started_at: e.ts ?? null, ended_at: null });
+      }
+    } else if (e.kind === "tool-end") {
+      const owner = ownerFor(e.sessionID);
+      const key = JSON.stringify([e.sessionID ?? null, e.callID]);
+      const tool = owner?.tools.get(key);
+      if (tool && tool.ended_at == null) tool.ended_at = e.ts ?? null;
     } else if (e.kind === "phase-end") {
       const current = active.get(e.sessionID);
       if (!current) continue;
-      current.ended = e.ts;
-      finalize(current);
+      finalize(current, "idle", e.ts ?? null);
       active.delete(e.sessionID);
     }
   }
-  for (const current of active.values()) finalize(current);
+  for (const current of active.values()) finalize(current, "eof");
   return {
     bySession: windows,
     all,
@@ -343,11 +659,11 @@ export function phaseWindows(events) {
       if (Number.isNaN(cutoff)) return null;
       const candidates = list.filter((w) =>
         (command == null || w.command === command)
-        && Date.parse(w.started) <= cutoff
+        && Date.parse(w.started_at) <= cutoff
       );
       return candidates.reduce((latest, w) => {
         if (!latest) return w;
-        const delta = Date.parse(w.started) - Date.parse(latest.started);
+        const delta = Date.parse(w.started_at) - Date.parse(latest.started_at);
         return delta > 0 || (delta === 0 && order.get(w) > order.get(latest)) ? w : latest;
       }, null);
     },
@@ -360,7 +676,9 @@ export function phaseWindows(events) {
  *  agent naming its own model, one level up (§0.3). */
 export function resolveOrigin({ origin_run_id, origin_phase, ts = null }, windows) {
   const w = origin_run_id != null ? windows?.pick(origin_run_id, origin_phase ?? null, ts) : null;
-  if (w) return { origin_model: w.model, origin_confidence: "linked" };
+  if (w?.complete && w?.data_quality?.valid !== false && w.model) {
+    return { origin_model: w.model, origin_confidence: "linked" };
+  }
   if (origin_run_id != null || origin_phase != null) return { origin_model: null, origin_confidence: "inferred" };
   return { origin_model: null, origin_confidence: "unknown" };
 }
@@ -629,7 +947,7 @@ export function enrichFixes(folded, windows) {
     r.kind === "miss-fix" && r.fix_run_id != null
       ? windows?.pick(r.fix_run_id, r.fix_phase ?? null, r.ts) ?? null
       : null
-  );
+  ).map((window) => !window?.complete || window?.data_quality?.valid === false ? null : window);
   const windowCount = new Map();
   for (const w of selected) if (w) windowCount.set(w, (windowCount.get(w) ?? 0) + 1);
   return folded.map((r, index) => {
@@ -653,9 +971,10 @@ export function enrichFixes(folded, windows) {
       subagents: w ? {
         count: w.subagents?.count ?? 0,
         tokens_out: apportioned(w.subagents?.tokens_out ?? 0),
-        cost_usd: apportioned(w.subagents?.cost_usd ?? 0, 6),
+        cost_usd: apportioned(w.subagents?.cost_usd ?? null, 6),
       } : null,
       model: w ? w.model : null,
+      data_quality: w ? w.data_quality ?? null : null,
     };
   });
 }

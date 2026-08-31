@@ -1,37 +1,55 @@
-# Telemetry Guide — what each phase cost, on which model, with what outcome
+# Telemetry Guide — phase effort, time, tokens, models and outcome
 
-**Audience:** anyone operating the playbook. **TL;DR:** opt-in per-phase records plus a durable miss stream — model, tokens, cost, attempt, verdict and escaped/reworked defects — captured without ever asking a model to self-report numbers. **Capture-point evidence and design:** [`Telemetry-Hooks.md`](Telemetry-Hooks.md) · **what to do with the numbers:** [`Model-Routing-Guide.md`](Model-Routing-Guide.md).
+**Audience:** anyone operating the playbook. **TL;DR:** schema-2 OpenCode records answer wall-clock phase time, observed active agent time, token/cost usage, actual model mix, and spawned/contributing subagents. A separate durable stream covers escaped/reworked defects. Values come from harness events or deterministic framework parsing, never model self-report. **TfLens phase contract:** [`Phase-Efficiency-TfLens-Contract.md`](Phase-Efficiency-TfLens-Contract.md) · **TfLens miss contract:** [`Miss-Telemetry-TfLens-From-AIFP.md`](Miss-Telemetry-TfLens-From-AIFP.md) · **capture evidence:** [`Telemetry-Hooks.md`](Telemetry-Hooks.md).
 
 ## 1. What you get
 
-One NDJSON record per phase execution:
+One schema-2 NDJSON record per phase execution:
 
 ```json
-{"phase":"verify", "model":"anthropic/claude-sonnet-5", "tier":"standard",
+{"schema":2, "kind":"phase-metric", "phase_execution_id":"25ed...", "phase":"verify",
+ "started_at":"2026-08-20T09:10:00Z", "ended_at":"2026-08-20T09:12:00Z",
+ "elapsed_ms":120000, "complete":true, "end_reason":"idle",
+ "model":"anthropic/claude-sonnet-5", "tier":"standard",
+ "models":[{"model":"anthropic/claude-sonnet-5","turns":12,"tokens_in":45000,"tokens_out":8500,"cost_usd":0.38,"cost_status":"complete","active_ms":71000}],
+ "tokens":{"input":31203,"output":7900,"reasoning":1220,"cache_read":16000,"cache_write":1010},
  "tokens_in":48213, "tokens_out":9120, "cost_usd":0.41,
  "attempt":2, "gate_verdict":"FAIL", "project_type":"dotnet-react",
  "timestamp":"2026-08-20T09:12:00Z", "session_id":"ses_…",
  "harness":"opencode", "granularity":"message", "turns":14,
- "tokens_scope":"tree", "subagents":{"count":2, "tokens_out":1840, "cost_usd":0.06}}
+ "observed_active_effort":{"assistant_elapsed_ms":78000,"tool_elapsed_ms":31000,"observed_active_ms":84000,"coverage":"complete"},
+ "data_quality":{"valid":true,"issues":[],"token_status":"complete","cost_status":"complete"},
+ "tokens_scope":"tree", "subagents":{"count":2,"spawned":3,"contributors":2,
+ "tokens_in":9100,"tokens_out":1840,"cost_usd":0.06,"sessions":[...]}}
 ```
 
 Field by field:
 
 | Field | Meaning | Where it comes from |
 |---|---|---|
+| `schema` / `kind` | `2` / `phase-metric` | Joiner contract discriminator |
+| `phase_execution_id` | Unique idempotency key for this command execution; legacy events get a deterministic `legacy-...` id | Plugin UUID at phase start or deterministic joiner fallback |
 | `phase` | The command that ran (`verify`, `implement`, `fix`, …) | Harness — the plugin's `command.execute.before` hook |
-| `model` | What **actually** ran (dominant model across the phase's turns) | Harness — per-message `providerID/modelID`; never self-reported by the model |
+| `started_at` / `ended_at` / `elapsed_ms` | Phase wall-clock boundary and duration. Incomplete EOF windows have null end/duration | Harness phase events |
+| `complete` / `end_reason` | Whether a trustworthy end exists; `idle`, `superseded`, or `eof` | Joiner |
+| `model` | Compatibility dominant model, selected by finalized turn count; lexical tie-break | Harness per-message model |
+| `models` | Every observed model with turns, tokens, cost status and assistant-message elapsed time | Harness per-message data |
 | `tier` | The tier that model reverse-maps to in `playbook/model-tiers.yml` | Framework — deterministic lookup |
+| `tokens` | Exact `input`, `output`, `reasoning`, `cache_read`, and `cache_write` breakdown | Harness per-message usage |
 | `tokens_in` / `tokens_out` | Σ input+cache / output+reasoning tokens over the phase | Harness — per-message token rollups |
 | `cost_usd` | Σ provider-reported cost over the phase | Harness (see the v2-engine caveat in `Telemetry-Hooks.md`) |
 | `attempt` | Which run this was for the checklist (1st, 2nd, …) | Framework — counted from the checklist's `### Run on` entries |
 | `gate_verdict` | Worst verdict on the checklist: `BLOCKED` > `FAIL` > `DATA-GAP` > `PASS (code-audit)` > `PASS` | Framework — parsed from `**Verifier Result**:` lines |
 | `project_type` | Your stack label | Framework — `playbook/environment-profile.yml` |
 | `granularity` | `message` (OpenCode — exact per-phase) or `session` (Claude Code — see §5) | Capture path |
+| `observed_active_effort` | Overlap-safe observed busy time plus diagnostic assistant/tool elapsed sums and `complete`, `partial`, or `unavailable` coverage | Assistant intervals and paired tool hooks |
+| `data_quality` | Numeric validity plus separate token and provider-cost status. Invalid rows must be quarantined from aggregates | Joiner validation |
 | `tokens_scope` | `tree` if the totals include turns from subagent (child) sessions spawned during the phase; `main` if only the phase's own session contributed | Harness — each turn's session and recursively recorded `parentID` chain |
-| `subagents` | `{count, tokens_out, cost_usd}` — how much of the total came from child sessions (`count` = distinct child sessions). Always present; all zeros when `tokens_scope` is `main` | Harness — same rows, attributed by `parentID` |
+| `subagents` | Child rollup and `sessions[]` detail. `spawned` includes zero-token/failed children; `contributors` and compatibility `count` include token-bearing children | Child lifecycle and turn events |
 
-**Related subagent tokens are always in the total.** A verifier that fans out sub-verifiers, or an implementer that delegates to a `subtask`, runs those in child sessions. The joiner follows each session's recorded parent chain to the active phase root, so `tokens_in`/`tokens_out`/`cost_usd` cover the whole phase tree without absorbing unrelated interleaved top-level sessions. `tokens_scope` and `subagents` make that explicit — `cost_usd - subagents.cost_usd` is what the main session alone spent — without changing the total.
+**Related subagent tokens are always in the total.** A verifier that fans out sub-verifiers, or an implementer that delegates to a `subtask`, runs those in child sessions. The joiner follows each session's recorded parent chain to the active phase root, so usage covers the whole phase tree without absorbing unrelated interleaved roots. `spawned - contributors` is the number of children that started but produced no retained token-bearing turn. Each `sessions[]` row carries lifecycle time, usage, models and optional harness-provided agent type.
+
+**Wall time is not human effort.** `elapsed_ms` answers how long the operator waited. `observed_active_effort.observed_active_ms` is the union of observed assistant-message and tool intervals across the phase tree, so overlapping tools and parallel children are counted once. `assistant_elapsed_ms` and `tool_elapsed_ms` are diagnostic sums whose intervals can overlap; never add them. Use observed active time for comparisons only when `coverage:"complete"`; `partial` is a lower bound and `unavailable` is not zero.
 
 The design principle behind the split: **attempt and verdict are framework data, not harness data** — they are parsed deterministically from the checklist the process already maintains, identically in any harness. Only phase, model and tokens are harness-sourced, which shrinks the fragile surface to three fields.
 
@@ -49,7 +67,7 @@ PLAYBOOK_TELEMETRY=1 opencode
 node scripts/playbook-telemetry.mjs --checklist=verification/MyFeature-Checklist.md
 ```
 
-Each line of output is one phase execution, ready for `jq`, a spreadsheet, or your dashboard of choice.
+Each line is one phase execution. TfLens must upsert by `phase_execution_id`, because re-reading the transient event file re-emits previously seen windows.
 
 ## 3. Reading the numbers — three worked questions
 
@@ -67,16 +85,17 @@ node scripts/playbook-telemetry.mjs --checklist=… | \
 ## 4. Trust rules
 
 - **Never self-reported.** Models are never asked how many tokens they used; every number comes from the harness's own event stream or from deterministic parsing of the checklist.
-- **Never estimated.** A missing signal produces `null`, not a guess (see the Claude Code granularity note, §5).
+- **Never estimated.** Missing time/cost signals produce `null`. A schema-2 turn missing required token components makes the row invalid/incomplete; sparse legacy events are `legacy-unverified`. Compatibility zeros on either status must not enter aggregates.
 - **Never in the way.** The plugin is opt-in (`PLAYBOOK_TELEMETRY=1`), fire-and-forget, and error-isolated — a telemetry failure can lose a record, never break a run.
-- **Reviewable before it leaves the repo.** `events.ndjson` lives in your project (`verification/telemetry/`); it carries ids, counts and command names — no prompt text, no code. Rotate or delete it freely; the joiner only ever reads.
+- **Coverage-labelled.** Incomplete windows and unpaired timing events are visible rather than converted to zero.
+- **Reviewable before it leaves the repo.** `events.ndjson` lives in your project (`verification/telemetry/`); it carries ids, counts, event names and command names — no raw command arguments, prompt text or code. Rotate it only after a consumer has checkpointed all `phase_execution_id` values.
 
 ## 5. Claude Code — session-level, honestly
 
 The Playbook is OpenCode-first; the Claude Code path is documented for parity but no Claude transcript parser is built or planned. Claude Code exposes less: hooks carry no token counts and per-subagent usage is not surfaced through hooks. The practical setup (full evidence chain in [`Telemetry-Hooks.md`](Telemetry-Hooks.md)):
 
 - Run **session-per-phase** (the launcher records the phase name and model), then take tokens from OpenTelemetry (`claude_code.token.usage` to a local collector) or, for headless mechanical phases, from `claude -p --output-format json` (exact, includes `total_cost_usd`).
-- Records get `granularity: "session"` so consumers know they are phase≈session totals rather than per-message sums; `tokens_scope`/`subagents` are not produced on that path.
+- Records get `granularity: "session"` so consumers know they are phase≈session totals rather than per-message sums. The schema-2 OpenCode effort/subagent contract is not currently emitted on that path.
 - The checklist-parsed fields (`attempt`, `gate_verdict`, `project_type`) are identical to OpenCode — that half of every record never degrades.[^claude-subagents]
 
 [^claude-subagents]: Verified 2026-08-20 on Claude Code 2.1.x: the `SubagentStop` hook payload carries `agent_transcript_path`, and subagent transcripts sit at `<transcript-dir>/<session-id>/subagents/agent-<id>.jsonl` in the same (undocumented) JSONL format with per-message `usage`, so a transcript-window parser *could* recover a subagent split there. Recorded for completeness only — the Playbook will not build that parser.
@@ -85,8 +104,12 @@ The Playbook is OpenCode-first; the Claude Code path is documented for parity bu
 
 - **"events.ndjson doesn't exist."** The plugin only registers when `PLAYBOOK_TELEMETRY=1` was set before OpenCode started. Set it and restart.
 - **"Records show attempt: null."** Pass `--checklist=` pointing at the checklist the phases ran against; attempt/verdict are parsed from it.
-- **"cost_usd is 0 on every record."** See the v2-engine caveat in `Telemetry-Hooks.md` — tokens are correct everywhere; recompute cost from tokens × your price sheet until provider cost lands, which you need for Claude Code parity anyway.
+- **"cost_usd is 0 on every record."** See the v2-engine caveat in `Telemetry-Hooks.md`. Non-zero-token zero cost is labelled `cost_status:"zero-unverified"` and excluded from measured-cost aggregates; compute a separately labelled rate-card estimate if needed.
 - **"Two phases in one session?"** Each `command.execute.before` starts a new record for that session; the joiner closes only that session's previous window. Interleaved top-level sessions remain isolated, while recursively linked child sessions roll up only to their own active root. Session reuse across phases is fine.
+- **"Why is elapsed null?"** The event file ended before a root `session.idle`, so the joiner emitted `complete:false`, `end_reason:"eof"` and incomplete token/cost status. Do not calculate a duration from the file modification time or aggregate its partial usage.
+- **"Why do assistant and tool elapsed sums exceed observed active time?"** Their intervals overlap. `observed_active_ms` unions them and is the comparison value; do not add the diagnostic component sums.
+- **"Why do spawned and contributors differ?"** A child session was created but produced no retained token-bearing assistant turn. This includes early failures and zero-token tasks; it is why the two counts are intentionally separate.
+- **"Why is cost null?"** No valid provider cost was available for every retained turn. Check `data_quality.cost_status`; `unavailable`, `partial`, and `invalid` are never zero.
 - **"Can I commit events.ndjson?"** It contains no prompt/code content, but it is transient capture noise. Ignore exactly `/verification/telemetry/events.ndjson`; do **not** ignore `verification/telemetry/`, because that would also discard the durable `misses.ndjson` stream described below.
 
 ## 7. Miss telemetry — durable defect and rework history

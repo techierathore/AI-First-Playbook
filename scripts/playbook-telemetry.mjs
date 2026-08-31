@@ -16,23 +16,22 @@
  *   node scripts/playbook-telemetry.mjs --misses \
  *        [--misses-file=verification/telemetry/misses.ndjson] [--events=...]
  *
- * Emits one NDJSON record per phase execution on stdout:
- *   {"phase","model","tier","tokens_in","tokens_out","cost_usd","attempt",
- *    "gate_verdict","project_type","timestamp","session_id","harness","granularity",
- *    "turns","tokens_scope","subagents"}
+ * Emits one schema-2 NDJSON record per phase execution on stdout. Stable
+ * identity, wall time, observed active effort, token/model breakdowns and
+ * child lifecycle details accompany the compatibility fields below.
  *
  * Subagent accounting: every turn in the active phase session tree is summed,
  * including child sessions linked through their recorded parent chain while
  * excluding unrelated interleaved roots. `tokens_scope` says whether that happened
  * ("tree" — at least one child-session turn was summed; "main" — only the
- * phase's own session) and `subagents` rolls the child share up as
- * {count, tokens_out, cost_usd}. A turn is a child turn when its session's
- * recorded parent chain resolves to the active phase root.
+ * phase's own session). `subagents.count` remains the contributing-child
+ * compatibility count; `spawned`, `contributors` and `sessions` distinguish
+ * every child launched from children that produced token-bearing turns.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
-  readMisses, readEvents, foldAmends, phaseWindows, enrichFixes, validateMisses, defaultMissesPath,
+  readMisses, readEventsWithDiagnostics, foldAmends, phaseWindows, enrichFixes, validateMisses, defaultMissesPath,
 } from "./miss-lib.mjs";
 
 const root = process.cwd();
@@ -106,7 +105,9 @@ if (args.misses) {
   const raw = readMisses(missesPath);
   if (raw.malformed.length) console.error(`warning: ${raw.malformed.length} malformed line(s) skipped in ${missesPath}`);
   const { folded, applied } = foldAmends(raw.records);
-  const windows = phaseWindows(readEvents(eventsPath));
+  const eventInput = readEventsWithDiagnostics(eventsPath);
+  if (eventInput.malformed.length) console.error(`warning: ${eventInput.malformed.length} malformed event line(s) skipped in ${eventsPath}`);
+  const windows = phaseWindows(eventInput.events);
   const enriched = enrichFixes(folded, windows);
   for (const r of enriched) {
     const output = r.kind === "miss-fix" ? { ...r, tier: r.model ? tierForModel(r.model) : null } : r;
@@ -126,7 +127,9 @@ if (!existsSync(eventsPath)) {
   process.exit(1);
 }
 
-const events = readEvents(eventsPath);
+const eventInput = readEventsWithDiagnostics(eventsPath);
+if (eventInput.malformed.length) console.error(`warning: ${eventInput.malformed.length} malformed event line(s) skipped in ${eventsPath}`);
+const events = eventInput.events;
 
 const { attempt, gate_verdict } = checklistFacts();
 const project_type = projectType();
@@ -138,20 +141,32 @@ const phases = phaseWindows(events).all;
 for (const p of phases) {
   const model = p.model;
   console.log(JSON.stringify({
+    schema: p.schema,
+    kind: p.kind,
+    phase_execution_id: p.phase_execution_id,
     phase: p.command,
+    started_at: p.started_at,
+    ended_at: p.ended_at,
+    elapsed_ms: p.elapsed_ms,
+    complete: p.complete,
+    end_reason: p.end_reason,
     model,
+    models: p.models,
     tier: tierForModel(model),
+    tokens: p.tokens,
     tokens_in: p.tokens_in,
     tokens_out: p.tokens_out,
     cost_usd: p.cost_usd,
     attempt,
     gate_verdict,
     project_type,
-    timestamp: p.ended ?? p.started,
+    timestamp: p.complete ? p.ended_at : p.started_at,
     session_id: p.session_id,
     harness: "opencode",
     granularity: "message",
     turns: p.turns,
+    observed_active_effort: p.observed_active_effort,
+    data_quality: p.data_quality,
     tokens_scope: p.tokens_scope,
     subagents: p.subagents,
   }));

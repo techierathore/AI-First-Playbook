@@ -1,12 +1,14 @@
 # Telemetry Hook Points (Task 5)
 
-Feeds the existing telemetry design. Target record, one per phase execution (NDJSON):
+Feeds the existing telemetry design. The current target is schema 2, one record per phase execution (NDJSON):
 
 ```json
-{"phase": "verify", "command": "verify", "model": "anthropic/claude-sonnet-5",
- "tier": "standard", "tokens_in": 48213, "tokens_out": 9120, "attempt": 2,
- "gate_verdict": "FAIL", "project_type": "dotnet-react", "timestamp": "2026-08-20T09:12:00Z",
- "harness": "opencode", "session_id": "...", "cost_usd": 0.41}
+{"schema":2,"kind":"phase-metric","phase_execution_id":"...","phase":"verify",
+ "started_at":"2026-08-20T09:10:00Z","ended_at":"2026-08-20T09:12:00Z","elapsed_ms":120000,
+ "model":"anthropic/claude-sonnet-5","models":[...],"tokens":{"input":32000,"output":8000,
+ "reasoning":1120,"cache_read":15000,"cache_write":1213},"tokens_in":48213,"tokens_out":9120,
+ "observed_active_effort":{"assistant_elapsed_ms":78000,"tool_elapsed_ms":31000,
+ "observed_active_ms":84000,"coverage":"complete"},"subagents":{"spawned":3,"contributors":2,"sessions":[...]}}
 ```
 
 A field-by-field principle first: **attempt number and gate verdict are framework data, not
@@ -28,11 +30,14 @@ per-sub-verifier accounting are both available without estimation.
 
 | Signal | Capture point | Evidence |
 |---|---|---|
-| Phase start (phase = command name) | Plugin hook `command.execute.before` — receives `{command, sessionID, arguments}` | `packages/opencode/src/session/prompt.ts:1460-1464`; `packages/plugin/src/index.ts` (Hooks) |
+| Phase start (phase = command name) | Plugin hook `command.execute.before` — records command/session plus a generated execution UUID; raw `arguments` are deliberately discarded | `packages/opencode/src/session/prompt.ts:1460-1464`; `packages/plugin/src/index.ts` (Hooks) |
+| Wall-clock end | Root `session.idle`; a new command supersedes an open window; EOF remains incomplete with no invented end | `packages/schema/src/session-status-event.ts:44` |
 | Model actually used | `message.updated` events — assistant `info.modelID`/`providerID` are per message (mixed-model sessions are real, so record per message, not per session) | `packages/opencode/src/session/prompt.ts:1196-1197`; event `packages/schema/src/v1/session.ts:597` |
 | Tokens in/out (+ reasoning, cache) and cost | `message.part.updated` events with `part.type === "step-finish"` (`tokens{input,output,reasoning,cache}`, `cost`), or the assistant message rollup on `message.updated` | `packages/opencode/src/session/processor.ts:435-456`; `packages/schema/src/v1/session.ts:240-256` |
-| Per-subagent split | Child sessions: filter events by `sessionID`; map children via `GET /session/{id}/children`; session totals on `GET /session/{childID}` | `packages/opencode/src/tool/task.ts:156-172`; `packages/core/src/session/projector.ts:89-109` |
-| Phase end | `session.idle` event for the session (or child session for `subtask` commands) | `packages/schema/src/session-status-event.ts:44` |
+| Assistant interval | Valid assistant `info.time.created`/`completed`; this envelope can contain tool time, so consumers union intervals instead of adding tool time again | Assistant message schema |
+| Tool-active time | Paired plugin `tool.execute.before` / `tool.execute.after` hooks keyed by session and call ID | Plugin Hooks API |
+| Spawned subagents | `session.created` with a `parentID`; child `session.idle` closes lifecycle. This counts children even when no tokens are emitted | Session events |
+| Per-subagent split | Filter turns/tools by `sessionID` and recursively resolve the recorded parent chain | `packages/opencode/src/tool/task.ts:156-172`; `packages/core/src/session/projector.ts:89-109` |
 | Offline backfill / audit | SQLite `~/.local/share/opencode/opencode.db`: `session` rollup columns; `json_extract(message.data, '$.tokens.input')` over message blobs (the exact recipe OpenCode's own backfill migration uses) | `packages/core/src/session/sql.ts:43-48`; `packages/core/src/database/migration/20260510033149_session_usage.ts:24-52` |
 
 **Recommended carrier:** a second small plugin (`telemetry.ts`, sibling of the guardrail) using
@@ -42,12 +47,14 @@ checklist-parsed attempt/verdict into the final record. The `event` hook is fire
 and error-isolated, so telemetry can never break a run
 (`packages/opencode/src/plugin/index.ts:253-260`).
 
-Two caveats. First, `opencode run --format json` also streams step-finish parts on stdout
+Three caveats. First, observed active time is the union of assistant and tool intervals, not human
+effort, CPU utilization or additive compute. Assistant and tool component sums overlap and must not
+be added. Second, `opencode run --format json` also streams step-finish parts on stdout
 (`packages/opencode/src/cli/cmd/run.ts:678-691`) — sufficient for launcher-scripted headless
-phases without any plugin. Second, the v2 engine currently hardcodes `cost: 0`
+phases without any plugin. Third, the v2 engine currently hardcodes `cost: 0`
 (`packages/core/src/session/runner/llm.ts:332-343`); tokens are correct everywhere, but treat
-`cost` as v1-only until that lands, or recompute cost from tokens × your price sheet — which
-you need anyway for Claude Code parity.
+`cost` as v1-only until that lands. The joiner labels non-zero-token zero cost `zero-unverified`;
+compute a separately labelled token × rate-card estimate when needed.
 
 ## Claude Code — tokens are the constrained signal; here is the honest fallback chain
 

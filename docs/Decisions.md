@@ -242,7 +242,7 @@ waves, never by handing work back.
 
 **Status:** implemented and independently verified in the working tree. Two fresh-context,
 read-only audits covered lifecycle and provenance semantics, concurrent session accounting,
-harness parity, privacy boundaries and installer delivery. Repository validation, 16 focused miss
+harness parity, privacy boundaries and installer delivery. Repository validation, 24 focused miss
 tests, guardrail tests, package dry-run and diff checks pass; rollout remains an owner decision.
 
 ### Decision 1 — misses use a separate durable stream
