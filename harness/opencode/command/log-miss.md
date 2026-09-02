@@ -15,7 +15,7 @@ $ARGUMENTS
 3. Do not edit `src/`, tests, config, package/lock files, deployment steps,
    infrastructure, or product code.
 4. The only allowed writes are:
-   - append records through `scripts/playbook-miss.mjs` to the miss stream; and
+   - append records through `.playbook/scripts/playbook-miss.mjs` to the miss stream; and
    - append the returned/collapsed `MISS-*` ID once to the referenced checklist item's
      metadata `misses` array.
 5. Do not add the report text to telemetry. Classify it using only these closed values:
@@ -39,7 +39,7 @@ $ARGUMENTS
 Run exactly one `open --if-new` command, with flags selected from the closed vocabularies:
 
 ```bash
-PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
+PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs open --if-new \
   --miss-class=<value> --artifact=<value> --severity=<value> \
   --found-by=<value> [--why-missed=<value>] [--item-id=<id>] [--feature=<token>] \
   [--origin-phase=<value>] [--origin-agent=<token>] [--origin-run-id=<exact-id>] \

@@ -65,7 +65,7 @@ export const FILE_WRITING_TOOLS = new Set([
 /** Tool names that reach the shell. */
 export const SHELL_TOOLS = new Set(["bash"]);
 
-const MISS_EMITTER = "scripts/playbook-miss.mjs";
+const MISS_EMITTER = ".playbook/scripts/playbook-miss.mjs";
 const MISS_STREAM = "verification/telemetry/misses.ndjson";
 const MISS_VALUE_FLAGS = {
   open: new Set([

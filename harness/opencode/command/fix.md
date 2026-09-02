@@ -2,7 +2,7 @@
 description: Fix FAIL items from the checklist's inline Verifier annotations using parallel sub-agents and a build+smoke-test self-check before declaring done
 ---
 
-Read `playbook/environment-profile.yml` before running any build, migration or start command.
+Read `.playbook/environment-profile.yml` before running any build, migration or start command.
 Use only profile-declared topology and secret-safe commands; never guess stack, ports, config
 files or migration tools.
 
@@ -332,7 +332,7 @@ After an addressed item's self-test passes, read its append-only metadata `misse
 For each linked miss that is still live, run one command at a time:
 
 ```bash
-PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs close \
+PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs close \
   --miss-id=<MISS-id> --verdict-after=deferred --fix-phase=fix \
   [--fix-run-id=<exact-current-fix-run-id>] [--actor=<token>]
 ```

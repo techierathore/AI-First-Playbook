@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["../.playbook/AGENTS.md", "../.playbook/environment-profile.yml"],
+  "plugin": ["./plugin/spec-guardrails.ts", "./plugin/yolo.ts"],
+  "agent": {
+    "analyst": {"mode": "primary", "prompt": "file://agent/analyst.md", "permission": {"edit": "allow", "write": "allow", "bash": "deny"}},
+    "orchestrator": {"mode": "primary", "prompt": "file://agent/orchestrator.md", "permission": {"edit": "allow", "write": "allow", "bash": "allow"}},
+    "builder": {"mode": "subagent", "prompt": "file://agent/builder.md", "permission": {"edit": "allow", "write": "allow", "bash": "allow"}},
+    "verifier": {"mode": "subagent", "prompt": "file://agent/verifier.md", "permission": {"edit": "allow", "write": "allow", "bash": "allow"}}
+  },
+  "mcp": {
+    "playwright": {"type": "remote", "url": "{env:PLAYWRIGHT_MCP_URL}", "enabled": false}
+  }
+}

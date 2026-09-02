@@ -40,7 +40,7 @@ Field by field:
 | `cost_usd` | Σ provider-reported cost over the phase | Harness (see the v2-engine caveat in `Telemetry-Hooks.md`) |
 | `attempt` | Which run this was for the checklist (1st, 2nd, …) | Framework — counted from the checklist's `### Run on` entries |
 | `gate_verdict` | Worst verdict on the checklist: `BLOCKED` > `FAIL` > `DATA-GAP` > `PASS (code-audit)` > `PASS` | Framework — parsed from `**Verifier Result**:` lines |
-| `project_type` | Your stack label | Framework — `playbook/environment-profile.yml` |
+| `project_type` | Your stack label | Framework - `.playbook/environment-profile.yml` |
 | `granularity` | `message` (OpenCode — exact per-phase) | Capture path |
 | `observed_active_effort` | Overlap-safe observed busy time plus diagnostic assistant/tool elapsed sums and `complete`, `partial`, or `unavailable` coverage | Assistant intervals and paired tool hooks |
 | `data_quality` | Numeric validity plus separate token and provider-cost status. Invalid rows must be quarantined from aggregates | Joiner validation |
@@ -64,7 +64,7 @@ PLAYBOOK_TELEMETRY=1 opencode
 #    interferes with a run; without the env var the plugin registers nothing).
 
 # 3. Produce the per-phase records:
-node scripts/playbook-telemetry.mjs --checklist=verification/MyFeature-Checklist.md
+node .playbook/scripts/playbook-telemetry.mjs --checklist=verification/MyFeature-Checklist.md
 ```
 
 Each line is one phase execution. TfLens must upsert by `phase_execution_id`, because re-reading the transient event file re-emits previously seen windows.
@@ -74,7 +74,7 @@ Each line is one phase execution. TfLens must upsert by `phase_execution_id`, be
 **"What does a verify cost us?"**
 
 ```bash
-node scripts/playbook-telemetry.mjs --checklist=… | \
+node .playbook/scripts/playbook-telemetry.mjs --checklist=… | \
   jq -s '[.[] | select(.phase=="verify")] | {runs: length, usd: (map(.cost_usd) | add)}'
 ```
 
@@ -143,10 +143,10 @@ origin, actor and phase-gate fields may be `null`; `why_missed: null` means **no
 from the caller. Confidence is `linked`, `inferred` or `unknown`; only `linked` records may be
 used for model/tier miss rates. `instruction-ignored` is a valid `why_missed` only when a written
 rule was loaded by an **agent** and that agent did not follow it; it is never a human judgement.
-`miss_id` keeps the schema-compatible `MISS-YYYYMMDD-<2+ digits>` shape, but the numeric suffix
-is deliberately not a daily sequence: it combines the record timestamp with cryptographic
-entropy. Existing-id collisions are detected and retried, so independent processes or machines
-do not allocate the same predictable “next” id.
+`miss_id` uses the human-readable `MISS-YYYYMMDD-NN` shape, where `NN` is the next sequence for
+that UTC day (`01`, `02`, ...). Miss writes are serialized by the parent agent, so allocation is
+predictable and collision-free within the stream. Legacy timestamp-plus-entropy IDs remain valid
+for backward compatibility but are never generated.
 
 **`miss-fix` — append a lifecycle outcome**
 
@@ -189,24 +189,24 @@ exits zero so telemetry cannot block delivery. Read commands work without the fl
 
 ```bash
 # Open (add --if-new to collapse the same still-live item/class; --fixed if already repaired)
-PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open \
+PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs open \
   --miss-class=wrong-behaviour --artifact=src --severity=major \
   --why-missed=insufficient-verify-method --found-by=verifier \
   --item-id=REQ-014 --found-phase=verify --found-phase-gate=FAIL --if-new
 
 # Append a result; omit --fix-run-id if no exact repairing run is known
-PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs close \
+PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs close \
   --miss-id=MISS-20260828-03 --verdict-after=pass --fix-run-id=ses_456
 
 # Complete a null judgement; allocate an id; inspect records/backlog
-PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs amend \
+PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs amend \
   MISS-20260828-03 why_missed insufficient-verify-method
-node scripts/playbook-miss.mjs next-id
-node scripts/playbook-miss.mjs list
-node scripts/playbook-miss.mjs list --item-id=REQ-014 --open
+node .playbook/scripts/playbook-miss.mjs next-id
+node .playbook/scripts/playbook-miss.mjs list
+node .playbook/scripts/playbook-miss.mjs list --item-id=REQ-014 --open
 
 # Fold amendments and join fix costs without mutating misses.ndjson
-node scripts/playbook-telemetry.mjs --misses
+node .playbook/scripts/playbook-telemetry.mjs --misses
 ```
 
 Lifecycle predicates intentionally differ. The **backlog** is records whose latest

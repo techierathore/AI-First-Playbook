@@ -197,7 +197,7 @@ After classifying each issue, run `open --if-new` one issue at a time. Normally 
 not "other". Use only CLI closed vocabularies:
 
 ```bash
-PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
+PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs open --if-new \
   --miss-class=<closed-value> --artifact=<closed-value> --severity=<blocker|major|minor> \
   --why-missed=<closed-value> --item-id=<id> --feature=<token> \
   --found-by=<human|production> --found-phase=<post-verification-bugs|production-bugs> \

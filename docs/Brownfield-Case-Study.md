@@ -49,8 +49,8 @@ defect; an unknown is a risk to investigate, not permission to redesign.
 
 ## 2. Prerequisites
 
-1. Install AIFP in the target repository and read root `AGENTS.md`.
-2. Replace relevant placeholders in `playbook/environment-profile.yml` with reviewed project facts.
+1. Install AIFP in the target repository and read `.playbook/AGENTS.md`.
+2. Replace relevant placeholders in `.playbook/environment-profile.yml` with reviewed project facts.
 3. Confirm the profile declares the real topology, build/test/start/stop commands, application
    endpoints, database method/config path, browser endpoint, log paths and cleanup command.
 4. Never infer a command, port, config file, migration tool, database or secret source from this
@@ -100,7 +100,7 @@ repository-approved path. This is not the feature implementation plan. It record
 Invoke the installed OpenCode command from the target repository root:
 
 ```text
-/legacy-audit @playbook/environment-profile.yml @<discovery-checklist-path> <target, feature token, run ID, scope and approved constraints>
+/legacy-audit @.playbook/environment-profile.yml @<discovery-checklist-path> <target, feature token, run ID, scope and approved constraints>
 ```
 
 Do not claim that the command generates named files such as `legacy-audit.md`, `baseline.md` or
@@ -218,7 +218,7 @@ are sound.
 - **Inputs:** Profile, discovery checklist, target, baseline and fixture controls.
 - **Command:**
   ```text
-  /legacy-audit @playbook/environment-profile.yml @<discovery-checklist-path> <scope>
+  /legacy-audit @.playbook/environment-profile.yml @<discovery-checklist-path> <scope>
   ```
 - **Artifact / evidence:** `verification/<feature>/legacy-audit-<run-id>/` evidence and linked
   must-not-change items in the supplied checklist.
@@ -425,18 +425,18 @@ approved fixture where possible; this table does not prescribe product behavior.
 Export from the target repository root after windows close:
 
 ```bash
-node scripts/playbook-telemetry.mjs \
+node .playbook/scripts/playbook-telemetry.mjs \
   --checklist=<path-to-implementation-checklist>
 
-node scripts/playbook-telemetry.mjs --misses
+node .playbook/scripts/playbook-telemetry.mjs --misses
 ```
 
 Both emit NDJSON to stdout. Controlled checkpoint examples are:
 
 ```bash
-node scripts/playbook-telemetry.mjs --checklist=<path-to-implementation-checklist> \
+node .playbook/scripts/playbook-telemetry.mjs --checklist=<path-to-implementation-checklist> \
   > <approved-checkpoint>/phase-metrics.ndjson
-node scripts/playbook-telemetry.mjs --misses \
+node .playbook/scripts/playbook-telemetry.mjs --misses \
   > <approved-checkpoint>/miss-lifecycle.ndjson
 ```
 

@@ -23,7 +23,7 @@ permission:
 
 ## Profile authority
 
-Before any probe, read `playbook/environment-profile.yml`. Its topology, commands, URLs,
+Before any probe, read `.playbook/environment-profile.yml`. Its topology, commands, URLs,
 database method, browser endpoint, logs and cleanup commands override every illustrative value
 below. If a required profile field is missing, record `BLOCKED` with the missing field; never
 invent a port, hostname, config path, migration tool, seed data or credential. Secrets must be
@@ -37,7 +37,7 @@ You may write only:
 - The Implementation Checklist itself (to annotate PASS/FAIL/BLOCKED inline)
 - Files under `verification/` (integration tests, SQL runners, log captures)
 - The durable default miss stream under `verification/telemetry/`, only indirectly by
-  invoking `scripts/playbook-miss.mjs`; never edit the stream or override its path
+  invoking `.playbook/scripts/playbook-miss.mjs`; never edit the stream or override its path
 - Files under `deploy/<feature>/` ONLY if you create a helper script the
   checklist already references but doesn't exist
 
@@ -963,7 +963,7 @@ You are about to write to disk. Stop. Check:
      screenshots, log captures — internal scratch only)
     - Files under `deploy/<feature>/` ONLY if the checklist already
       references a script there that doesn't yet exist
-    - The default durable miss stream, only through `scripts/playbook-miss.mjs`
+    - The default durable miss stream, only through `.playbook/scripts/playbook-miss.mjs`
 
 If a tool call would write any other file, **abandon that call** and
 go back to annotating the checklist inline.
@@ -976,7 +976,7 @@ Now, with that gate clear, process each item serially:
    - For `FAIL`, `FAIL (code-audit)`, or `DATA-GAP`, classify with the CLI closed
      vocabularies and run:
      ```bash
-     PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
+     PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs open --if-new \
        --miss-class=<closed-value> --artifact=<closed-value> \
        --severity=<blocker|major|minor> --item-id=<item-id> [--feature=<token>] \
        [--why-missed=<closed-value>] [--origin-phase=<closed-value>] \
@@ -988,7 +988,7 @@ Now, with that gate clear, process each item serially:
    - For `PASS` or `PASS (code-audit)`, inspect linked IDs against the append-only stream.
      For every still-live linked miss, run serially:
      ```bash
-     PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs close \
+     PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs close \
        --miss-id=<MISS-id> --verdict-after=pass --fix-phase=verify \
        [--fix-run-id=<exact-current-verifier-run-id>] [--actor=<token>]
      ```

@@ -1,90 +1,65 @@
 # npm Package Usage
 
-Package page: [`@techierathore/ai-first-playbook`](https://www.npmjs.com/package/@techierathore/ai-first-playbook)
+Package: [`@techierathore/ai-first-playbook`](https://www.npmjs.com/package/@techierathore/ai-first-playbook)
 
-## Requirements
+## Install
 
-- Node.js 22.14.0 or later
-- npm 11.5.1 or later
-- An existing or new project directory to receive the playbook
-
-## Preview And Install
-
-Preview the files without writing them:
-
-```powershell
-npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project" --dry-run
-```
-
-Install into the project:
-
-```powershell
-cd C:\work\my-project
+```bash
+cd /path/to/project
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-On macOS, Linux, or WSL, use an absolute POSIX path such as `/home/me/work/my-project`.
-Existing files are preserved by default.
+Do not use `npm install @techierathore/ai-first-playbook`; that adds an application dependency and
+creates `node_modules` plus package metadata. `npx` runs the installer from npm's cache and leaves
+only `.opencode/`, `.playbook/`, and the managed `.gitignore` entries.
 
-`npm install @techierathore/ai-first-playbook@latest` is also supported and automatically copies
-the payload to the current project root. It additionally creates npm dependency artifacts
-(`package.json`, `package-lock.json`, and `node_modules/`), which npm requires. Prefer the `npx`
-form when AIFP should not become an application dependency. See
-[`Repository-Structure.md`](Repository-Structure.md) for how the installed folders connect to
+Preview first when needed:
+
+```bash
+npx @techierathore/ai-first-playbook@latest install --dry-run
+```
+
+## Configure and start
+
+1. Replace every placeholder in `.playbook/environment-profile.yml` with real project values.
+2. Keep secrets out of that file.
+3. Restart OpenCode in the project root.
+4. Start with `/feature-plan`, then use `/implement`, `/verify`, and `/fix`.
+
+See [`Repository-Structure.md`](Repository-Structure.md) for how hidden runtime files connect to
 OpenCode.
 
-## After Installation
+## Optional guides
 
-1. Open the target project.
-2. Replace every placeholder in `playbook/environment-profile.yml` with the project's real
-   topology and commands. Do not put secrets in that file.
-3. Open or restart OpenCode so it loads `opencode.json`, `AGENTS.md`, and the installed plugins.
-4. Start with `/feature-plan`, then follow `/implement` → `/verify` → `/fix` as needed.
-5. Keep telemetry retention selective: ignore only
-   `/verification/telemetry/events.ndjson`; commit `verification/telemetry/misses.ndjson`.
+```bash
+npx @techierathore/ai-first-playbook@latest install --with-guides
+```
 
-The installation includes `scripts/playbook-miss.mjs`, `scripts/miss-lib.mjs`,
-`scripts/playbook-telemetry.mjs`, `playbook/model-tiers.yml` and the environment profile, so
-miss capture and read-time cost joining run from the target repository. See
-[`Telemetry-Guide.md`](Telemetry-Guide.md) §7 for the CLI and schemas.
+Offline reference files are placed under `.playbook/guides/`, never visible root folders.
 
 ## Upgrade
 
-Preview the upgrade first:
-
-```powershell
-npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project" --dry-run --force
+```bash
+npx @techierathore/ai-first-playbook@latest install --dry-run --force
+npx @techierathore/ai-first-playbook@latest install --force
 ```
 
-Then replace package-managed files:
-
-```powershell
-npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project" --force
-```
-
-Review the resulting working-tree diff before keeping the upgrade. The installer only overwrites
-files managed by this package.
+Existing unowned files are always preserved. `--force` replaces package-created files recorded in
+`.playbook/installation.json`, including locally edited copies, and removes recorded files from a
+previous visible-layout installation. Review the dry run first.
 
 ## Uninstall
 
-Preview removal:
-
-```powershell
-npx @techierathore/ai-first-playbook@latest --uninstall --target="C:\work\my-project" --dry-run
+```bash
+npx @techierathore/ai-first-playbook@latest uninstall --dry-run
+npx @techierathore/ai-first-playbook@latest uninstall --force
 ```
 
-After reviewing the list, remove package-managed files:
-
-```powershell
-npx @techierathore/ai-first-playbook@latest --uninstall --target="C:\work\my-project" --force
-```
-
-The installation marker is stored at `.playbook/installation.json` in the target project.
+Without `--force`, uninstall removes nothing. The forced form removes only marker-owned files and
+the managed `.gitignore` block.
 
 ## Help
 
-```powershell
+```bash
 npx @techierathore/ai-first-playbook@latest --help
 ```
-
-For clone-based OpenCode installation, see [`Installation.md`](Installation.md).

@@ -13,4 +13,4 @@ Never hand back "run the phase again for the remaining items" — plan another w
 YOLO mode (token `YOLO` or `PLAYBOOK_YOLO=1`): all approval gates are
 pre-approved; decide, log under `## YOLO Decisions`, continue; pass `YOLO` into every
 builder brief; git history writes stay denied; end with `PLAYBOOK_RUN_COMPLETE:` or
-`PLAYBOOK_RUN_BLOCKED:` as the very last line. See AGENTS.md → "YOLO mode".
+`PLAYBOOK_RUN_BLOCKED:` as the very last line. See `AGENTS.md` -> "YOLO mode".

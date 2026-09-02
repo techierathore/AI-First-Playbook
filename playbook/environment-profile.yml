@@ -1,4 +1,4 @@
-# Copy to the target repository as playbook/environment-profile.yml.
+# Installed in target repositories as .playbook/environment-profile.yml.
 # Values are examples and must be replaced; secrets are references, never values.
 version: 1
 project_type: "<replace: short stack label for telemetry, e.g. dotnet-react>"

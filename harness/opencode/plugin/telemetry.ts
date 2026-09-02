@@ -13,7 +13,7 @@
  *   {"kind":"tool-start","sessionID":"...","callID":"...","tool":"bash","ts":"..."}
  *   {"kind":"phase-end","sessionID":"...","ts":"..."}
  *
- * scripts/playbook-telemetry.mjs joins these rows with the checklist's own
+ * .playbook/scripts/playbook-telemetry.mjs joins these rows with the checklist's own
  * Run Log (attempt number) and Verifier Result lines (gate verdict) into the
  * final per-phase records. Capture points and rationale:
  * docs/Telemetry-Guide.md.

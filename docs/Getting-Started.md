@@ -39,7 +39,7 @@ After onboarding, you should be able to:
 
 1. Choose the correct installation path without assuming that every source-repository script is
    installed into the target project.
-2. Complete `playbook/environment-profile.yml` without inventing topology, ports, commands, data,
+2. Complete `.playbook/environment-profile.yml` without inventing topology, ports, commands, data,
    or secrets.
 3. Explain the ten conceptual AIFP phases and how they differ from command-phase telemetry.
 4. Run a planted-defect smoke test and recognise correct inline Verifier behaviour.
@@ -75,8 +75,8 @@ does not install, start, or guess that application toolchain.
 
 | Path | When to choose | Command | What reaches the target | Boundary |
 |---|---|---|---|---|
-| OpenCode from npm | Simplest supported install. | From the target: `npx @techierathore/ai-first-playbook@latest install` | `.opencode/`, `opencode.json`, `AGENTS.md`, docs/onboarding, `playbook/{environment-profile,model-tiers}.yml`, and only the target telemetry runtime scripts `scripts/{playbook-miss,miss-lib,playbook-telemetry}.mjs`. | The target does **not** receive every operational script from the AIFP source repository. Do not assume it contains the routing operator, YOLO supervisor, validators, tests, or WSL provisioner. |
-| OpenCode from a source clone | Developing AIFP, needing source-only operational utilities, or inspecting before install. | `git clone <repository-url> ai-first-playbook` then `node ai-first-playbook/scripts/install.mjs --target="/absolute/path/to/project"` | The same OpenCode payload described above. The source clone retains the full `scripts/` toolset and canonical `harness/`, `templates/`, and `phases/`. | Run clone-only operational utilities from the source checkout. `scripts/install.mjs` still does not copy all of them into the target. |
+| OpenCode from npm | Simplest supported install. | From the target: `npx @techierathore/ai-first-playbook@latest install` | Only `.opencode/` and `.playbook/`, plus managed `.gitignore` entries. | No visible framework folders and no application npm dependency artifacts. |
+| OpenCode from a source clone | Developing AIFP or inspecting source before install. | `git clone <repository-url> ai-first-playbook` then `node ai-first-playbook/scripts/install.mjs --target="/absolute/path/to/project"` | The same two hidden runtime directories. | Source-only folders remain in the framework clone, not the target. |
 
 Preview before writing:
 
@@ -89,10 +89,10 @@ Existing files are preserved unless `--force` is explicit. Review a dry run and 
 before using `--force`. See [Installation.md](Installation.md) and [Usage.md](Usage.md) for
 upgrade and uninstall behaviour.
 
-Plain `npm install @techierathore/ai-first-playbook@latest` also scaffolds the current directory,
-but npm necessarily adds dependency metadata and `node_modules`. Use the `npx` form when those are
-not wanted. [Repository-Structure.md](Repository-Structure.md) separates OpenCode runtime inputs,
-operator documentation, project evidence, and framework-source-only folders.
+Do not use `npm install @techierathore/ai-first-playbook@latest`; npm necessarily adds dependency
+metadata and `node_modules`. The supported BMAD-style command is `npx ... install`.
+[Repository-Structure.md](Repository-Structure.md) separates hidden runtime, project evidence, and
+framework-source-only folders.
 
 ### Windows: use WSL as the primary path
 
@@ -152,9 +152,9 @@ or unredacted PII in:
 The profile names secret **sources**, not secret values. Redact evidence before retaining it. See
 [Security.md](Security.md).
 
-## 5. Establish AGENTS.md authority
+## 5. Establish hidden standing-rule authority
 
-`AGENTS.md` is the always-loaded source for standing, cross-cutting rules: logging, UI fidelity,
+`.playbook/AGENTS.md` is the always-loaded source for standing, cross-cutting rules: logging, UI fidelity,
 error handling, coding standards, verifier write scope, version-control behaviour, and the
 single-checklist rule. Tailor it deliberately, but do not move critical rules into a long feature
 document where context pressure can hide them.
@@ -362,7 +362,7 @@ ask rather than guess.
 | Command | Practical example | Use it for |
 |---|---|---|
 | `/feature-plan` | `/feature-plan @docs/BRDs/BRD-004-Cost-Dashboard.md @src/mockui/CostDashboardMockup.tsx` | Analyst creates the verifiable feature document set and self-checks requirement/mockup coverage. |
-| `/legacy-audit` | `/legacy-audit @src/legacy-inventory/ @playbook/environment-profile.yml` | Characterize an unknown existing module, preserve baselines, risks, ownership, and safe seams before change. |
+| `/legacy-audit` | `/legacy-audit @src/legacy-inventory/ @.playbook/environment-profile.yml` | Characterize an unknown existing module, preserve baselines, risks, ownership, and safe seams before change. |
 | `/implement` | `/implement @docs/CostDocs/App-CostDashboard-FullStack-Implementation-Checklist.md` | Orchestrator builds the whole approved scope in waves and performs self-review/smoke testing. |
 | `/verify` | `/verify @docs/CostDocs/App-CostDashboard-FullStack-Implementation-Checklist.md` | Fresh Verifier executes every Verify method and writes evidence/verdicts inline. |
 | `/fix` | `/fix @docs/CostDocs/App-CostDashboard-FullStack-Implementation-Checklist.md` | Fix only inline FAIL items, self-test, and return to fresh verification. |
@@ -434,10 +434,10 @@ flowchart TD
 From the target repository root:
 
 ```bash
-node scripts/playbook-telemetry.mjs \
+node .playbook/scripts/playbook-telemetry.mjs \
   --checklist=docs/<Feature>-Implementation-Checklist.md
 
-node scripts/playbook-telemetry.mjs --misses
+node .playbook/scripts/playbook-telemetry.mjs --misses
 ```
 
 The first command reads transient events and emits one schema-2 `phase-metric` NDJSON row per
@@ -560,7 +560,7 @@ Use [Brownfield-Case-Study.md](Brownfield-Case-Study.md) for the complete legacy
 - [ ] Windows users operate in WSL with repositories under `~/work`.
 - [ ] Every profile placeholder is replaced and each command is tested.
 - [ ] Secret sources and evidence-redaction rules are approved.
-- [ ] `AGENTS.md`, coding standards, and the single-checklist rule are understood.
+- [ ] `.playbook/AGENTS.md`, coding standards, and the single-checklist rule are understood.
 - [ ] Only `/verification/telemetry/events.ndjson` is ignored; misses are committed and retained.
 - [ ] OpenCode telemetry is enabled before launch where metrics are required.
 - [ ] The planted-defect smoke test produces an inline FAIL and no separate report.
@@ -575,7 +575,7 @@ Use [Brownfield-Case-Study.md](Brownfield-Case-Study.md) for the complete legacy
 
 - Treating conceptual Phase 4 or Phase 6 as a separately measured command phase.
 - Reporting exported `attempt` or `gate_verdict` snapshots as historical execution truth.
-- Assuming npm copied `scripts/playbook-routing.mjs`, `scripts/playbook-yolo.mjs`,
+- Assuming the minimal installer copied source-only routing, YOLO supervisor,
   validators, or other source operational utilities into the target.
 - Running on Windows paths when the team standard is WSL `~/work`.
 - Leaving profile placeholders or guessing topology, URLs, migration tools, credentials, or data.

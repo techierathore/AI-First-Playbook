@@ -62,41 +62,29 @@ Operator guide: `docs/YOLO-Mode-Guide.md`.
 
 ## Install (OpenCode)
 
-1. Copy `harness/opencode/` to `.opencode/` and copy `opencode.json` to the target root. The
-   plugin is under singular `.opencode/plugin/`, the supported discovery path:
+Use the package installer rather than copying the source tree manually:
 
-   ```bash
-   cp -r harness/opencode/. /path/to/your-repo/.opencode/
-   cp opencode.json /path/to/your-repo/opencode.json
-   ```
+```bash
+cd /path/to/your-repo
+npx @techierathore/ai-first-playbook@latest install
+```
 
-2. Install the plugin's one dependency so the guardrail loads. Restart OpenCode after changing
-   configuration, commands, agents, skills or plugins:
-
-   ```bash
-   cd /path/to/your-repo/.opencode && npm install @opencode-ai/plugin
-   ```
-
-3. Add an `AGENTS.md` at your repo root from
-   [`templates/agents-md-template.md`](../templates/agents-md-template.md). The standing
-   rules live there, not inside the commands — that's the point of it.
-
-4. Copy `playbook/environment-profile.yml` to the target and replace its placeholders. It is
-   the source of truth for topology, commands, URLs, database, browser, logs, secrets and
-   cleanup. Optional Playwright is configured through `PLAYWRIGHT_MCP_URL`:
+The target receives only `.opencode/` and `.playbook/`; both are hidden and gitignored. The
+standing rules are `.playbook/AGENTS.md`, and the topology/command contract is
+`.playbook/environment-profile.yml`. Replace its placeholders before the first run. Optional
+Playwright is configured through `PLAYWRIGHT_MCP_URL`:
 
    ```bash
    npx @playwright/mcp@latest --port "$PLAYWRIGHT_PORT" --allowed-hosts "*"
    ```
 
-5. Smoke-test before trusting it: run `/verify` against a checklist with a bug you
+Smoke-test before trusting it: run `/verify` against a checklist with a bug you
    planted, and confirm the Verifier annotates it `FAIL` **inline in the checklist**. If
    it produces a separate report file instead, the plugin isn't loading.
 
-The installer also places `scripts/playbook-miss.mjs`, `scripts/miss-lib.mjs`,
-`scripts/playbook-telemetry.mjs`, `playbook/model-tiers.yml` and the environment profile in
-the target. Preserve durable `verification/telemetry/misses.ndjson`; ignore only the transient
-`/verification/telemetry/events.ndjson`, never the whole telemetry directory.
+Runtime CLIs are under `.playbook/scripts/`, and model tiers are
+`.playbook/model-tiers.yml`. Preserve durable `verification/telemetry/misses.ndjson`; ignore only
+the transient `/verification/telemetry/events.ndjson`, never the whole telemetry directory.
 
 ## Personas
 

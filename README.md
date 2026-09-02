@@ -140,13 +140,14 @@ front door: classify and append a durable record without booting or reproducing 
 
 ## Installation
 
-### Easiest: npm
+### Easiest: one-shot npm runner
 
-Requires Node.js 22.14.0 or later and npm 11.5.1 or later. Open PowerShell, Command Prompt,
-Terminal, or a GUI terminal and preview the installation:
+Requires Node.js 22.14.0 or later and npm 11.5.1 or later. Like BMAD Method, run the package
+installer without adding it as an application dependency. Preview from the target project:
 
 ```powershell
-npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project" --dry-run
+cd C:\work\my-project
+npx @techierathore/ai-first-playbook@latest install --dry-run
 ```
 
 Then install:
@@ -156,14 +157,12 @@ cd C:\work\my-project
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-Use a normal macOS/Linux path instead of `C:\work\my-project`. The first command previews the
-files. The second installs them. Existing project files are preserved. Then open the project in
-OpenCode, restart OpenCode, and replace the placeholders in `playbook/environment-profile.yml`.
-Plain `npm install @techierathore/ai-first-playbook@latest` also scaffolds the current project, but
-npm necessarily keeps it as a dependency and creates `node_modules` plus package metadata. Use
-`npx` for a clean one-shot installation. The [repository structure guide](docs/Repository-Structure.md)
-explains which folders OpenCode loads, which commands read explicitly, which are documentation,
-and which are source-only.
+Use a normal macOS/Linux path instead of `C:\work\my-project`. A fresh target receives only
+`.opencode/`, `.playbook/`, and managed `.gitignore` entries. It does not receive visible framework
+folders, `node_modules`, `package.json`, or `package-lock.json`. Do not use plain `npm install`;
+that is npm's dependency command. Restart OpenCode and replace the placeholders in
+`.playbook/environment-profile.yml`. The [repository structure guide](docs/Repository-Structure.md)
+explains the hidden runtime and source-only folders.
 See the [usage guide](docs/Usage.md) for upgrades, uninstalling, installed files, and first-run
 steps.
 
@@ -186,7 +185,7 @@ The runnable artifacts are in [`harness/`](harness/) — install instructions, e
 assumptions, and porting notes are in [`harness/README.md`](harness/README.md). The short
 version:
 
-1. Follow the [installation steps](#installation), configure `playbook/environment-profile.yml`,
+1. Follow the [installation steps](#installation), configure `.playbook/environment-profile.yml`,
    and restart OpenCode.
 2. **Per machine (optional):** start Playwright MCP on the host
    (`npx @playwright/mcp@latest --port 8931 --allowed-hosts "*"`) and point your harness

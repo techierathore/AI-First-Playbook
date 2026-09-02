@@ -1,127 +1,112 @@
-# Repository Structure and Runtime Connection
+# Repository Structure and Installed Layout
 
-AI-First Playbook is a repository-scoped workflow, not an OpenCode application plugin installed
-into OpenCode's global program directory. The framework has to be installed in each target project
-because OpenCode discovers project commands and agents from that project's `.opencode/` directory.
-The other top-level folders are either files those commands use, project outputs they create, or
-reference/source material. They are not all loaded automatically.
+AI-First Playbook has two different layouts:
 
-There is no `playbooks/` folder in the supported layout. The singular `playbook/` folder contains
-machine-readable project configuration; `phases/` contains the human-readable lifecycle.
+- The **framework source repository** contains implementation, tests, diagrams, release tooling,
+  and documentation for framework maintainers.
+- An **application project installation** receives only the hidden runtime needed by OpenCode.
 
-## What OpenCode actually loads
+Do not copy the framework source tree into an application project. The installer follows the
+one-shot package-runner model used by [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD):
+npm transports and executes an installer, but the framework does not become an application
+dependency.
 
-OpenCode starts in the target project and discovers the following files:
+## Correct installation command
 
-| Path in the project | How it is connected |
-|---|---|
-| `.opencode/command/*.md` | OpenCode discovers these as slash commands such as `/feature-plan`, `/implement`, `/verify`, and `/fix`. |
-| `.opencode/agent/*.md` | `opencode.json` registers these as the analyst, orchestrator, builder, and independent verifier agents. |
-| `.opencode/plugin/*` | `opencode.json` loads guardrail, optional telemetry, and YOLO plugins. |
-| `.opencode/templates/doc-shell.html` | Documentation commands read this when they render Markdown as human-readable HTML. |
-| `opencode.json` | Project-level OpenCode configuration. It connects the agents, plugins, standing instructions, and optional Playwright MCP endpoint. |
-| `AGENTS.md` | Always-on team rules loaded through `opencode.json`. This is shared process policy, not personal OpenCode state. |
-| `playbook/environment-profile.yml` | Runtime source of truth for topology, commands, URLs, logs, data access, secrets policy, and cleanup. Commands explicitly read it before acting. |
-| `playbook/model-tiers.yml` | Optional model-routing configuration and telemetry tier attribution. Source-only routing utilities are not included in a target install. |
-| `scripts/playbook-miss.mjs`, `scripts/miss-lib.mjs`, `scripts/playbook-telemetry.mjs` | Installed runtime CLIs for durable miss writes and OpenCode telemetry export. Ordinary scripts are invoked by commands/operators, not auto-loaded. |
-| `verification/` | Not a framework program folder. It is project output created during verification: probes, evidence, screenshots, transient OpenCode events, and durable miss history. |
-
-The connection is therefore explicit:
-
-```text
-OpenCode starts in project
-  -> reads opencode.json
-  -> loads AGENTS.md + playbook/environment-profile.yml
-  -> discovers .opencode commands, agents, and plugins
-  -> slash commands invoke project tools and runtime scripts
-  -> verifier writes evidence and verdicts under verification/ and the checklist
-```
-
-## What each folder is for
-
-The framework's own source checkout contains more than an installed target project:
-
-| Folder | Purpose | Runtime, operator aid, or source only? | Installed as that top-level folder? |
-|---|---|---|---|
-| `harness/` | Canonical framework source for harness adapters. The installer copies `harness/opencode/` to the target as `.opencode/`. OpenCode never searches `harness/`. | Source only; it produces the runtime copy. | No. |
-| `playbook/` | Machine-readable project policy. `environment-profile.yml` prevents agents from guessing topology and commands; `model-tiers.yml` configures optional routing/attribution. | Runtime input read by prompts/scripts. | Yes. |
-| `scripts/` | Package installer plus maintainer utilities in the source repository. A target receives only the miss and telemetry CLIs that commands call explicitly. Scripts are not auto-loaded merely because the folder exists. | Partly runtime, partly source only. | Partly. |
-| `templates/` | Starter structures for checklist metadata, deployment instructions, issue files, and gate handoffs. Operators or commands use them when creating project documents; OpenCode does not discover this folder. | Operator aid. | Partly, by default. |
-| `phases/` | Explanations of the ten lifecycle steps and gates. The runnable behavior is already implemented in `.opencode/command/`; these files let humans inspect the process. | Reference documentation. | Yes, by default. |
-| `diagrams/` | Mermaid sources used to maintain framework illustrations. They do not participate in an installed run. | Source only. | No. |
-| `verification/` | Project-owned output from `/verify`: tests/runners, logs, screenshots, evidence, YOLO state, and telemetry. It is created when needed, not copied as framework content. | Runtime output. | Created on demand. |
-| `docs/` | Installation, usage, security, telemetry, troubleshooting, and operating guides. OpenCode reads one only when a prompt or user explicitly references it. | Operator documentation. | Yes, by default. |
-| `onboarding/` | First-week exercises and team rollout guidance. It has no effect on OpenCode execution. | Operator documentation. | Yes, by default. |
-
-The minimum executable chain is `.opencode/` + `opencode.json` + `AGENTS.md` + `playbook/`.
-Installed runtime scripts support miss/telemetry operations. `docs/`, `onboarding/`, `phases/`, and
-`templates/` explain or support operation but are not OpenCode discovery locations. Use
-`--no-docs` when only the runtime payload is wanted.
-
-The npm tarball must contain the source files from which the installer copies the project payload.
-Seeing `harness/`, `docs/`, or `scripts/` under
-`node_modules/@techierathore/ai-first-playbook/` means npm installed the package transport; it does
-not mean OpenCode searches that nested directory.
-
-## What is ignored in a target project
-
-A leading dot is a harness discovery convention, not a security boundary. `.opencode/` is hidden
-because OpenCode expects project extensions there. In an application repository, however, the
-installed commands, agents, plugins, runtime policy, and installer metadata are reproducible
-framework copies. The installer adds an idempotent managed `.gitignore` block for them so another
-machine can restore them by running the same `npx ... install` command.
-
-The managed block covers `.opencode/`, `.playbook/`, `AGENTS.md`, `opencode.json`, `playbook/`,
-`onboarding/`, `phases/`, installed templates, runtime scripts, and each generic framework guide
-that the installer actually created under `docs/`. A preserved pre-existing file is never claimed
-or ignored. It ignores owned guide filenames rather than the entire `docs/` folder, so
-project-created requirements, implementation checklists, and status documents remain trackable.
-The whole `verification/` folder also remains trackable because it is project evidence; only
-transient `/verification/telemetry/events.ndjson` is ignored. Durable
-`verification/telemetry/misses.ndjson` remains committable.
-
-This rule applies to target applications. The AI-First Playbook source repository tracks its own
-framework implementation because that repository is the canonical source from which packages are
-published.
-
-Personal OpenCode credentials and user preferences belong under `~/.config/opencode/` and
-`~/.local/share/opencode/`, outside the project and outside Git.
-
-Framework-maintainer material such as `Context-Prompt.md`, `/update-context`, design decisions,
-publishing procedures, generated documentation HTML, and external-consumer
-contracts remains in the source repository and is deliberately excluded from npm and target
-installs.
-
-## npm installation versus project scaffolding
-
-Both npm forms now put the runnable payload directly in the project root, but they have different
-package-manager effects.
-
-The recommended form is the one-shot installer CLI:
+Run this from the application project:
 
 ```bash
-cd /absolute/path/to/project
-npx @techierathore/ai-first-playbook@latest install --dry-run
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-`npx` downloads the package and its dependencies into npm's cache, runs `scripts/install.mjs`, and
-copies the project payload directly into the current directory. The application receives no AIFP
-dependency and no project-level npm files. Use `--target=/absolute/path` when installing from a
-different directory. Existing files are preserved unless `--force` is explicit.
+For a fresh directory, the complete framework-created layout is:
 
-Plain npm installation is also supported:
-
-```bash
-cd /absolute/path/to/project
-npm install @techierathore/ai-first-playbook@latest
+```text
+.opencode/     OpenCode commands, agents, plugins, document shell, and hidden config
+.playbook/     standing rules, environment profile, model tiers, runtime CLIs, install marker
+.gitignore     only a managed block is added; an existing file is preserved
 ```
 
-The package's guarded `postinstall` runs the same installer and copies the payload directly into
-the directory where `npm install` was started, so OpenCode can immediately discover `.opencode/`.
-However, `npm install` always means "add a dependency": npm itself creates or updates
-`package.json`, `package-lock.json`, and `node_modules/`, and retains the package transport under
-`node_modules/@techierathore/ai-first-playbook/`. A package cannot disable that npm behavior. Use
-the `npx` form when those dependency artifacts are not wanted. The automatic scaffold is skipped
-for global installation and for `npx`; lifecycle scripts must not be disabled with
-`--ignore-scripts` when using the plain npm form.
+There is no project-root `node_modules/`, `package.json`, or `package-lock.json` because `npx`
+runs the package from npm's cache. There is also no project-root `onboarding/`, `phases/`,
+`playbook/`, `scripts/`, `templates/`, `harness/`, `diagrams/`, `docs/`, or `verification/`
+created by default.
+
+Do **not** use:
+
+```bash
+npm install @techierathore/ai-first-playbook
+```
+
+That command means "add this as an application dependency." npm will necessarily create
+`node_modules`, `package.json`, and `package-lock.json`; an npm package cannot suppress that
+package-manager behavior. BMAD also documents `npx bmad-method install`, not `npm install
+bmad-method`, for the same reason.
+
+## Installed runtime connection
+
+| Installed path | Purpose | How it is used |
+|---|---|---|
+| `.opencode/opencode.json` | Hidden project-level framework config | OpenCode merges it from the `.opencode` configuration directory. It loads the hidden standing rules and environment profile. |
+| `.opencode/command/*.md` | Slash commands | OpenCode discovers `/feature-plan`, `/implement`, `/verify`, `/fix`, and supporting commands. |
+| `.opencode/agent/*.md` | Specialized agents | OpenCode discovers the analyst, orchestrator, builder, and verifier. |
+| `.opencode/plugin/*` | Mechanical guardrails and optional telemetry/YOLO behavior | OpenCode loads plugins from its project extension directory. |
+| `.opencode/templates/doc-shell.html` | HTML rendering shell | Documentation commands read it explicitly when rendering project documents. |
+| `.playbook/AGENTS.md` | Shared framework rules | `.opencode/opencode.json` includes it as standing instructions. |
+| `.playbook/environment-profile.yml` | Project topology and command contract | Every build/verify command reads it before running tools. This is the file the operator customizes. |
+| `.playbook/model-tiers.yml` | Optional model routing and attribution | Runtime utilities read it when routing or telemetry is enabled. |
+| `.playbook/scripts/*.mjs` | Miss and telemetry runtime | Framework commands invoke these exact hidden paths; they are not auto-run merely because they exist. |
+| `.playbook/installation.json` | Package ownership record | Upgrade and uninstall use it to avoid deleting unowned project files. `--force` may replace or remove locally edited package-created files after dry-run review. |
+
+The runtime chain is:
+
+```text
+OpenCode starts in the application project
+  -> discovers .opencode/
+  -> merges .opencode/opencode.json
+  -> loads .playbook/AGENTS.md and .playbook/environment-profile.yml
+  -> discovers commands, agents, and plugins
+  -> commands invoke .playbook/scripts only when required
+```
+
+Both framework directories are added to the installer's managed `.gitignore` block. They are
+reinstallable copies, not application source.
+
+## Why verification is different
+
+`verification/` is not installed framework implementation. `/verify` creates it later only when
+the project needs executable probes, screenshots, logs, or evidence. That output belongs to the
+application and is intentionally visible and trackable. Only the transient
+`verification/telemetry/events.ndjson` stream is ignored; durable miss history remains
+committable.
+
+## Optional guides
+
+The default installation excludes all operator/reference material. If a team deliberately wants
+an offline copy, use:
+
+```bash
+npx @techierathore/ai-first-playbook@latest install --with-guides
+```
+
+Those files remain hidden under `.playbook/guides/`; they are never placed in visible root
+folders.
+
+## Source repository folders
+
+These folders belong to the framework source checkout, not a default application install:
+
+| Source folder | Maintainer purpose | Installed by default? |
+|---|---|---|
+| `harness/` | Canonical OpenCode runtime copied into `.opencode/` | Its OpenCode payload is copied, but the `harness/` folder is not. |
+| `playbook/` | Source copies of the environment profile and model-tier map | Copied into `.playbook/`, never as visible `playbook/`. |
+| `scripts/` | Installer, validators, tests, release utilities, supervisors, and runtime CLIs | Only required runtime CLIs are copied into `.playbook/scripts/`. |
+| `templates/` | Framework specifications and optional document starters | No. Optional hidden guides only with `--with-guides`. |
+| `phases/` | Human-readable lifecycle reference | No. Optional hidden guides only with `--with-guides`. |
+| `onboarding/` | Team rollout material | No. Optional hidden guides only with `--with-guides`. |
+| `docs/` | Framework documentation and case studies | No. Optional hidden guides only with `--with-guides`. |
+| `diagrams/` | Mermaid sources used to maintain framework illustrations | No. |
+| `verification/` | This repository's own test/evidence output | No. |
+
+Source folders stay visible in this repository because this repository develops and publishes the
+framework. That source layout must never be confused with the minimal target deployment layout.

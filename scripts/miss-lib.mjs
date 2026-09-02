@@ -20,7 +20,7 @@
  *     (§6.2): no titles, no repro steps, no free text.
  */
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 
 export const MISS_SCHEMA = 1;
@@ -210,26 +210,20 @@ export function findLiveDuplicate(records, itemId, missClass) {
   );
 }
 
-export function nextMissId(records, now = new Date(), { entropy = () => randomBytes(8), maxAttempts = 100 } = {}) {
+export function nextMissId(records, now = new Date()) {
   const day = now.toISOString().slice(0, 10).replaceAll("-", "");
   const prefix = `MISS-${day}-`;
-  const existing = new Set((records ?? []).filter((r) => r.kind === "miss").map((r) => r.miss_id));
-  const timestamp = String(now.getTime());
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const raw = entropy(attempt);
-    let n;
-    if (typeof raw === "bigint") n = raw;
-    else if (typeof raw === "number" && Number.isSafeInteger(raw)) n = BigInt(raw);
-    else if (typeof raw === "string" && /^\d+$/.test(raw)) n = BigInt(raw);
-    else if (raw instanceof Uint8Array) {
-      const hex = Buffer.from(raw).toString("hex");
-      n = BigInt(`0x${hex || "0"}`);
-    } else throw new TypeError("miss id entropy must be a non-negative integer or byte array");
-    if (n < 0n) throw new TypeError("miss id entropy must be non-negative");
-    const candidate = `${prefix}${timestamp}${String(n).padStart(20, "0")}`;
-    if (!existing.has(candidate)) return candidate;
+  let highest = 0;
+  for (const record of records ?? []) {
+    if (record.kind !== "miss" || !record.miss_id?.startsWith(prefix)) continue;
+    const suffix = record.miss_id.slice(prefix.length);
+    if (!/^\d{2,}$/.test(suffix)) continue;
+    const sequence = Number(suffix);
+    // Legacy timestamp-plus-entropy IDs exceed Number's safe range and do not
+    // participate in the new human-readable daily sequence.
+    if (Number.isSafeInteger(sequence)) highest = Math.max(highest, sequence);
   }
-  throw new Error(`could not allocate a collision-free miss id after ${maxAttempts} attempts`);
+  return `${prefix}${String(highest + 1).padStart(2, "0")}`;
 }
 
 // ── events.ndjson windows (the only source of numbers; transient by design) ─
@@ -725,7 +719,7 @@ function isIsoTimestamp(value) {
   return calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 && calendar.getUTCDate() === day;
 }
 
-export function buildMissRecord(args, { records = [], windows, now = new Date(), project_type = null, idEntropy } = {}) {
+export function buildMissRecord(args, { records = [], windows, now = new Date(), project_type = null } = {}) {
   const errors = [];
   rejectCallerFields(args, errors, [
     "kind", "ts", "schema", "miss_id", "origin_model", "origin_confidence", "cost_attribution",
@@ -758,7 +752,7 @@ export function buildMissRecord(args, { records = [], windows, now = new Date(),
   return {
     record: {
       kind: "miss", ts, schema: MISS_SCHEMA,
-      miss_id: nextMissId(records, now, { entropy: idEntropy }),
+      miss_id: nextMissId(records, now),
       item_id: args.item_id ?? null,
       feature: args.feature ?? null,
       miss_class: args.miss_class, artifact: args.artifact, severity: args.severity,

@@ -43,8 +43,9 @@ const args = Object.fromEntries(process.argv.slice(2).filter((a) => a.startsWith
 const inputPath = (value, fallback) => resolve(root, typeof value === "string" && value.length ? value : fallback);
 const eventsPath = inputPath(args.events, "verification/telemetry/events.ndjson");
 const checklistPath = typeof args.checklist === "string" && args.checklist.length ? resolve(root, args.checklist) : null;
-const profilePath = resolve(root, "playbook/environment-profile.yml");
-const tiersPath = inputPath(args.tiers, "playbook/model-tiers.yml");
+const installedRuntime = existsSync(resolve(root, ".playbook"));
+const profilePath = resolve(root, installedRuntime ? ".playbook/environment-profile.yml" : "playbook/environment-profile.yml");
+const tiersPath = inputPath(args.tiers, installedRuntime ? ".playbook/model-tiers.yml" : "playbook/model-tiers.yml");
 
 // ── framework-sourced fields ────────────────────────────────────────────────
 
@@ -99,7 +100,7 @@ function tierForModel(model) {
 if (args.misses) {
   const missesPath = inputPath(args["misses-file"], defaultMissesPath(root));
   if (!existsSync(missesPath)) {
-    console.error(`no miss stream at ${missesPath} — open one with scripts/playbook-miss.mjs (docs/Telemetry-Guide.md §7)`);
+    console.error(`no miss stream at ${missesPath} — open one with .playbook/scripts/playbook-miss.mjs`);
     process.exit(1);
   }
   const raw = readMisses(missesPath);

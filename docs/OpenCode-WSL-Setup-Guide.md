@@ -569,7 +569,7 @@ In the project root `opencode.json`, enable the existing `mcp.playwright` entry.
 }
 ```
 
-And in `playbook/environment-profile.yml`, set:
+And in `.playbook/environment-profile.yml`, set:
 
 ```yaml
 browser:
@@ -846,7 +846,7 @@ Two rules when you do this:
 
 - **Keep the solution on `C:\`**, not in `~/work`. MSBuild over the `\\wsl.localhost\` network
   path is slow and occasionally flaky.
-- Add the build command to `playbook/environment-profile.yml` so the agent uses the same one
+- Add the build command to `.playbook/environment-profile.yml` so the agent uses the same one
   you just tested.
 
 ### 10d. Opening a WSL app from your Windows browser
@@ -888,24 +888,24 @@ git clone <your-org-git-url>/MyWebApp
 cd MyWebApp
 ```
 
-Install the Playbook harness and operator assets without adding a project dependency:
+Install the minimal hidden Playbook runtime without adding a project dependency:
 
 ```bash
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-Copy the environment profile and fill in the placeholders — this file tells the agent how to
+Fill in the hidden environment profile placeholders — this file tells the agent how to
 build, run, test and verify your project:
 
 ```bash
-nano playbook/environment-profile.yml
+nano .playbook/environment-profile.yml
 ```
 
 Set at minimum: `project_type`, `topology`, the four `commands`, the `application` URLs, and
 `browser.endpoint` if you did Step 8.
 
-The installer also provides `AGENTS.md`, `.opencode/`, the runtime scripts, lifecycle phases,
-handoff templates, and operator documentation. Full details are in `docs/Installation.md`.
+The installer creates only `.opencode/` and `.playbook/` plus managed `.gitignore` entries.
+Optional guides are available under `.playbook/guides/` only with `--with-guides`.
 
 ---
 
@@ -1171,7 +1171,7 @@ opencode run "reply with the single word OK"
 # 6. The installed harness is intact
 test -f .opencode/command/verify.md
 test -f .opencode/plugin/spec-guardrails.ts
-test -f playbook/environment-profile.yml
+test -f .playbook/environment-profile.yml
 ```
 
 Then one manual test: plant an obvious bug, run `/verify`, and confirm the Verifier marks it

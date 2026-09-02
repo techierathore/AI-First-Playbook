@@ -2,7 +2,7 @@
 description: Build a planned feature from its implementation checklist using parallel sub-agents and a build+smoke-test self-check before declaring done
 ---
 
-Read `playbook/environment-profile.yml` before running any build, migration or start command.
+Read `.playbook/environment-profile.yml` before running any build, migration or start command.
 Use only profile-declared topology and secret-safe commands; never guess stack, ports, config
 files or migration tools.
 
@@ -293,7 +293,7 @@ only required behavior that the plan/checklist left unspecified, not ordinary co
 questions or implementation churn. Process candidates **serially**, never from builders:
 
 ```bash
-PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
+PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs open --if-new \
   --miss-class=unspecified-gap --artifact=<plan|checklist> --severity=<blocker|major|minor> \
   --found-by=agent-review --found-phase=build [--item-id=<id>] [--feature=<token>] \
   [--origin-phase=<plan|plan-review-gate>] [--origin-agent=<token>] \

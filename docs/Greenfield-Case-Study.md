@@ -14,7 +14,7 @@ credentials and defect patch are illustrative and are not shipped with this Play
 must provide an authorized disposable repository and its own synthetic fixtures.
 
 This runbook does not prescribe an app stack, database, command, port or deployment platform.
-Every operational value comes from the target's `playbook/environment-profile.yml`.
+Every operational value comes from the target's `.playbook/environment-profile.yml`.
 
 ## 2. SDLC-to-AIFP phase mapping
 
@@ -81,7 +81,7 @@ exception expiry.
 
 - An authorized disposable greenfield repository.
 - Supported Node.js/npm and OpenCode; install/restart as described in `docs/Installation.md`.
-- A fully populated `playbook/environment-profile.yml` with no `<replace: ...>` values.
+- A fully populated `.playbook/environment-profile.yml` with no `<replace: ...>` values.
 - Engineering-validated profile build, test, start, cleanup, URLs, database method and log paths.
 - Repository coding standards and approved DB architecture decisions.
 - Approved local/non-production resources for the declared topology.
@@ -122,7 +122,7 @@ Do not plan until all six are available:
 3. **Standards:** actual coding-standards path, including test, logging, security, errors and naming.
 4. **DB architecture:** approved data/migration/compatibility/rollback architecture path, or an
    explicit "no database scope" decision.
-5. **Environment profile:** validated `playbook/environment-profile.yml`.
+5. **Environment profile:** validated `.playbook/environment-profile.yml`.
 6. **Naming/output decisions:** display name, slug, project prefix, docs folder, exact checklist
    name, run-ID convention, evidence path and deploy path.
 
@@ -218,7 +218,7 @@ command window by guessed token percentages.
   ```bash
   PLAYBOOK_TELEMETRY=1 opencode
   ```
-- **Expected outputs/artifacts:** Completed `playbook/environment-profile.yml`, retention review,
+- **Expected outputs/artifacts:** Completed `.playbook/environment-profile.yml`, retention review,
   fixture approval record, session UTC start timestamp.
 - **Gate/exit criteria:** No placeholders, secrets, production data or guessed topology values.
   Profile must contain zero `<replace: ...>` entries.
@@ -253,7 +253,7 @@ command window by guessed token percentages.
   ```text
   /feature-plan @docs/team-inventory/Team-Inventory-BRD-or-Spec.md
   @<mockup-if-UI> @<coding-standards> @<db-architecture>
-  @playbook/environment-profile.yml
+  @.playbook/environment-profile.yml
   Output to docs/team-inventory/. Use prefix Team-Inventory and the selected checklist name.
   Map every requirement/mockup state; define duplicate atomicity, auth, audit and logging.
   Use synthetic verification. Markdown only.
@@ -446,10 +446,10 @@ command window by guessed token percentages.
 After the final command reaches idle, export from the target root:
 
 ```bash
-node scripts/playbook-telemetry.mjs \
+node .playbook/scripts/playbook-telemetry.mjs \
   --checklist="docs/team-inventory/Team-Inventory-FullStack-Implementation-Checklist.md" \
   > "verification/team-inventory/<run-id>/phase-metrics.ndjson"
-node scripts/playbook-telemetry.mjs --misses \
+node .playbook/scripts/playbook-telemetry.mjs --misses \
   > "verification/team-inventory/<run-id>/miss-lifecycle-export.ndjson"
 ```
 

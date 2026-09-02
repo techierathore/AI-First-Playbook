@@ -50,12 +50,17 @@ function run(script, args, { cwd, telemetry = false } = {}) {
   });
 }
 
-check("nextMissId combines timestamp and injectable entropy and retries existing collisions", () => {
-  const suffix = (entropy) => `${now.getTime()}${String(entropy).padStart(20, "0")}`;
-  const records = [{ kind: "miss", miss_id: `MISS-20260829-${suffix(7)}` }];
-  const id = nextMissId(records, now, { entropy: (attempt) => BigInt(attempt + 7) });
-  assert.equal(id, `MISS-20260829-${suffix(8)}`);
-  assert.match(id, /^MISS-\d{8}-\d{2,}$/);
+check("nextMissId allocates a compact UTC daily sequence and ignores legacy entropy ids", () => {
+  const records = [
+    { kind: "miss", miss_id: "MISS-20260829-01" },
+    { kind: "miss-fix", miss_id: "MISS-20260829-02" },
+    { kind: "miss", miss_id: "MISS-20260829-03" },
+    { kind: "miss", miss_id: "MISS-20260829-178797600000000000000000000000001" },
+    { kind: "miss", miss_id: "MISS-20260828-99" },
+  ];
+  assert.equal(nextMissId([], now), "MISS-20260829-01");
+  assert.equal(nextMissId(records, now), "MISS-20260829-04");
+  assert.equal(nextMissId([{ kind: "miss", miss_id: "MISS-20260829-99" }], now), "MISS-20260829-100");
 });
 
 check("foldAmends completes null without mutating the raw parent and handles merged order", () => {

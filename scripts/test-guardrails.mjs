@@ -124,9 +124,9 @@ const guardrailFail = (message) => { console.error(`guardrail policy behavioral 
 const decision = (tool, args, isVerifier = true) => evaluateToolCall({ tool, args, isVerifier });
 
 const allowedEmitterCalls = [
-  "node scripts/playbook-miss.mjs open --miss-class=partial-implementation --artifact=src --severity=major --found-by=verifier --found-phase=verify --found-phase-gate=FAIL --if-new",
+  "node .playbook/scripts/playbook-miss.mjs open --miss-class=partial-implementation --artifact=src --severity=major --found-by=verifier --found-phase=verify --found-phase-gate=FAIL --if-new",
   [
-    "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \\",
+    "PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs open --if-new \\",
     "  --miss-class=wrong-behaviour --artifact=source-code \\",
     "  --severity=major --item-id=REQ-014 --feature=checkout \\",
     "  --why-missed=insufficient-verify-method --origin-phase=build \\",
@@ -134,9 +134,9 @@ const allowedEmitterCalls = [
     "  --found-by=verifier --found-phase=verification-results-gate \\",
     '  --found-phase-gate="FAIL (code-audit)" --harness=opencode',
   ].join("\n"),
-  "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs close --miss-id=MISS-20260829-01 --verdict-after=pass --fix-phase=fix",
-  "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs amend MISS-20260829-01 why_missed insufficient-verify-method",
-  "node scripts/playbook-miss.mjs list --item-id=REQ-014 --open",
+  "PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs close --miss-id=MISS-20260829-01 --verdict-after=pass --fix-phase=fix",
+  "PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs amend MISS-20260829-01 why_missed insufficient-verify-method",
+  "node .playbook/scripts/playbook-miss.mjs list --item-id=REQ-014 --open",
 ];
 for (const [gate, quote] of [
   ["PASS", '"'],
@@ -146,28 +146,28 @@ for (const [gate, quote] of [
   ["DATA-GAP", '"'],
   ["BLOCKED", "'"],
 ]) {
-  allowedEmitterCalls.push(`node scripts/playbook-miss.mjs open --found-phase-gate=${quote}${gate}${quote}`);
+  allowedEmitterCalls.push(`node .playbook/scripts/playbook-miss.mjs open --found-phase-gate=${quote}${gate}${quote}`);
 }
 for (const command of allowedEmitterCalls) {
   if (decision("bash", { command })) guardrailFail(`approved miss emitter call was denied: ${command}`);
 }
 
 const deniedShellCalls = [
-  "PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --miss-class=other --misses=tmp/misses.ndjson",
-  'node scripts/playbook-miss.mjs open --miss-class=other --found-phase-gate="BLOCKED by user"',
-  'node scripts/playbook-miss.mjs open --artifact="source-code" --found-phase-gate=FAIL',
-  'node scripts/playbook-miss.mjs open --found-phase-gate="FAIL"suffix',
-  "node scripts/playbook-miss.mjs list --misses=verification/telemetry/misses.ndjson",
-  "node scripts/playbook-miss.mjs open\n  --found-phase-gate=FAIL",
-  "node scripts/playbook-miss.mjs open \\ \n  --found-phase-gate=FAIL",
-  "node scripts/playbook-miss.mjs next-id && touch src/app.ts",
-  "node scripts/playbook-miss.mjs next-id; node scripts/anything.mjs",
-  "node scripts/playbook-miss.mjs next-id | tee verification/out.txt",
-  "node scripts/playbook-miss.mjs open --artifact=$(touch src/app.ts)",
-  "node scripts/playbook-miss.mjs open --artifact=${HOME}",
+  "PLAYBOOK_TELEMETRY=1 node .playbook/scripts/playbook-miss.mjs open --miss-class=other --misses=tmp/misses.ndjson",
+  'node .playbook/scripts/playbook-miss.mjs open --miss-class=other --found-phase-gate="BLOCKED by user"',
+  'node .playbook/scripts/playbook-miss.mjs open --artifact="source-code" --found-phase-gate=FAIL',
+  'node .playbook/scripts/playbook-miss.mjs open --found-phase-gate="FAIL"suffix',
+  "node .playbook/scripts/playbook-miss.mjs list --misses=verification/telemetry/misses.ndjson",
+  "node .playbook/scripts/playbook-miss.mjs open\n  --found-phase-gate=FAIL",
+  "node .playbook/scripts/playbook-miss.mjs open \\ \n  --found-phase-gate=FAIL",
+  "node .playbook/scripts/playbook-miss.mjs next-id && touch src/app.ts",
+  "node .playbook/scripts/playbook-miss.mjs next-id; node scripts/anything.mjs",
+  "node .playbook/scripts/playbook-miss.mjs next-id | tee verification/out.txt",
+  "node .playbook/scripts/playbook-miss.mjs open --artifact=$(touch src/app.ts)",
+  "node .playbook/scripts/playbook-miss.mjs open --artifact=${HOME}",
   "node scripts/anything.mjs",
-  "node scripts/playbook-miss.mjs arbitrary-opaque-command",
-  "node ./scripts/playbook-miss.mjs next-id",
+  "node .playbook/scripts/playbook-miss.mjs arbitrary-opaque-command",
+  "node ./.playbook/scripts/playbook-miss.mjs next-id",
 ];
 for (const command of deniedShellCalls) {
   if (!decision("bash", { command })) guardrailFail(`unsafe or opaque shell shape was allowed: ${command}`);

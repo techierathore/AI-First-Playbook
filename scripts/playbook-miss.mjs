@@ -40,7 +40,7 @@
  *                                  # (why_missed); refuses to overwrite —
  *                                  # append-only survives
  *
- *   node scripts/playbook-miss.mjs next-id # timestamp + cryptographic-entropy candidate
+ *   node scripts/playbook-miss.mjs next-id # next MISS-YYYYMMDD-NN candidate
  *   node scripts/playbook-miss.mjs list [--item-id=REQ-014] [--open]
  *
  * Any command: --misses=<path> --events=<path> overrides.
@@ -71,7 +71,8 @@ const missesPath = inputPath(flags.misses, defaultMissesPath(root));
 const eventsPath = inputPath(flags.events, defaultEventsPath(root));
 
 function projectType() {
-  const profile = resolve(root, "playbook/environment-profile.yml");
+  const hiddenProfile = resolve(root, ".playbook/environment-profile.yml");
+  const profile = existsSync(hiddenProfile) ? hiddenProfile : resolve(root, "playbook/environment-profile.yml");
   if (!existsSync(profile)) return null;
   const m = readFileSync(profile, "utf8").match(/^project_type:\s*["']?([^"'\n#]+)/m);
   const value = m ? m[1].trim() : null;

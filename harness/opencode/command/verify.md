@@ -4,7 +4,7 @@ agent: verifier
 subtask: true
 ---
 
-Read `playbook/environment-profile.yml` before probing. All URLs, ports, commands, config paths,
+Read `.playbook/environment-profile.yml` before probing. All URLs, ports, commands, config paths,
 database methods, browser endpoints, logs and cleanup come from that profile; ask for missing
 values rather than use examples or defaults. Never put secrets in arguments, Markdown, logs or
 evidence.

@@ -249,9 +249,8 @@ The same collapse rule as the solo edition applies (`Miss-Telemetry-TechieFlow.m
   One exact phase window is `sole`; a window referenced by *n* closes is `shared:<n>`; no exact
   window is `none` with null usage. Framework phases map explicitly to harness slash commands,
   with timestamp-bounded latest-window selection. `misses.ndjson` is never rewritten.
-- Miss ids retain `MISS-YYYYMMDD-<digits>` schema compatibility while using a timestamp plus
-  cryptographic-entropy numeric suffix. Existing collisions retry instead of relying on a
-  process-local daily counter.
+- Miss ids use a compact UTC daily sequence (`MISS-YYYYMMDD-01`, `-02`, ...). The parent agent
+  serializes writes; legacy timestamp-plus-entropy IDs remain readable but are not generated.
 - OpenCode's plugin supplies transient turn/cost events, including provider cost where the engine
   exposes it. Without compatible events, origin confidence/model and fix cost degrade honestly
   instead of being inferred as facts.
