@@ -1,7 +1,7 @@
 # OpenCode-Only Framework Implementation Checklist
 
-**Feature state:** verified  
-**Created:** 2026-09-01T19:44:43Z  
+**Feature state:** verified
+**Created:** 2026-09-01T19:44:43Z
 **Scope:** Remove all Claude Code integration from the AI-First Playbook and enforce OpenCode-only behavior.
 
 ## Status Table
