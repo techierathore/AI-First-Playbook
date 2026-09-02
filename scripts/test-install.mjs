@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
@@ -82,6 +82,8 @@ try {
   mkdirSync(directTarget);
   const projectGitignore = "# Project rules\n/dist/\n";
   writeFileSync(join(directTarget, ".gitignore"), projectGitignore);
+  mkdirSync(join(directTarget, "docs"));
+  writeFileSync(join(directTarget, "docs/Usage.md"), "project-owned usage\n");
   run("scripts/install.mjs", ["install", `--target=${directTarget}`]);
   for (const path of [
     ".opencode/command/verify.md",
@@ -120,6 +122,8 @@ try {
   for (const rule of ["/.opencode/", "/.playbook/", "/phases/", "/playbook/", "/scripts/playbook-miss.mjs", "/templates/checklist-item-template.md", "/templates/handoffs/", "/verification/telemetry/events.ndjson"]) {
     assert(gitignoreLines.has(rule), `.gitignore is missing ${rule}`);
   }
+  assert(gitignoreLines.has("/docs/Repository-Structure.md"), ".gitignore does not ignore an installed framework document");
+  assert(!gitignoreLines.has("/docs/Usage.md"), ".gitignore hides a preserved project-owned document");
   for (const tracked of ["/docs/", "/verification/"]) {
     assert(!gitignoreLines.has(tracked), `.gitignore must not hide project-owned ${tracked}`);
   }
@@ -157,9 +161,31 @@ try {
   }
   for (const path of packedFiles) assertNoIntegrationMarkers(join(root, path), `npm package file ${path}`);
   for (const path of maintainerOnly) assert(!packedFiles.has(path), `maintainer-only file leaked into npm package: ${path}`);
-  for (const path of ["scripts/install.mjs", "harness/opencode/command/verify.md", "docs/Usage.md", "phases/01-plan.md", "templates/checklist-item-template.md", "templates/checklist-metadata.yml", "templates/deployment-steps-template.md", "templates/handoffs/plan-approval.md", "templates/issues-file-template.md", "AGENTS.md"]) {
+  for (const path of ["scripts/install.mjs", "scripts/postinstall.mjs", "harness/opencode/command/verify.md", "docs/Usage.md", "phases/01-plan.md", "templates/checklist-item-template.md", "templates/checklist-metadata.yml", "templates/deployment-steps-template.md", "templates/handoffs/plan-approval.md", "templates/issues-file-template.md", "AGENTS.md"]) {
     assert(packedFiles.has(path), `required file is missing from npm package: ${path}`);
   }
+
+  const npxTarget = join(sandbox, "npx-skip");
+  mkdirSync(npxTarget);
+  writeFileSync(join(npxTarget, "package.json"), JSON.stringify({ dependencies: { "@techierathore/ai-first-playbook": "latest" } }));
+  run("scripts/postinstall.mjs", [], { cwd: root, env: { INIT_CWD: npxTarget, npm_command: "exec" } });
+  assert(!existsSync(join(npxTarget, ".opencode")), "postinstall scaffold ran during npx execution");
+
+  const packed = process.env.npm_execpath
+    ? spawnSync(process.execPath, [process.env.npm_execpath, "pack", "--json", `--pack-destination=${sandbox}`], { cwd: root, encoding: "utf8" })
+    : spawnSync("npm", ["pack", "--json", `--pack-destination=${sandbox}`], { cwd: root, encoding: "utf8" });
+  if (packed.status !== 0) throw new Error(`npm pack for lifecycle test failed:\n${packed.stdout}${packed.stderr}`);
+  const tarball = join(sandbox, basename(JSON.parse(packed.stdout)[0].filename));
+  const npmTarget = join(sandbox, "npm-install");
+  mkdirSync(npmTarget);
+  const npmInstall = process.env.npm_execpath
+    ? spawnSync(process.execPath, [process.env.npm_execpath, "install", tarball], { cwd: npmTarget, encoding: "utf8" })
+    : spawnSync("npm", ["install", tarball], { cwd: npmTarget, encoding: "utf8" });
+  if (npmInstall.status !== 0) throw new Error(`npm install lifecycle test failed:\n${npmInstall.stdout}${npmInstall.stderr}`);
+  for (const path of [".opencode/command/verify.md", "AGENTS.md", "playbook/environment-profile.yml", ".playbook/installation.json"]) {
+    assert(existsSync(join(npmTarget, path)), `plain npm install did not scaffold ${path} into the project root`);
+  }
+  assert(existsSync(join(npmTarget, "node_modules/@techierathore/ai-first-playbook")), "npm did not retain its dependency package");
 
   console.log("installer tests passed");
 } finally {

@@ -91,10 +91,10 @@ function replaceManagedBlock(content, replacement) {
   return `${projectRules ? `${projectRules}\n\n` : ""}${replacement}\n`;
 }
 
-function updateGitignore(remove = false) {
+function updateGitignore(remove = false, additionalRules = []) {
   const path = join(target, ".gitignore");
   const existing = existsSync(path) ? readFileSync(path, "utf8") : "";
-  const block = remove ? "" : [gitignoreStart, ...frameworkIgnoreRules, gitignoreEnd].join("\n");
+  const block = remove ? "" : [gitignoreStart, ...frameworkIgnoreRules, ...additionalRules, gitignoreEnd].join("\n");
   const next = replaceManagedBlock(existing, block);
   if (next === existing) return;
   console.log(`${remove ? "update" : existsSync(path) ? "update" : "create"} .gitignore`);
@@ -147,7 +147,11 @@ function install() {
     for (const file of userDocs) copy(join(sourceRoot, "docs", file), join(target, "docs", file));
     for (const item of operatorAssets) copy(join(sourceRoot, item), join(target, item));
   }
-  if (manageGitignore) updateGitignore();
+  const ownedFiles = new Set([...previouslyCreated, ...created]);
+  const ownedDocRules = userDocs
+    .filter((file) => ownedFiles.has(`docs/${file}`))
+    .map((file) => `/docs/${file}`);
+  if (manageGitignore) updateGitignore(false, ownedDocRules);
   if (!dryRun) {
     const marker = {
       package: packageMetadata.name,
@@ -162,7 +166,7 @@ function install() {
     console.log(`verified telemetry runtime (${telemetryRuntime.length} files)`);
   }
   console.log(`${dryRun ? "Would install" : "Installed"} AI-First Playbook in ${target}`);
-  if (manageGitignore) console.log("Framework assets are covered by the managed .gitignore block; docs and verification evidence remain trackable.");
+  if (manageGitignore) console.log("Framework assets, including installed framework docs, are ignored; project-created docs and verification evidence remain trackable.");
   const smokeTest = includeDocs ? "run the smoke test in docs/Troubleshooting.md, and " : "run your approved smoke test, and ";
   console.log(`Next: replace placeholders in playbook/environment-profile.yml, ${smokeTest}restart OpenCode.`);
 }

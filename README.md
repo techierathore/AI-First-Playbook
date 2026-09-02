@@ -152,12 +152,18 @@ npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project" --dry-
 Then install:
 
 ```powershell
-npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project"
+cd C:\work\my-project
+npx @techierathore/ai-first-playbook@latest install
 ```
 
 Use a normal macOS/Linux path instead of `C:\work\my-project`. The first command previews the
 files. The second installs them. Existing project files are preserved. Then open the project in
 OpenCode, restart OpenCode, and replace the placeholders in `playbook/environment-profile.yml`.
+Plain `npm install @techierathore/ai-first-playbook@latest` also scaffolds the current project, but
+npm necessarily keeps it as a dependency and creates `node_modules` plus package metadata. Use
+`npx` for a clean one-shot installation. The [repository structure guide](docs/Repository-Structure.md)
+explains which folders OpenCode loads, which commands read explicitly, which are documentation,
+and which are source-only.
 See the [usage guide](docs/Usage.md) for upgrades, uninstalling, installed files, and first-run
 steps.
 

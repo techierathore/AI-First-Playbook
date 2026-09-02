@@ -19,11 +19,19 @@ npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project" --dry-
 Install into the project:
 
 ```powershell
-npx @techierathore/ai-first-playbook@latest --target="C:\work\my-project"
+cd C:\work\my-project
+npx @techierathore/ai-first-playbook@latest install
 ```
 
 On macOS, Linux, or WSL, use an absolute POSIX path such as `/home/me/work/my-project`.
 Existing files are preserved by default.
+
+`npm install @techierathore/ai-first-playbook@latest` is also supported and automatically copies
+the payload to the current project root. It additionally creates npm dependency artifacts
+(`package.json`, `package-lock.json`, and `node_modules/`), which npm requires. Prefer the `npx`
+form when AIFP should not become an application dependency. See
+[`Repository-Structure.md`](Repository-Structure.md) for how the installed folders connect to
+OpenCode.
 
 ## After Installation
 

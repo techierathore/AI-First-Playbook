@@ -6,22 +6,39 @@ Requires Node.js 22.14.0 or later and npm 11.5.1 or later.
 
 ## From npm (OpenCode)
 
+Run the one-shot installer from the target project directory. This is the recommended form because
+it writes the framework payload directly without adding AIFP to the application's dependencies:
+
 ```bash
-npx @techierathore/ai-first-playbook@latest --target="/absolute/path/to/project"
+cd /absolute/path/to/project
+npx @techierathore/ai-first-playbook@latest install
 ```
 
 Preview first with `--dry-run`. Existing files are kept. To upgrade package-managed files:
 
 ```bash
-npx @techierathore/ai-first-playbook@latest --target="/absolute/path/to/project" --force
+npx @techierathore/ai-first-playbook@latest install --force
 ```
 
-The installer adds `.opencode/`, `opencode.json`, `AGENTS.md`, `Context-Prompt.md`, docs,
+The installer adds `.opencode/`, `opencode.json`, `AGENTS.md`, docs,
 onboarding and the telemetry runtime: `scripts/{playbook-miss,miss-lib,playbook-telemetry}.mjs`
 plus `playbook/{environment-profile,model-tiers}.yml`. Replace the profile placeholders, then
 restart OpenCode. It does not create secrets, start application services or guess commands.
 Existing files are preserved unless `--force` is explicit; the installation marker retains the
 created-file ownership list across upgrades.
+
+If you run the plain dependency command instead, it is now scaffold-aware:
+
+```bash
+npm install @techierathore/ai-first-playbook@latest
+```
+
+Its `postinstall` copies the same framework payload into the current project root. npm still
+creates or updates `package.json`, `package-lock.json`, and `node_modules/` because that command
+means "add a dependency"; those npm artifacts cannot be suppressed by this package. OpenCode uses
+the root `.opencode/` copy, not the nested transport copy. Use `npx` above if you do not want the
+dependency artifacts. See [`Repository-Structure.md`](Repository-Structure.md) for the exact role,
+runtime connection, install status, and Git treatment of every framework folder.
 
 For command options, upgrading, uninstalling, and first-run usage, see [`Usage.md`](Usage.md).
 

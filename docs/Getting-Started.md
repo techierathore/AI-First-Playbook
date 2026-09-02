@@ -75,7 +75,7 @@ does not install, start, or guess that application toolchain.
 
 | Path | When to choose | Command | What reaches the target | Boundary |
 |---|---|---|---|---|
-| OpenCode from npm | Simplest supported install. | `npx @techierathore/ai-first-playbook@latest --target="/absolute/path/to/project"` | `.opencode/`, `opencode.json`, `AGENTS.md`, `Context-Prompt.md`, docs/onboarding, `playbook/{environment-profile,model-tiers}.yml`, and only the target telemetry runtime scripts `scripts/{playbook-miss,miss-lib,playbook-telemetry}.mjs`. | The target does **not** receive every operational script from the AIFP source repository. Do not assume it contains the routing operator, YOLO supervisor, validators, tests, or WSL provisioner. |
+| OpenCode from npm | Simplest supported install. | From the target: `npx @techierathore/ai-first-playbook@latest install` | `.opencode/`, `opencode.json`, `AGENTS.md`, docs/onboarding, `playbook/{environment-profile,model-tiers}.yml`, and only the target telemetry runtime scripts `scripts/{playbook-miss,miss-lib,playbook-telemetry}.mjs`. | The target does **not** receive every operational script from the AIFP source repository. Do not assume it contains the routing operator, YOLO supervisor, validators, tests, or WSL provisioner. |
 | OpenCode from a source clone | Developing AIFP, needing source-only operational utilities, or inspecting before install. | `git clone <repository-url> ai-first-playbook` then `node ai-first-playbook/scripts/install.mjs --target="/absolute/path/to/project"` | The same OpenCode payload described above. The source clone retains the full `scripts/` toolset and canonical `harness/`, `templates/`, and `phases/`. | Run clone-only operational utilities from the source checkout. `scripts/install.mjs` still does not copy all of them into the target. |
 
 Preview before writing:
@@ -88,6 +88,11 @@ npx @techierathore/ai-first-playbook@latest \
 Existing files are preserved unless `--force` is explicit. Review a dry run and the target diff
 before using `--force`. See [Installation.md](Installation.md) and [Usage.md](Usage.md) for
 upgrade and uninstall behaviour.
+
+Plain `npm install @techierathore/ai-first-playbook@latest` also scaffolds the current directory,
+but npm necessarily adds dependency metadata and `node_modules`. Use the `npx` form when those are
+not wanted. [Repository-Structure.md](Repository-Structure.md) separates OpenCode runtime inputs,
+operator documentation, project evidence, and framework-source-only folders.
 
 ### Windows: use WSL as the primary path
 
