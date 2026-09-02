@@ -1,18 +1,14 @@
 /**
- * yolo-policy.mjs — the harness-independent YOLO (unattended-run) policy.
+ * yolo-policy.mjs — the OpenCode YOLO (unattended-run) policy.
  *
- * Pure functions only: no OpenCode imports, no Claude Code imports. This is
- * the single source of truth for what YOLO mode may and may not do; the
- * harness carriers are thin adapters around it:
- *   - OpenCode:    ./yolo.ts                               (permission.ask + event plugin)
- *   - Claude Code: harness/claude-code/hooks/yolo-hook.mjs (PreToolUse + PermissionRequest hook)
- *   - Supervisor:  scripts/playbook-yolo.mjs               (rate-limit wait + restart loop)
+ * Pure functions only: no OpenCode imports. This is the single source of
+ * truth for ./yolo.ts and the optional source-checkout supervisor.
  *
  * YOLO mode is ON when PLAYBOOK_YOLO=1 is in the environment (the supervisor
  * sets it; a human can export it before starting the TUI). The prompt-level
- * trigger — the word YOLO in a command's arguments, or a Claude Code /goal —
- * is honoured by the command bodies (AGENTS.md "YOLO mode"); the mechanical
- * carriers key off the environment variable only, because a hook cannot see
+ * trigger — the word YOLO in a command's arguments — is honoured by the
+ * command bodies (AGENTS.md "YOLO mode"); the mechanical plugin keys off the
+ * environment variable only, because the plugin cannot inspect
  * the conversation.
  *
  * What YOLO changes, mechanically:
@@ -32,8 +28,8 @@
 // MODE DETECTION
 // ────────────────────────────────────────────────────────────────────────────
 
-/** Tool names that reach the shell, in either harness. */
-export const SHELL_TOOLS_YOLO = new Set(["bash", "shell", "run", "Bash"]);
+/** OpenCode tool names that reach the shell. */
+export const SHELL_TOOLS_YOLO = new Set(["bash"]);
 
 /** True when the environment says we are in an unattended YOLO run. */
 export function isYoloEnv(env = process.env) {
@@ -136,7 +132,7 @@ export function gitWriteReason(command) {
 
 /**
  * Decide a permission request in YOLO mode → { decision: "allow"|"deny", reason }.
- * `tool` is the harness tool name (bash/Bash/edit/Write/…); `args` its input.
+ * `tool` is the OpenCode tool name; `args` is its input.
  * Everything that is not a git/gh write is allowed — that is the point.
  */
 export function yoloDecision({ tool, args }) {
@@ -183,7 +179,7 @@ const LIMIT_PATTERNS = [
   /resets?\s+(?:at\s+|in\s+|on\s+)?(?:\(?(?:sun|mon|tue|wed|thu|fri|sat)[a-z]*\)?\s*)?\d/i,
 ];
 
-/** True when `text` looks like a provider/harness usage-limit error. */
+/** True when `text` looks like a provider/OpenCode usage-limit error. */
 export function isRateLimitText(text) {
   return typeof text === "string" && text.length > 0 && LIMIT_PATTERNS.some((p) => p.test(text));
 }
@@ -236,10 +232,9 @@ export function nextWallClock(hour, minute, tz, now, env = process.env, weekday 
 }
 
 /**
- * Parse a reset instant out of a limit message. Handles the shapes the two
- * harnesses and the API actually emit:
- *   "You've hit your session limit · resets 3:45pm"        (Claude Code)
- *   "You've hit your weekly limit · resets Mon 12:00am"    (Claude Code)
+ * Parse a reset instant out of a provider limit message. Handles these shapes:
+ *   "You've hit your session limit · resets 3:45pm"
+ *   "You've hit your weekly limit · resets Mon 12:00am"
  *   "resets 3pm (UTC)", "resets at 2:30pm (America/Los_Angeles)", "reset at 15:00 IST"
  *   "resets in 2 hours 13 minutes", "retry after 3600 seconds", "retry-after: 120"
  *   "You will regain access on 2026-09-01 at 00:00 UTC"    (API spend cap)
@@ -305,7 +300,7 @@ export function parseResetTime(text, now = new Date(), env = process.env) {
 }
 
 /**
- * Given harness/provider output, return a restart plan, or null when the text
+ * Given OpenCode/provider output, return a restart plan, or null when the text
  * is not a limit error:
  *   { resetAt: Date|null, retryAt: Date, waitMs, parsed: boolean, bufferMinutes }
  * retryAt = resetAt + buffer, or now + defaultWait when no reset time parsed;

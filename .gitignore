@@ -4,5 +4,4 @@ node_modules/
 .DS_Store
 Thumbs.db
 jira-config.json
-.claude/
 /verification/telemetry/events.ndjson

@@ -6,10 +6,8 @@ Read `playbook/environment-profile.yml` before running any build, migration or s
 Use only profile-declared topology and secret-safe commands; never guess stack, ports, config
 files or migration tools.
 
-**IMPORTANT**: Before starting, activate the Orchestrator persona. See
-`harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/agent/orchestrator.md`; any equivalent
-orchestrator persona works.
+**IMPORTANT**: Before starting, activate the Orchestrator persona by reading and
+following `.opencode/agent/orchestrator.md`; any equivalent orchestrator persona works.
 
 You are the Orchestrator. **You are NOT a single developer working through a
 list one item at a time.** You are a coordinator who spawns multiple parallel
@@ -30,7 +28,7 @@ The user's input contains:
 
 ## YOLO mode (unattended) — check this first
 YOLO mode is on if the input above contains the token `YOLO` (any case, `*YOLO*` counts),
-a `/goal` is active, or `PLAYBOOK_YOLO=1` is set. When on, the `AGENTS.md` "YOLO mode"
+or `PLAYBOOK_YOLO=1` is set. When on, the `AGENTS.md` "YOLO mode"
 rules apply to this whole run and to every builder you spawn (say so in each brief):
 
 - Every approval gate below — the wave plan "Proceed?", the smoke-test "Approve?",
@@ -302,7 +300,7 @@ PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
   [--origin-run-id=<exact-id>] --harness=opencode
 ```
 
-The harness flag is mandatory and set explicitly above as `--harness=opencode`; never rely
+The OpenCode telemetry flag is mandatory and set explicitly above as `--harness=opencode`; never rely
 on the CLI default. Capture either `opened MISS-*` or
 `collapsed: MISS-*` and append that ID once to the related item's metadata `misses` array.
 Never remove IDs. If there is no related item, retain the ID in the wave summary / Run Log.
@@ -394,7 +392,7 @@ matches expectation. A 200 with zero rows written is a smoke FAIL, not a pass.
 This is the step that catches the "looks done but does nothing" class of bug.
 
 ### Step 3.5: One frontend snapshot
-If the profile's Playwright MCP endpoint is reachable (`curl "$PLAYWRIGHT_MCP_URL/mcp"`
+If the profile's Playwright MCP endpoint is reachable (`curl "$PLAYWRIGHT_MCP_URL"`
 returns success), use it to navigate to the new page and take a snapshot
 that confirms the page rendered without an error boundary. Just one
 snapshot — this is a smoke test, not full verification.
@@ -417,7 +415,7 @@ the Orchestrator may serially open/link it with `found-by=self-review` and
 `found-phase=self-review`. If repaired and self-tested, append a close with
 `--verdict-after=deferred --fix-phase=self-review`; never claim `pass` before independent
 verification. Include a run ID only when exact. All calls use `PLAYBOOK_TELEMETRY=1` and
-the harness-specific flag above and remain fire-and-forget.
+the OpenCode telemetry flag above and remain fire-and-forget.
 
 ---
 

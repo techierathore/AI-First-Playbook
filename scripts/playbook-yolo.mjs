@@ -7,34 +7,31 @@
  * until the agent prints the completion sentinel.
  *
  * Usage
- *   node scripts/playbook-yolo.mjs --harness=claude-code --cwd=/repo \
- *        --prompt "/implement docs/X-Implementation-Checklist.md"
- *   node scripts/playbook-yolo.mjs --harness=opencode --cwd=/repo --agent=orchestrator \
+ *   node scripts/playbook-yolo.mjs --cwd=/repo --agent=orchestrator \
  *        --goal "Feature X: implement the checklist, verify, fix until every item PASSes"
+ *   node scripts/playbook-yolo.mjs --cwd=/repo \
+ *        --prompt "/implement docs/X-Implementation-Checklist.md"
  *   node scripts/playbook-yolo.mjs status [--cwd=/repo]        # what a run is waiting for
  *   node scripts/playbook-yolo.mjs resume [--cwd=/repo]        # pick up after a VM reboot
  *
  * Options
- *   --harness=claude-code|opencode   (default: PLAYBOOK_HARNESS or claude-code)
  *   --cwd=<repo>                     (default: current directory)
  *   --prompt "<text>" | --goal "<text>"   one is required for `run`
- *   --agent=<name>                   OpenCode agent (default orchestrator); ignored for Claude Code
+ *   --agent=<name>                   OpenCode agent (default orchestrator)
  *   --model=<id>                     pass-through model override
  *   --buffer=<min>                   added to the parsed reset time     (default 15)
  *   --default-wait=<min>             wait when no reset time parsed      (default 60, doubles each time, max 24h)
  *   --max-cycles=<n>                 hard cap on restarts                (default 200)
  *   --max-nudges=<n>                 consecutive "you stopped early" restarts before giving up (default 8)
- *   --permission-mode=<mode>         Claude Code only (default bypassPermissions; use `auto` if bypass is disallowed)
- *   --claude-goal                    Claude Code only: send the goal as `/goal …` so its native loop is used too
  *   --dry-run                        print the command that would run and exit
  *
  * Exit codes: 0 complete · 3 blocked (agent reported PLAYBOOK_RUN_BLOCKED) ·
  *             4 gave up (max cycles / nudges) · 5 fatal (auth, binary missing) · 2 usage
  *
  * State lives in <cwd>/verification/yolo/ — state.json (session id, cycle,
- * retryAt), cycles/<n>.log (full harness output) and rate-limit.json (written by
+ * retryAt), cycles/<n>.log (full OpenCode output) and rate-limit.json (written by
  * the OpenCode plugin when it sees the error first-hand). Nothing here touches
- * git: the supervisor sets PLAYBOOK_YOLO=1 and the harness carriers deny git
+ * git: the supervisor sets PLAYBOOK_YOLO=1 and the OpenCode plugin denies git
  * writes mechanically (harness/opencode/plugin/yolo-policy.mjs).
  */
 import { spawn } from "node:child_process";
@@ -44,8 +41,29 @@ import { rateLimitPlan, runOutcome, hasYoloToken, SENTINEL_COMPLETE, SENTINEL_BL
 
 // ── args ────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
-const positional = argv.filter((a) => !a.startsWith("--"));
-const subcommand = ["status", "resume", "run"].includes(positional[0]) ? positional[0] : "run";
+const valueOptions = new Set([
+  "cwd", "prompt", "goal", "agent", "model", "buffer", "default-wait", "max-cycles", "max-nudges",
+]);
+const flagOptions = new Set(["dry-run"]);
+const positional = [];
+for (let i = 0; i < argv.length; i++) {
+  const arg = argv[i];
+  if (!arg.startsWith("--")) { positional.push(arg); continue; }
+  const [name, inline] = arg.slice(2).split("=", 2);
+  if (!valueOptions.has(name) && !flagOptions.has(name)) usage(`unknown option '--${name}'`);
+  if (flagOptions.has(name)) {
+    if (inline !== undefined) usage(`--${name} does not take a value`);
+    continue;
+  }
+  if (inline === undefined) {
+    if (argv[i + 1] === undefined || argv[i + 1].startsWith("--")) usage(`--${name} needs a value`);
+    i++;
+  }
+}
+const commands = new Set(["status", "resume", "run"]);
+if (positional[0] && !commands.has(positional[0])) usage(`unknown command '${positional[0]}'`);
+if (positional.length > 1) usage(`unexpected positional argument '${positional[1]}'`);
+const subcommand = positional[0] ?? "run";
 const opt = (name, dflt) => {
   const i = argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`));
   if (i === -1) return dflt;
@@ -54,9 +72,6 @@ const opt = (name, dflt) => {
   const next = argv[i + 1];
   return next !== undefined && !next.startsWith("--") ? next : true;
 };
-const flag = (name) => argv.includes(`--${name}`);
-
-const harness = String(opt("harness", process.env.PLAYBOOK_HARNESS || "claude-code"));
 const cwd = resolve(String(opt("cwd", process.cwd())));
 const prompt = opt("prompt", null);
 const goal = opt("goal", null);
@@ -66,16 +81,13 @@ const bufferMinutes = Number(opt("buffer", DEFAULT_BUFFER_MINUTES));
 const defaultWaitMinutes = Number(opt("default-wait", DEFAULT_UNPARSED_WAIT_MINUTES));
 const maxCycles = Number(opt("max-cycles", 200));
 const maxNudges = Number(opt("max-nudges", 8));
-const permissionMode = String(opt("permission-mode", "bypassPermissions"));
-const claudeGoal = flag("claude-goal");
-const dryRun = flag("dry-run");
+const dryRun = argv.includes("--dry-run");
 
-if (!["claude-code", "opencode"].includes(harness)) usage(`unknown harness ${harness}`);
 if (subcommand === "run" && typeof prompt !== "string" && typeof goal !== "string") usage("run needs --prompt or --goal");
 
 function usage(msg) {
   if (msg) console.error(`playbook-yolo: ${msg}`);
-  console.error("usage: node scripts/playbook-yolo.mjs [run|status|resume] --harness=<claude-code|opencode> --cwd=<repo> (--prompt \"…\" | --goal \"…\") [--agent=…] [--buffer=15] [--dry-run]");
+  console.error("usage: node scripts/playbook-yolo.mjs [run|status|resume] --cwd=<repo> (--prompt \"…\" | --goal \"…\") [--agent=…] [--model=…] [--buffer=15] [--dry-run]");
   process.exit(2);
 }
 
@@ -112,7 +124,7 @@ function initialPrompt() {
     const body =
       `Goal: ${goal}\n\n` +
       `Run the playbook end to end against this goal: plan only if no implementation checklist exists yet (/feature-plan), then /implement the ENTIRE checklist, then /verify, then loop /fix → /verify until every item is PASS (or a documented external blocker remains). Use the playbook commands; do not improvise a different process.\n\n` + RULES;
-    return harness === "claude-code" && claudeGoal ? `/goal every checklist item for this goal is PASS after /verify, with the run finished as described\n\n${body}` : body;
+    return body;
   }
   const p = String(prompt);
   const withToken = hasYoloToken(p) ? p : p.replace(/^(\/\S+)(\s|$)/, "$1 YOLO$2");
@@ -121,7 +133,7 @@ function initialPrompt() {
 const resumeAfterLimit = () => `The usage-limit window has reset. Continue the YOLO run from where it stopped: re-read the checklist Status Table, resume at the first unfinished item, and finish everything. ${RULES}`;
 const nudge = (n) => `You stopped without printing ${SENTINEL_COMPLETE} or ${SENTINEL_BLOCKED} (attempt ${n}). YOLO mode: do not ask — decide, record the decision, and continue until every item in scope is finished. ${RULES}`;
 
-// ── harness launchers ───────────────────────────────────────────────────────
+// ── OpenCode launcher ──────────────────────────────────────────────────────
 function childEnv() {
   const env = { ...process.env, PLAYBOOK_YOLO: "1" };
   // Windows binaries launched from WSL only see variables listed in WSLENV.
@@ -135,14 +147,6 @@ function childEnv() {
 function readSafe(p) { try { return readFileSync(p, "utf8"); } catch { return ""; } }
 
 function buildCommand(text, sessionId) {
-  if (harness === "claude-code") {
-    const bin = process.env.PLAYBOOK_CLAUDE_BIN || "claude";
-    const args = ["-p", "--output-format", "json", "--permission-mode", permissionMode];
-    if (model) args.push("--model", String(model));
-    if (sessionId) args.push("--resume", sessionId);
-    args.push(text);
-    return { bin, args };
-  }
   const bin = process.env.PLAYBOOK_OPENCODE_BIN || "opencode";
   const args = ["run", "--auto", "--format", "json"];
   if (agent) args.push("--agent", agent);
@@ -176,15 +180,11 @@ function runOnce(text, sessionId, cycle) {
 
 // ── output parsing ──────────────────────────────────────────────────────────
 function extractSessionId(out) {
-  let m = out.match(/"session_id"\s*:\s*"([^"]+)"/);       // Claude Code json result
-  if (m) return m[1];
-  m = out.match(/"sessionID"\s*:\s*"(ses_[A-Za-z0-9]+)"/);  // OpenCode json events
+  const m = out.match(/"sessionID"\s*:\s*"(ses_[A-Za-z0-9]+)"/); // OpenCode JSON events
   return m ? m[1] : null;
 }
 function extractResultText(out) {
-  // Claude Code --output-format json: last {"type":"result", "result": "..."}; OpenCode: text parts
-  const results = [...out.matchAll(/"result"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => JSON.parse(`"${m[1]}"`));
-  if (results.length) return results.at(-1);
+  // OpenCode JSON output carries assistant text in text parts.
   const parts = [...out.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => JSON.parse(`"${m[1]}"`));
   return parts.length ? parts.join("\n") : out;
 }
@@ -212,8 +212,9 @@ async function waitUntil(retryAt, why) {
 async function main() {
   let state = subcommand === "resume" ? loadState() : null;
   if (subcommand === "resume" && !state) usage("nothing to resume — no verification/yolo/state.json");
+  if (state && state.harness !== "opencode") usage("saved YOLO state is not an OpenCode run");
   if (!state) {
-    state = { harness, cwd, startedAt: ts(), cycle: 0, sessionId: null, nextPrompt: initialPrompt(), nudges: 0, unparsedWaits: 0, retryAt: null, status: "running" };
+    state = { harness: "opencode", cwd, startedAt: ts(), cycle: 0, sessionId: null, nextPrompt: initialPrompt(), nudges: 0, unparsedWaits: 0, retryAt: null, status: "running" };
   } else {
     say(`resuming run started ${state.startedAt} (cycle ${state.cycle}, session ${state.sessionId ?? "none"})`);
     if (state.retryAt && new Date(state.retryAt) > new Date()) await waitUntil(new Date(state.retryAt), "resume: earlier limit still in force");
@@ -243,7 +244,7 @@ async function main() {
       continue;
     }
 
-    if (fatal(out)) { state.status = "fatal"; saveState(state); say(`💥 fatal harness error (exit ${code}) — fix the environment/auth and run \`resume\`.`); return 5; }
+    if (fatal(out)) { state.status = "fatal"; saveState(state); say(`💥 fatal OpenCode error (exit ${code}) — fix the environment/auth and run \`resume\`.`); return 5; }
 
     // ended without a sentinel: asked a question, hit context end, or crashed — nudge it on
     state.nudges += 1;

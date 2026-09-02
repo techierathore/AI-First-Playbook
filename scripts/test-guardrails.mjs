@@ -5,12 +5,12 @@ const source = readFileSync(policyUrl, "utf8");
 const required = ["normalizePath", "traverses the repository", "isSymbolicLink", "shellWriteTargets", "apply_patch", "verification/", "playbook-miss.mjs"];
 const missing = required.filter((term) => !source.includes(term));
 if (missing.length) { console.error(`guardrail coverage missing: ${missing.join(", ")}`); process.exit(1); }
-for (const copy of ["../.opencode/plugin/write-policy.mjs", "../harness/claude-code/hooks/write-policy.mjs"]) {
+for (const copy of ["../.opencode/plugin/write-policy.mjs"]) {
   const url = new URL(copy, import.meta.url);
   if (!existsSync(url)) { console.error(`guardrail policy copy missing: ${copy}`); process.exit(1); }
   if (readFileSync(url, "utf8") !== source) { console.error(`guardrail policy copy drift: ${copy}`); process.exit(1); }
 }
-for (const carrier of ["../harness/opencode/plugin/spec-guardrails.ts", "../harness/claude-code/hooks/spec-guardrails-hook.mjs"]) {
+for (const carrier of ["../harness/opencode/plugin/spec-guardrails.ts"]) {
   const url = new URL(carrier, import.meta.url);
   if (!existsSync(url)) { console.error(`guardrail carrier missing: ${carrier}`); process.exit(1); }
   if (!readFileSync(url, "utf8").includes("write-policy.mjs")) { console.error(`guardrail carrier does not use shared policy: ${carrier}`); process.exit(1); }
@@ -40,15 +40,83 @@ const harnessPromptFiles = [
 for (const relative of harnessPromptFiles) {
   const canonicalRelative = relative.replace("commands/", "command/").replace("agents/", "agent/");
   const canonical = readFileSync(new URL(`../harness/opencode/${canonicalRelative}`, import.meta.url), "utf8");
-  const generated = readFileSync(new URL(`../harness/claude-code/${relative}`, import.meta.url), "utf8");
   if (canonical.includes("<current-harness>")) { console.error(`OpenCode prompt has unresolved harness placeholder: ${canonicalRelative}`); process.exit(1); }
-  if (generated.includes("<current-harness>") || generated.includes("--harness=opencode")) {
-    console.error(`Claude Code prompt has OpenCode or unresolved harness guidance: ${relative}`);
+}
+
+// ── OpenCode-only validator: deny integration artifacts without rejecting
+// ordinary provider/model identifiers used by OpenCode. ──────────────────────
+{
+  const { mkdirSync, mkdtempSync, rmSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { spawnSync } = await import("node:child_process");
+  const sandbox = mkdtempSync(join(tmpdir(), "playbook-open-code-only-"));
+  const fixture = join(sandbox, "fixture");
+  const validator = fileURLToPath(new URL("./playbook-validate.mjs", import.meta.url));
+  const runScan = () => spawnSync(process.execPath, [validator, `--open-code-only-scan-root=${fixture}`], { encoding: "utf8" });
+  const reset = () => { rmSync(fixture, { recursive: true, force: true }); mkdirSync(join(fixture, "src"), { recursive: true }); };
+  const fail = (message, result) => {
+    console.error(`OpenCode-only validator check failed: ${message}\n${result?.stdout ?? ""}${result?.stderr ?? ""}`);
     process.exit(1);
-  }
-  if (canonical.includes("--harness=opencode") && !generated.includes("--harness=claude-code")) {
-    console.error(`Claude Code prompt did not translate the emitter harness flag: ${relative}`);
-    process.exit(1);
+  };
+  try {
+    reset();
+    writeFileSync(join(fixture, "src", "models.yml"), "model: anthropic/claude-sonnet-5\n");
+    let result = runScan();
+    if (result.status !== 0) fail("ordinary OpenCode model ID was rejected", result);
+
+    reset();
+    mkdirSync(join(fixture, "docs"), { recursive: true });
+    writeFileSync(join(fixture, "docs", "OpenCode-Only-Framework-Implementation-Checklist.md"), `Deliberate historical ${["Claude", "Code"].join(" ")} wording.\n`);
+    result = runScan();
+    if (result.status !== 0) fail("active checklist's deliberate historical wording was rejected", result);
+
+    const markers = [
+      ["Claude", "Code"].join(" "),
+      ["Claude", "adapter"].join(" "),
+      ["Claude", "binary"].join(" "),
+      ["Claude", "harness"].join(" "),
+      ["Claude", "hook"].join(" "),
+      ["Claude", "pack"].join(" "),
+      ["Claude", "parity"].join(" "),
+      ["claude", "code"].join("-"),
+      ["claude", " -p"].join(""),
+      ["PLAYBOOK", "CLAUDE", "BIN"].join("_"),
+      ["CLAUDE", "PROJECT", "DIR"].join("_"),
+      ["harness", ["claude", "code"].join("-")].join("/"),
+      `.${["clau", "de"].join("")}`,
+      ["CLAUDE", ".md"].join(""),
+      [".mcp", ".json"].join(""),
+    ];
+    for (const marker of markers) {
+      reset();
+      writeFileSync(join(fixture, "src", "integration.mjs"), `export default ${JSON.stringify(marker)};\n`);
+      result = runScan();
+      if (result.status === 0 || !result.stderr.includes(marker)) fail(`marker was not named and rejected: ${marker}`, result);
+    }
+
+    const artifacts = [
+      ["harness", ["claude", "code"].join("-")].join("/"),
+      `.${["clau", "de"].join("")}`,
+      ["CLAUDE", ".md"].join(""),
+      [".mcp", ".json"].join(""),
+      ["scripts/harness", "-install.mjs"].join(""),
+    ];
+    for (const artifact of artifacts) {
+      reset();
+      const artifactPath = join(fixture, ...artifact.split("/"));
+      if (/\.[a-z]+$/i.test(artifact)) {
+        mkdirSync(join(artifactPath, ".."), { recursive: true });
+        writeFileSync(artifactPath, "integration fixture\n");
+      } else {
+        mkdirSync(artifactPath, { recursive: true });
+      }
+      result = runScan();
+      if (result.status === 0 || !result.stderr.includes(artifact)) fail(`artifact was not named and rejected: ${artifact}`, result);
+    }
+    console.log("OpenCode-only negative validation passed");
+  } finally {
+    rmSync(sandbox, { recursive: true, force: true });
   }
 }
 const { evaluateToolCall } = await import(policyUrl);
@@ -81,7 +149,7 @@ for (const [gate, quote] of [
   allowedEmitterCalls.push(`node scripts/playbook-miss.mjs open --found-phase-gate=${quote}${gate}${quote}`);
 }
 for (const command of allowedEmitterCalls) {
-  if (decision("Bash", { command })) guardrailFail(`approved miss emitter call was denied: ${command}`);
+  if (decision("bash", { command })) guardrailFail(`approved miss emitter call was denied: ${command}`);
 }
 
 const deniedShellCalls = [
@@ -102,7 +170,7 @@ const deniedShellCalls = [
   "node ./scripts/playbook-miss.mjs next-id",
 ];
 for (const command of deniedShellCalls) {
-  if (!decision("Bash", { command })) guardrailFail(`unsafe or opaque shell shape was allowed: ${command}`);
+  if (!decision("bash", { command })) guardrailFail(`unsafe or opaque shell shape was allowed: ${command}`);
 }
 
 const previousChecklist = process.env.PLAYBOOK_CHECKLIST;
@@ -121,8 +189,8 @@ try {
   for (const filePath of ["verification/feature/run-1/probe.cs", "docs/Feature-Implementation-Checklist.md", "deploy/feature/probe.sh"]) {
     if (decision("write", { filePath })) guardrailFail(`existing permitted verifier write was denied: ${filePath}`);
   }
-  if (decision("Bash", { command: "touch verification/feature/run-1/probe.txt" })) guardrailFail("permitted verification shell target was denied");
-  if (!decision("Bash", { command: "npm test" })) guardrailFail("opaque verifier shell command was allowed");
+  if (decision("bash", { command: "touch verification/feature/run-1/probe.txt" })) guardrailFail("permitted verification shell target was denied");
+  if (!decision("bash", { command: "npm test" })) guardrailFail("opaque verifier shell command was allowed");
   if (decision("write", { filePath: "src/app.ts" }, false)) guardrailFail("non-verifier source write was denied");
   if (!decision("write", { filePath: "Feature-Gap-Report.md" }, false)) guardrailFail("forbidden report was allowed for non-verifier");
 } finally {
@@ -134,7 +202,7 @@ console.log("guardrail policy coverage passed");
 // ── YOLO policy: git writes denied, everything else allowed, limit parsing ──
 {
   const yoloUrl = new URL("../harness/opencode/plugin/yolo-policy.mjs", import.meta.url);
-  for (const carrier of ["../harness/opencode/plugin/yolo.ts", "../harness/claude-code/hooks/yolo-hook.mjs", "./playbook-yolo.mjs"]) {
+  for (const carrier of ["../harness/opencode/plugin/yolo.ts", "./playbook-yolo.mjs"]) {
     const url = new URL(carrier, import.meta.url);
     if (!existsSync(url)) { console.error(`yolo carrier missing: ${carrier}`); process.exit(1); }
     if (!readFileSync(url, "utf8").includes("yolo-policy.mjs")) { console.error(`yolo carrier does not use shared policy: ${carrier}`); process.exit(1); }
@@ -143,9 +211,9 @@ console.log("guardrail policy coverage passed");
   const fail = (msg) => { console.error(`yolo policy check failed: ${msg}`); process.exit(1); };
   const denied = ["git commit -m x", "cd src && git push origin main", "git add .", "git -C /r tag v1", "npm test; git reset --hard", "git branch -D feature", "git stash", "git checkout -- .", "gh pr create --fill", "git rebase -i HEAD~3"];
   const allowed = ["git status", "git log --oneline -5", "git diff HEAD", "git show abc123", "git blame file.cs", "git branch", "git stash list", "GIT_PAGER=cat git diff --stat", "rm -rf build/", "rmdir /s old", "dotnet build", "git fetch origin"];
-  for (const c of denied) if (y.yoloDecision({ tool: "Bash", args: { command: c } }).decision !== "deny") fail(`should deny: ${c}`);
-  for (const c of allowed) if (y.yoloDecision({ tool: "Bash", args: { command: c } }).decision !== "allow") fail(`should allow: ${c}`);
-  if (y.yoloDecision({ tool: "Write", args: { file_path: "x.md" } }).decision !== "allow") fail("file writes must be allowed");
+  for (const c of denied) if (y.yoloDecision({ tool: "bash", args: { command: c } }).decision !== "deny") fail(`should deny: ${c}`);
+  for (const c of allowed) if (y.yoloDecision({ tool: "bash", args: { command: c } }).decision !== "allow") fail(`should allow: ${c}`);
+  if (y.yoloDecision({ tool: "write", args: { filePath: "x.md" } }).decision !== "allow") fail("file writes must be allowed");
   if (!y.isYoloEnv({ PLAYBOOK_YOLO: "1" }) || y.isYoloEnv({})) fail("isYoloEnv");
   if (!y.hasYoloToken("/implement YOLO docs/x.md") || !y.hasYoloToken("*YOLO* please") || y.hasYoloToken("yoloswag mode")) fail("hasYoloToken");
   const now = new Date("2026-08-21T10:00:00Z"); const env = { PLAYBOOK_TZ: "UTC" };

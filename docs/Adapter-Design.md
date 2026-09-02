@@ -1,39 +1,37 @@
 # Adapter Boundary and Model Routing Design
 
-Covers Tasks 3 and 4. Depends on `Capability-Matrix.md` rows (b), (c), (f) and the
-breaks-list in `Coupling-Points.md`. Design only — no implementation in this pass.
+Covers the OpenCode packaging boundary and model-routing design. Depends on
+`Capability-Matrix.md` rows (b), (c), and (f), plus `Coupling-Points.md`.
 
 ---
 
 ## Part 1 — The adapter boundary (Task 3)
 
-### The decision: an install-time generator, not a runtime abstraction
+### The decision: install-time packaging, not a runtime abstraction
 
-Every "breaks" item in `Coupling-Points.md` is a *packaging* difference, not a *behaviour*
-difference: both harnesses can run markdown commands with `$ARGUMENTS`, both have subagents
-with per-subagent models, both can abort a tool call from a hook and feed the error text back
-to the model, both auto-load a root context file. What differs is frontmatter dialect, file
-locations, and the carrier for the guardrail. Packaging differences are resolved once, at
-install time — nothing needs to sit between the model and the harness at runtime.
+The framework's OpenCode dependencies are packaging concerns: Markdown commands with
+`$ARGUMENTS`, subagents with per-subagent models, plugins that can abort a tool call and feed
+the error text back to the model, and automatic loading of a root context file. File
+locations, frontmatter, and plugin registration are resolved once at install time; nothing
+needs to sit between the model and OpenCode at runtime.
 
-So the adapter is a single script — `scripts/harness-install.mjs <opencode|claude-code>
-<target-repo>` — that reads one canonical source tree and **emits** a harness pack. This
-respects the hard constraint: phase logic, gates, the Verifier and the command library are
-inputs to the generator, byte-for-byte unchanged in their bodies.
+The installer reads the canonical OpenCode source tree and emits the project-local pack.
+This respects the hard constraint: phase logic, gates, the Verifier, and the command library
+remain canonical inputs rather than runtime-generated behavior.
 
-### What sits behind the adapter (the generator owns it)
+### What the installer owns
 
-| Concern | OpenCode emission | Claude Code emission |
-|---|---|---|
-| Command packaging | `.opencode/command/<name>.md`, frontmatter `description` / `agent` / `subtask` / **`model`** (stamped from the tier map, Part 2) | `.claude/commands/<name>.md`, frontmatter `description` / `argument-hint`; `/verify` gets a generated opening line delegating to the verifier subagent |
-| Agent packaging | `.opencode/agent/*.md` (`mode`, `permission`, `temperature`, **`model`**) | `.claude/agents/*.md` (`description`, `tools`, **`model`**) |
-| Standing rules wiring | `AGENTS.md` at root (OpenCode prefers it and suppresses `CLAUDE.md` — matrix row d) | `CLAUDE.md` containing `@AGENTS.md` — both files coexist safely |
-| Guardrail carrier | TS plugin registered in `opencode.json` (`tool.execute.before` + throw) | `.claude/settings.json` PreToolUse hook invoking `scripts/spec-guardrails-hook.mjs` (JSON `permissionDecision: "deny"` with the same reason text) |
-| Guardrail **policy** | One shared, pure module (`checkWritePolicy` — already extractable from `harness/opencode/plugins/spec-guardrails.ts:134-143` with zero OpenCode imports) consumed by both carriers | same module |
-| MCP registration | `opencode.json` `mcp` key, `{env:PLAYWRIGHT_MCP_URL}` syntax (fixes Coupling item 9) | `.mcp.json`, `${PLAYWRIGHT_MCP_URL}` syntax |
-| Instruction/profile injection | `opencode.json` `instructions: []` (fixes the case-mismatch, Coupling item 4b) | `@import` lines in `CLAUDE.md` |
-| Tier → model resolution | `playbook/model-tiers.yml` → concrete `provider/model` strings stamped into command/agent frontmatter | same file → `model:` aliases stamped into subagent frontmatter |
-| Install validation | `playbook-validate.mjs` grows a per-harness mode asserting the emitted pack is complete | same |
+| Concern | OpenCode emission |
+|---|---|
+| Command packaging | `.opencode/command/<name>.md`, frontmatter `description` / `agent` / `subtask` / **`model`** (stamped from the tier map, Part 2) |
+| Agent packaging | `.opencode/agent/*.md` (`mode`, `permission`, `temperature`, **`model`**) |
+| Standing rules wiring | `AGENTS.md` at the repository root |
+| Guardrail carrier | TS plugins registered in `opencode.json` (`tool.execute.before` + throw) |
+| Guardrail **policy** | Shared pure policy modules consumed by the OpenCode plugin carriers |
+| MCP registration | `opencode.json` `mcp` key with `{env:PLAYWRIGHT_MCP_URL}` syntax |
+| Instruction/profile injection | `opencode.json` `instructions: []` |
+| Tier → model resolution | `playbook/model-tiers.yml` → concrete `provider/model` strings stamped into command/agent frontmatter |
+| Install validation | `playbook-validate.mjs` asserts that the emitted OpenCode pack is complete |
 
 ### What stays in framework code (the generator never touches it)
 
@@ -42,25 +40,23 @@ inputs to the generator, byte-for-byte unchanged in their bodies.
   Log contracts.
 - Every command **body** and the 1,050-line Verifier prompt — they are already
   harness-portable prose. The only tolerated in-body divergence is a two-line "tool
-  vocabulary" preamble (`task` vs `Agent`) the generator prepends per harness; command text is
-  not forked.
+  vocabulary" guidance needed for OpenCode's `task` tool; command text is not forked.
 - `playbook/environment-profile.yml`, handoff templates, the HTML doc shell.
 - `AGENTS.md` content.
 
-### Deliberately left harness-specific (abstracting it isn't worth the complexity)
+### Deliberately left OpenCode-native
 
-- **Permission dialects.** OpenCode's wildcard/arity `permission` maps and Claude Code's
-  `Bash(npm:*)` matchers are expressive in incompatible ways. The adapter emits only the
-  coarse per-agent scopes that exist today (`edit/write/bash allow|deny`); teams tune the rest
-  natively. The load-bearing write-scope rule lives in the shared guardrail policy anyway.
+- **Permission dialect.** OpenCode's wildcard/arity `permission` maps remain native. The
+  installer emits the coarse per-agent scopes used by the framework (`edit/write/bash
+  allow|deny`); teams tune additional permissions directly. The load-bearing write-scope
+  rule lives in the guardrail policy.
 - **Session mechanics** — resume, compaction, child-session UX, "restart after config
   change". These never cross the framework's contract surface; phase docs already say only
   "Chat: fresh".
-- **Parallelism mechanics.** No abstraction over `task` vs `Agent`; the vocabulary preamble
-  plus the model's own adaptation is sufficient, and `harness/README.md` already documents
-  serial fallback as acceptable.
-- **Telemetry transport** (SSE/SQLite vs OTel/JSONL) — two capture scripts behind one emit
-  schema; see `Telemetry-Hooks.md`. Abstracting the transports themselves buys nothing.
+- **Parallelism mechanics.** OpenCode's `task` tool is the native delegation mechanism, and
+  `harness/README.md` documents serial fallback as acceptable.
+- **Telemetry transport.** OpenCode's event and SQLite sources feed one emit schema; see
+  `Telemetry-Hooks.md`. Abstracting the transport itself buys nothing.
 - **TUI ergonomics, cost display, model pickers** — irrelevant to correctness.
 
 Rejected alternatives and why are recorded in `DECISIONS.md`.
@@ -77,16 +73,13 @@ is the routing unit** and the declaration lives in one new file:
 ```yaml
 # playbook/model-tiers.yml
 version: 1
-tiers:            # resolved per harness by the generator
+tiers:
   frontier:
     opencode: "anthropic/claude-fable-5"     # examples — teams substitute
-    claude-code: "fable"
   standard:
     opencode: "anthropic/claude-sonnet-5"
-    claude-code: "sonnet"
   economy:
     opencode: "anthropic/claude-haiku-4-5"
-    claude-code: "haiku"
 
 commands:         # phase → tier (see mapping table below)
   feature-plan: frontier
@@ -126,29 +119,14 @@ that stays inside the wrapping constraint: the generator emits a `builder` subag
 given…") and the vocabulary preamble tells the orchestrator to spawn `builder` for wave work.
 Command wave logic is untouched.
 
-### Honouring it in Claude Code — honest constraints
+### Operational routing constraints
 
-Per-command `model:` frontmatter is **UNVERIFIED** in Claude Code (matrix row b). Do not design
-on it. The real options, in recommended order:
-
-1. **Session-per-phase routing (primary).** The framework *already* mandates "Chat: fresh" for
-   phases 1, 3, 5, 9 — phase boundaries and session boundaries coincide by design. Launch each
-   phase as `claude --model <tier-model>` (or `/model` before the command; both verified). The
-   generator emits a phase-launcher note (or thin `playbook <phase>` wrapper script) so the
-   tier choice is mechanical, not remembered.
-2. **Subagents as the routing unit (secondary, composes with 1).** `verifier` and `builder`
-   subagents carry `model:` frontmatter (verified), so `/verify`'s independence and its tier
-   come from the same mechanism, and `/implement`'s waves get standard-tier workers even when
-   the session runs frontier.
-3. **Accept the residual:** the orchestrator's own turns (wave planning, aggregation) run on
-   whatever the session model is. With option 1 that session is already tiered per phase, so
-   the residual is zero except when a user chains phases in one chat against the framework's
-   own advice.
-
-If the `model:` command-frontmatter capability turns out to exist (one 5-minute test verifies
-it), option 1's launcher collapses into stamped frontmatter and the two harnesses become
-symmetric. The design works either way — that is why the tier map, not the mechanism, is the
-contract.
+The framework mandates fresh chats for phases 1, 3, 5, and 9, while command frontmatter gives
+each phase its declared model. `verifier` and `builder` subagents also carry model frontmatter,
+so verification independence and wave-worker cost control use the same native mechanism.
+The orchestrator's own turns use the command-selected model; child sessions use their agent's
+configured model or inherit only when no model is configured. The tier map remains the routing
+contract and generated frontmatter remains its mechanical enforcement.
 
 ### Starting tier mapping (and where I push back on the hypothesis)
 

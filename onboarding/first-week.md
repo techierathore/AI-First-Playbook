@@ -1,8 +1,7 @@
 # The First Week — an on-ramp for one developer
 
-[Enablement.md](../Enablement.md) argues that a rollout of this framework fails
-on enablement, not tooling — that the usual runbook covers machines and nothing covers
-people. This file is the missing half.
+A rollout of this framework succeeds or fails on enablement, not tooling: the usual runbook
+covers machines while leaving people unsupported. This guide supplies that missing half.
 
 **Scope:** one developer, one week, ending with them taking a small feature from
 `/feature-plan` to ALL PASS without help. It is written for the **process owner** to run,
@@ -37,15 +36,15 @@ Days need not be consecutive. The order does matter.
 Goal: the tooling is real and their first contact succeeds.
 
 1. Install the harness with them watching, not beforehand — see
-   [`harness/README.md`](../harness/README.md). They should see where the command files
+   [`docs/Installation.md`](../docs/Installation.md). They should see where the command files
    live, because the commands *are* the process.
 2. Have them run **`/generate-html`** against an existing markdown doc in your repo.
    It is mechanical, activates no persona, costs almost nothing, and produces something
    they can open in a browser thirty seconds later.
 3. Then run **`/create-issue-list`** against two or three real tickets.
 
-Both commands are on the cheap end of the [cost table](../templates/commands/README.md).
-That is deliberate: the first day should establish "this works and it's not scary",
+Both commands are mechanical and intentionally kept on the cheap end of model usage. The first
+day should establish "this works and it's not scary",
 not "this is powerful".
 
 **Answer the money question now, unprompted.** Nobody's first question is about

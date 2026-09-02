@@ -2,10 +2,8 @@
 description: Refresh documents against the CURRENT code — either a single shared/reference doc, or an entire feature doc set (checklist, dev-flow, business-verification, DB-changes, architecture). Reconciles drift, flags deleted/broken/stale references.
 ---
 
-**IMPORTANT**: Before starting, activate the Analyst persona. See
-`harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/agent/analyst.md`; any equivalent analyst
-persona works.
+**IMPORTANT**: Before starting, activate the Analyst persona by reading and
+following `.opencode/agent/analyst.md`; any equivalent analyst persona works.
 
 You are the Analyst. Your job is to **bring documents back in sync with the
 CURRENT state of the code.** Code drifts after docs are written: things get

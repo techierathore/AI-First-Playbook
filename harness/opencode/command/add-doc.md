@@ -2,10 +2,8 @@
 description: Produce a Developer Flow Guide (code-flow per screen/tab, OR per service/package/job) and/or a Business Verification Reference (plain-English sources/calculation/mapping) for an EXISTING feature, function, or service — derived from the real code
 ---
 
-**IMPORTANT**: Before starting, activate the Analyst persona. See
-`harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/agent/analyst.md`; any equivalent analyst
-persona works.
+**IMPORTANT**: Before starting, activate the Analyst persona by reading and
+following `.opencode/agent/analyst.md`; any equivalent analyst persona works.
 
 You are the Analyst. Your job is to produce ONE (or both) of the two
 **human-readable companion documents** that the framework was missing:

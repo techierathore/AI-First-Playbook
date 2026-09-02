@@ -6,12 +6,14 @@ import { fileURLToPath } from "node:url";
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageMetadata = JSON.parse(readFileSync(join(sourceRoot, "package.json"), "utf8"));
 const args = process.argv.slice(2);
+const command = args.find((arg) => !arg.startsWith("-"));
 const targetArg = args.find((arg) => arg.startsWith("--target="));
 const target = resolve(targetArg ? targetArg.slice("--target=".length) : process.cwd());
 const dryRun = args.includes("--dry-run");
 const force = args.includes("--force");
-const uninstall = args.includes("--uninstall");
+const uninstall = args.includes("--uninstall") || command === "uninstall";
 const includeDocs = !args.includes("--no-docs");
+const manageGitignore = !args.includes("--no-gitignore");
 const telemetryRuntime = [
   "scripts/playbook-miss.mjs",
   "scripts/miss-lib.mjs",
@@ -19,12 +21,84 @@ const telemetryRuntime = [
   "playbook/model-tiers.yml",
   "playbook/environment-profile.yml",
 ];
-const copyItems = [".opencode", "opencode.json", "Context-Prompt.md", "AGENTS.md", ...telemetryRuntime];
-if (includeDocs) copyItems.push("docs", "onboarding");
+const copyItems = ["opencode.json", "AGENTS.md", ...telemetryRuntime];
+const operatorAssets = [
+  "onboarding",
+  "phases",
+  "templates/checklist-item-template.md",
+  "templates/checklist-metadata.yml",
+  "templates/deployment-steps-template.md",
+  "templates/handoffs",
+  "templates/issues-file-template.md",
+];
+const userDocs = [
+  "Adoption-Metrics.md",
+  "Brownfield-Case-Study.md",
+  "Environment-Profile.md",
+  "Getting-Started.md",
+  "Greenfield-Case-Study.md",
+  "Handoffs.md",
+  "Installation.md",
+  "OpenCode-WSL-Setup-Guide.md",
+  "Operating-Model.md",
+  "Release-And-Operations.md",
+  "Repository-Structure.md",
+  "Security.md",
+  "Telemetry-Guide.md",
+  "Troubleshooting.md",
+  "Usage.md",
+  "YOLO-Mode-Guide.md",
+];
+const harnessExclusions = new Set(["command/update-context.md"]);
 const created = [];
+const gitignoreStart = "# >>> AI-First Playbook framework (managed) >>>";
+const gitignoreEnd = "# <<< AI-First Playbook framework (managed) <<<";
+const frameworkIgnoreRules = [
+  "/.opencode/",
+  "/.playbook/",
+  "/AGENTS.md",
+  "/opencode.json",
+  "/onboarding/",
+  "/phases/",
+  "/playbook/",
+  "/scripts/miss-lib.mjs",
+  "/scripts/playbook-miss.mjs",
+  "/scripts/playbook-telemetry.mjs",
+  "/templates/checklist-item-template.md",
+  "/templates/checklist-metadata.yml",
+  "/templates/deployment-steps-template.md",
+  "/templates/handoffs/",
+  "/templates/issues-file-template.md",
+  "/verification/telemetry/events.ndjson",
+];
 
 function usage() {
-  console.log(`AI-First Playbook installer\n\nUsage:\n  npx @techierathore/ai-first-playbook --target=/path/to/repo [--dry-run] [--force]\n  npx @techierathore/ai-first-playbook --uninstall --target=/path/to/repo\n\nBy default existing files are preserved. --force overwrites only files managed by this package.`);
+  console.log(`AI-First Playbook installer\n\nUsage:\n  cd /path/to/repo && npx @techierathore/ai-first-playbook@latest install [--dry-run] [--force]\n  npx @techierathore/ai-first-playbook@latest install --target=/path/to/repo [--dry-run] [--force]\n  npx @techierathore/ai-first-playbook@latest uninstall --target=/path/to/repo [--dry-run] [--force]\n\nThe target defaults to the current directory. Existing files are preserved. The installer adds a managed .gitignore block for reinstallable framework assets; use --no-gitignore to opt out. --force overwrites only files managed by this package.`);
+}
+
+function replaceManagedBlock(content, replacement) {
+  const start = content.indexOf(gitignoreStart);
+  const end = content.indexOf(gitignoreEnd);
+  if ((start === -1) !== (end === -1) || (start !== -1 && end < start)) {
+    throw new Error("Existing .gitignore has an invalid AI-First Playbook managed block");
+  }
+  if (start === -1 && !replacement) return content;
+  const withoutBlock = start === -1
+    ? content
+    : `${content.slice(0, start)}${content.slice(end + gitignoreEnd.length)}`;
+  const projectRules = withoutBlock.replace(/\n+$/, "");
+  if (!replacement) return projectRules ? `${projectRules}\n` : "";
+  return `${projectRules ? `${projectRules}\n\n` : ""}${replacement}\n`;
+}
+
+function updateGitignore(remove = false) {
+  const path = join(target, ".gitignore");
+  const existing = existsSync(path) ? readFileSync(path, "utf8") : "";
+  const block = remove ? "" : [gitignoreStart, ...frameworkIgnoreRules, gitignoreEnd].join("\n");
+  const next = replaceManagedBlock(existing, block);
+  if (next === existing) return;
+  console.log(`${remove ? "update" : existsSync(path) ? "update" : "create"} .gitignore`);
+  if (!dryRun) writeFileSync(path, next);
 }
 
 function ensureSafeTarget() {
@@ -37,10 +111,12 @@ function ensureSafeTarget() {
   if (!statSync(target).isDirectory()) throw new Error(`Target is not a directory: ${target}`);
 }
 
-function copy(source, destination) {
+function copy(source, destination, exclusions = new Set(), base = source) {
+  const sourceRelative = relative(base, source).replaceAll("\\", "/");
+  if (exclusions.has(sourceRelative)) return;
   if (statSync(source).isDirectory()) {
     if (!existsSync(destination)) { console.log(`create ${relative(target, destination)}`); if (!dryRun) mkdirSync(destination, { recursive: true }); }
-    for (const child of readdirSync(source)) copy(join(source, child), join(destination, child));
+    for (const child of readdirSync(source)) copy(join(source, child), join(destination, child), exclusions, base);
     return;
   }
   const exists = existsSync(destination);
@@ -64,7 +140,14 @@ function install() {
     try { previouslyCreated = JSON.parse(readFileSync(markerPath, "utf8")).created ?? []; }
     catch { throw new Error("Existing .playbook/installation.json is invalid; refusing to replace its ownership record"); }
   }
-  for (const item of copyItems) copy(join(sourceRoot, item === ".opencode" ? "harness/opencode" : item), join(target, item));
+  const harnessSource = join(sourceRoot, "harness/opencode");
+  copy(harnessSource, join(target, ".opencode"), harnessExclusions, harnessSource);
+  for (const item of copyItems) copy(join(sourceRoot, item), join(target, item));
+  if (includeDocs) {
+    for (const file of userDocs) copy(join(sourceRoot, "docs", file), join(target, "docs", file));
+    for (const item of operatorAssets) copy(join(sourceRoot, item), join(target, item));
+  }
+  if (manageGitignore) updateGitignore();
   if (!dryRun) {
     const marker = {
       package: packageMetadata.name,
@@ -79,7 +162,9 @@ function install() {
     console.log(`verified telemetry runtime (${telemetryRuntime.length} files)`);
   }
   console.log(`${dryRun ? "Would install" : "Installed"} AI-First Playbook in ${target}`);
-  console.log("Next: replace placeholders in playbook/environment-profile.yml, run the smoke test in docs/Troubleshooting.md, and restart OpenCode.");
+  if (manageGitignore) console.log("Framework assets are covered by the managed .gitignore block; docs and verification evidence remain trackable.");
+  const smokeTest = includeDocs ? "run the smoke test in docs/Troubleshooting.md, and " : "run your approved smoke test, and ";
+  console.log(`Next: replace placeholders in playbook/environment-profile.yml, ${smokeTest}restart OpenCode.`);
 }
 
 function remove() {
@@ -94,10 +179,12 @@ function remove() {
       if (!dryRun) rmSync(path, { recursive: true, force: true });
     } else console.log(`preserve ${item} (use --force after reviewing local changes)`);
   }
+  if (manageGitignore) updateGitignore(true);
   if (!dryRun) rmSync(join(target, ".playbook"), { recursive: true, force: true });
 }
 
 try {
+  if (command && !["install", "uninstall"].includes(command)) throw new Error(`Unknown command: ${command}`);
   if (args.includes("--help") || args.includes("-h")) usage();
   else if (uninstall) remove();
   else install();

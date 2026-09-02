@@ -14,11 +14,11 @@ Feeds the existing telemetry design. The current target is schema 2, one record 
 A field-by-field principle first: **attempt number and gate verdict are framework data, not
 harness data.** They live in the checklist the framework already maintains — one
 `## Verifier Run Log` entry per run, one `**Verifier Result**:` line per item, a Status Table —
-so they are captured identically in both harnesses by a deterministic parser
+so they are captured by a deterministic parser
 (`scripts/playbook-telemetry.mjs`), never by asking a model or a harness API. `project_type`
 comes from `playbook/environment-profile.yml`; `tier` from `playbook/model-tiers.yml`
 (reverse-mapped from the observed model). Only **phase, model, and tokens** are
-harness-sourced, and that is where the two harnesses genuinely differ.
+harness-sourced.
 
 ---
 
@@ -56,31 +56,32 @@ phases without any plugin. Third, the v2 engine currently hardcodes `cost: 0`
 `cost` as v1-only until that lands. The joiner labels non-zero-token zero cost `zero-unverified`;
 compute a separately labelled token × rate-card estimate when needed.
 
-## Claude Code — tokens are the constrained signal; here is the honest fallback chain
+## OpenCode fallback and data-quality behavior
 
-Confirmed constraints (matrix row i): hooks receive **no token counts**; subagent usage is
-**not exposed**; per-message usage in transcript JSONL is **UNVERIFIED** as a stable interface.
+The primary capture path is the project plugin. Headless JSON output and SQLite are audit or
+recovery sources, not parallel writers to the same event stream.
 
-| Signal | Capture point | Status |
-|---|---|---|
-| Phase start/end, session identity | `SessionStart` / `Stop` / `SessionEnd` hooks — receive `session_id`, `transcript_path`, `cwd` on stdin; the phase name comes from the launcher (session-per-phase, `Adapter-Design.md`) or a `UserPromptSubmit` hook matching `/command` text | Verified — https://code.claude.com/docs/en/hooks.md |
-| Model | The launcher chose it (`claude --model` / `/model`), so record it at launch; OTel metrics also carry a `model` attribute | Verified — https://code.claude.com/docs/en/monitoring-usage.md |
-| Tokens per phase — primary | **OpenTelemetry**: `claude_code.token.usage` and `claude_code.cost.usage` metrics to a local OTLP collector; with session-per-phase, session ≈ phase, so per-session aggregation ≈ per-phase tokens. Adding a `phase` dimension via `OTEL_RESOURCE_ATTRIBUTES=phase=verify` set by the launcher is standard OTel behaviour but **UNVERIFIED** for Claude Code's exporter — verify by launching once against a debug collector | Partially verified |
-| Tokens per phase — fallback | Parse the transcript JSONL named by `transcript_path` in the `Stop` hook for per-message `usage` fields. The file exists and hooks hand you its path (verified); its **format is internal and undocumented (UNVERIFIED)** — pin the Claude Code version, and treat a parse failure as `tokens: null`, never as zero | Fragile by design |
-| Tokens — headless phases only | `claude -p --output-format json` returns usage + `total_cost_usd` per run — exact, but only for non-interactive phases (P6 gate parsing, mechanical commands); the elicitation-heavy phases (P1, P9) are interactive by design and can't use it | Verified — https://code.claude.com/docs/en/headless.md |
-| Per-subagent split | **Available after all (verified 2026-08-20, Claude Code 2.1.x):** the `SubagentStop` hook payload carries `agent_transcript_path`, and subagent transcripts live at a deterministic path beside the parent transcript — `<transcript-dir>/<session-id>/subagents/agent-<id>.jsonl`, same JSONL format with per-message `usage`. A transcript-window parser can include subagent tokens with no hook at all. The format remains undocumented — pin the version, degrade parse failures to `null` | Verified empirically (supersedes the earlier "confirmed absence") |
-| Attempt, gate verdict, project_type | Checklist + profile parsing — identical to OpenCode | Framework-owned |
+| Condition | Required result |
+|---|---|
+| Plugin disabled | No event file is created; framework execution proceeds normally |
+| Event append fails | The run continues; the affected telemetry window may be absent |
+| Root session never becomes idle | Emit an incomplete EOF window with null elapsed time |
+| Child lifecycle exists without a token-bearing turn | Count it in `spawned`, not `contributors` |
 
-**Net:** in Claude Code the telemetry record is per-phase (session-level), with cost computed
-from tokens × price sheet or taken from OTel `cost.usage`; the per-sub-verifier granularity
-OpenCode gives is simply not reproducible there today, and the schema should carry
-`granularity: "session" | "message"` so consumers know which they are reading.
+Do not merge offline backfill into a live window unless execution and session identity prove
+that both sources describe the same phase. Duplicate observations must be deduplicated before
+aggregation rather than averaged or added.
+
+Cost validity is independent of token validity. A valid token record with missing or known-zero
+provider cost remains useful for effort analysis but must not enter measured-cost aggregates.
+Consumers inspect `data_quality.token_status` and `data_quality.cost_status` separately.
+That separation is part of the schema contract, not a presentation preference.
 
 ## What the emit schema gains from this design
 
-`phase`, `tier`, `attempt`, `gate_verdict`, `project_type`, `timestamp` — harness-independent,
-one parser. `model`, `tokens_in`, `tokens_out`, `cost` — harness-sourced via the two capture
-paths above. That split is the whole trick: the fragile, harness-specific surface is reduced
+`phase`, `tier`, `attempt`, `gate_verdict`, `project_type`, `timestamp` — framework-owned,
+one parser. `model`, `tokens_in`, `tokens_out`, `cost` — sourced from OpenCode events.
+That split is the whole trick: the fragile, runtime-specific surface is reduced
 to three fields, and the fields that gate decisions (verdict, attempt) are read from durable
 framework artifacts that survive harness upgrades.
 
@@ -101,8 +102,7 @@ that stream to event windows without mutating either input.
 | `cost_attribution` | Joiner count of closes sharing an exact fix window | `sole`, `shared:<n>`, or `none`; no window means null costs, never an estimate |
 | `miss-amend` | Later agent/human classification | May complete a null closed-vocabulary judgement only; cannot alter observed or derived facts |
 
-This also explains the harness difference. OpenCode's event carrier captures provider cost, so
-an exact linked fix window can produce measured `sole` cost. Claude Code still emits the same
-durable classifications, but without compatible `events.ndjson` rows, model provenance and
-cost degrade honestly to inferred/unknown and `null`/`none`; classification does not depend on
-cost capture.
+OpenCode's event carrier captures provider cost, so an exact linked fix window can produce
+measured `sole` cost. Without compatible `events.ndjson` rows, model provenance and cost
+degrade honestly to inferred/unknown and `null`/`none`; classification does not depend on cost
+capture.

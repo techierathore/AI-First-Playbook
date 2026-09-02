@@ -12,15 +12,14 @@
  * Honours the map's top-level `enabled:` flag (OFF by default):
  *   enabled: true   → stamp every mapped file with its tier's model
  *   enabled: false  → REMOVE the `model:` field from every mapped file, so
- *                     routing is fully reversible and the harness session
+ *                     routing is fully reversible and the OpenCode session
  *                     model applies again
  * A tier of `inherit` (or `none`) leaves that one file unrouted even when ON.
  *
  * Usage:
  *   node scripts/apply-model-tiers.mjs            # stamp (or strip, if disabled)
  *   node scripts/apply-model-tiers.mjs --check    # verify stamps match the map + flag (CI)
- *   node scripts/apply-model-tiers.mjs --harness=claude-code --print
- *                                                 # resolve map for another harness
+ *   node scripts/apply-model-tiers.mjs --print    # print the resolved OpenCode map
  *
  * The one-command front end is scripts/playbook-routing.mjs (status | on | off |
  * set-tier | set-model | set-escalation | bind) — it edits the map and calls
@@ -64,7 +63,7 @@ export function applyTiers({ check = false, config = loadConfig(), log = () => {
       if (!existsSync(file)) { if (required) problems.push(`${rel}: file missing for tier map entry`); continue; }
       let expected = null;
       if (enabled && !UNROUTED_TIERS.has(tier)) {
-        try { expected = resolveModel(config.tiers, tier, "opencode"); }
+        try { expected = resolveModel(config.tiers, tier); }
         catch (e) { problems.push(`${rel}: ${e.message}`); continue; }
       }
       const text = readFileSync(file, "utf8");
@@ -91,9 +90,9 @@ export function applyTiers({ check = false, config = loadConfig(), log = () => {
   return { enabled, changed: stamped + stripped, stamped, stripped, problems, files };
 }
 
-export function printResolved(config, harness) {
+export function printResolved(config) {
   const resolved = { enabled: routingEnabled(config), commands: {}, agents: {} };
-  const res = (tier) => (UNROUTED_TIERS.has(tier) ? null : resolveModel(config.tiers, tier, harness));
+  const res = (tier) => (UNROUTED_TIERS.has(tier) ? null : resolveModel(config.tiers, tier));
   for (const [name, tier] of Object.entries(config.commands ?? {})) resolved.commands[name] = res(tier);
   for (const [name, tier] of Object.entries(config.agents ?? {})) resolved.agents[name] = res(tier);
   return resolved;
@@ -102,13 +101,17 @@ export function printResolved(config, harness) {
 // ── CLI ─────────────────────────────────────────────────────────────────────
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const args = process.argv.slice(2);
+  const unknown = args.filter((arg) => !["--check", "--print"].includes(arg));
+  if (unknown.length) {
+    console.error(`unknown option '${unknown[0]}' — OpenCode routing accepts only --check or --print`);
+    process.exit(2);
+  }
   const check = args.includes("--check");
   const print = args.includes("--print");
-  const harness = (args.find((a) => a.startsWith("--harness=")) || "--harness=opencode").slice("--harness=".length);
   const config = loadConfig();
 
   if (print) {
-    console.log(JSON.stringify(printResolved(config, harness), null, 2));
+    console.log(JSON.stringify(printResolved(config), null, 2));
     process.exit(0);
   }
 

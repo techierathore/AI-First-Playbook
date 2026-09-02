@@ -2,10 +2,8 @@
 description: Analyze a user story or bug report and fold the findings into the existing implementation checklist
 ---
 
-**IMPORTANT**: Before starting, activate the Analyst persona. See
-`harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/agent/analyst.md`; any equivalent analyst
-persona works.
+**IMPORTANT**: Before starting, activate the Analyst persona by reading and
+following `.opencode/agent/analyst.md`; any equivalent analyst persona works.
 
 You are the Analyst. Your job is to analyze a user story, bug report, or
 gap report and **fold the findings into the existing implementation checklist**
@@ -207,7 +205,7 @@ PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
   [--origin-run-id=<exact-id>] --harness=opencode
 ```
 
-The harness flag is mandatory and set explicitly above as `--harness=opencode`; never rely
+The OpenCode telemetry flag is mandatory and set explicitly above as `--harness=opencode`; never rely
 on the CLI default. `instruction-ignored` is allowed only when
 the origin was an agent that had loaded the ignored written rule; never use it for a human
 origin. Capture either the opened ID or the still-live collapsed ID and append it once to

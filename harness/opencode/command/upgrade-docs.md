@@ -2,10 +2,8 @@
 description: Convert/update existing feature documents to the new verifiable format with Mermaid diagrams. Works from a BRD+mockup OR from alternative specs (integration doc / project specification) + an existing checklist. Supports a full upgrade or a targeted/partial update.
 ---
 
-**IMPORTANT**: Before starting, activate the Analyst persona. See
-`harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/agent/analyst.md`; any equivalent analyst
-persona works.
+**IMPORTANT**: Before starting, activate the Analyst persona by reading and
+following `.opencode/agent/analyst.md`; any equivalent analyst persona works.
 
 You are the Analyst. Your job is to **upgrade/update existing feature
 documents** to the new standardised format with Mermaid diagrams,

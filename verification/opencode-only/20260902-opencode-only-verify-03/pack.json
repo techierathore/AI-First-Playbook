@@ -1,0 +1,391 @@
+[
+  {
+    "id": "@techierathore/ai-first-playbook@0.1.0",
+    "name": "@techierathore/ai-first-playbook",
+    "version": "0.1.0",
+    "size": 242115,
+    "unpackedSize": 692330,
+    "shasum": "9169b23335572d2bf9f8eb77fdbc6e9df3185def",
+    "integrity": "sha512-kG4zpurs40+jFM96aWlyKBZhlls2EanXMUa8gTtjae1bELOoknBAVS5+PKOlOAp5cBMRei1shUP52A82ke0jew==",
+    "filename": "techierathore-ai-first-playbook-0.1.0.tgz",
+    "files": [
+      {
+        "path": "AGENTS.md",
+        "size": 6273,
+        "mode": 493
+      },
+      {
+        "path": "LICENSE",
+        "size": 11524,
+        "mode": 493
+      },
+      {
+        "path": "README.md",
+        "size": 15617,
+        "mode": 493
+      },
+      {
+        "path": "docs/Adoption-Metrics.md",
+        "size": 2705,
+        "mode": 493
+      },
+      {
+        "path": "docs/Brownfield-Case-Study.md",
+        "size": 33937,
+        "mode": 493
+      },
+      {
+        "path": "docs/Environment-Profile.md",
+        "size": 303,
+        "mode": 493
+      },
+      {
+        "path": "docs/Getting-Started.md",
+        "size": 41391,
+        "mode": 493
+      },
+      {
+        "path": "docs/Greenfield-Case-Study.md",
+        "size": 30841,
+        "mode": 493
+      },
+      {
+        "path": "docs/Handoffs.md",
+        "size": 239,
+        "mode": 493
+      },
+      {
+        "path": "docs/Installation.md",
+        "size": 4018,
+        "mode": 493
+      },
+      {
+        "path": "docs/OpenCode-WSL-Setup-Guide.md",
+        "size": 50600,
+        "mode": 493
+      },
+      {
+        "path": "docs/Operating-Model.md",
+        "size": 549,
+        "mode": 493
+      },
+      {
+        "path": "docs/Release-And-Operations.md",
+        "size": 350,
+        "mode": 493
+      },
+      {
+        "path": "docs/Repository-Structure.md",
+        "size": 6974,
+        "mode": 493
+      },
+      {
+        "path": "docs/Security.md",
+        "size": 926,
+        "mode": 493
+      },
+      {
+        "path": "docs/Telemetry-Guide.md",
+        "size": 18329,
+        "mode": 493
+      },
+      {
+        "path": "docs/Troubleshooting.md",
+        "size": 2598,
+        "mode": 493
+      },
+      {
+        "path": "docs/Usage.md",
+        "size": 2525,
+        "mode": 493
+      },
+      {
+        "path": "docs/YOLO-Mode-Guide.md",
+        "size": 14250,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/agent/analyst.md",
+        "size": 269,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/agent/builder.md",
+        "size": 2292,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/agent/orchestrator.md",
+        "size": 894,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/agent/verifier.md",
+        "size": 54905,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/add-doc.md",
+        "size": 30374,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/amend-checklist.md",
+        "size": 6197,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/analyze-fix.md",
+        "size": 15857,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/archive-checklist.md",
+        "size": 12305,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/create-issue-list.md",
+        "size": 8829,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/feature-plan.md",
+        "size": 17869,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/fix.md",
+        "size": 18063,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/generate-html.md",
+        "size": 7225,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/implement.md",
+        "size": 26646,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/legacy-audit.md",
+        "size": 579,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/log-miss.md",
+        "size": 3045,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/refresh-doc.md",
+        "size": 17194,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/upgrade-docs.md",
+        "size": 25227,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/command/verify.md",
+        "size": 3303,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/plugin/spec-guardrails.ts",
+        "size": 3143,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/plugin/telemetry.ts",
+        "size": 8744,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/plugin/write-policy.mjs",
+        "size": 11859,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/plugin/yolo-policy.mjs",
+        "size": 17463,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/plugin/yolo.ts",
+        "size": 5553,
+        "mode": 493
+      },
+      {
+        "path": "harness/opencode/templates/doc-shell.html",
+        "size": 23433,
+        "mode": 493
+      },
+      {
+        "path": "onboarding/first-week.md",
+        "size": 8597,
+        "mode": 493
+      },
+      {
+        "path": "onboarding/team-rollout.md",
+        "size": 528,
+        "mode": 493
+      },
+      {
+        "path": "opencode.json",
+        "size": 945,
+        "mode": 493
+      },
+      {
+        "path": "package.json",
+        "size": 2676,
+        "mode": 493
+      },
+      {
+        "path": "phases/01-plan.md",
+        "size": 1999,
+        "mode": 493
+      },
+      {
+        "path": "phases/02-plan-review-gate.md",
+        "size": 1162,
+        "mode": 493
+      },
+      {
+        "path": "phases/03-build.md",
+        "size": 3935,
+        "mode": 493
+      },
+      {
+        "path": "phases/04-self-review.md",
+        "size": 1883,
+        "mode": 493
+      },
+      {
+        "path": "phases/05-verify.md",
+        "size": 3024,
+        "mode": 493
+      },
+      {
+        "path": "phases/06-verification-results-gate.md",
+        "size": 3443,
+        "mode": 493
+      },
+      {
+        "path": "phases/07-fix.md",
+        "size": 1534,
+        "mode": 493
+      },
+      {
+        "path": "phases/08-human-acceptance.md",
+        "size": 1869,
+        "mode": 493
+      },
+      {
+        "path": "phases/09-post-verification-bugs.md",
+        "size": 2304,
+        "mode": 493
+      },
+      {
+        "path": "phases/10-production-bugs.md",
+        "size": 3125,
+        "mode": 493
+      },
+      {
+        "path": "playbook/environment-profile.yml",
+        "size": 1123,
+        "mode": 493
+      },
+      {
+        "path": "playbook/model-tiers.yml",
+        "size": 2756,
+        "mode": 493
+      },
+      {
+        "path": "scripts/install.mjs",
+        "size": 9013,
+        "mode": 493
+      },
+      {
+        "path": "scripts/miss-lib.mjs",
+        "size": 49026,
+        "mode": 493
+      },
+      {
+        "path": "scripts/playbook-miss.mjs",
+        "size": 8982,
+        "mode": 493
+      },
+      {
+        "path": "scripts/playbook-telemetry.mjs",
+        "size": 8052,
+        "mode": 493
+      },
+      {
+        "path": "templates/checklist-item-template.md",
+        "size": 3198,
+        "mode": 493
+      },
+      {
+        "path": "templates/checklist-metadata.yml",
+        "size": 859,
+        "mode": 493
+      },
+      {
+        "path": "templates/deployment-steps-template.md",
+        "size": 1854,
+        "mode": 493
+      },
+      {
+        "path": "templates/handoffs/acceptance.md",
+        "size": 374,
+        "mode": 420
+      },
+      {
+        "path": "templates/handoffs/implementation-summary.md",
+        "size": 363,
+        "mode": 420
+      },
+      {
+        "path": "templates/handoffs/incident.md",
+        "size": 396,
+        "mode": 420
+      },
+      {
+        "path": "templates/handoffs/operations-transfer.md",
+        "size": 425,
+        "mode": 420
+      },
+      {
+        "path": "templates/handoffs/plan-approval.md",
+        "size": 368,
+        "mode": 420
+      },
+      {
+        "path": "templates/handoffs/pr-evidence.md",
+        "size": 300,
+        "mode": 420
+      },
+      {
+        "path": "templates/handoffs/release-readiness.md",
+        "size": 442,
+        "mode": 420
+      },
+      {
+        "path": "templates/handoffs/verification-results.md",
+        "size": 421,
+        "mode": 420
+      },
+      {
+        "path": "templates/issues-file-template.md",
+        "size": 2137,
+        "mode": 493
+      }
+    ],
+    "entryCount": 75,
+    "bundled": []
+  }
+]

@@ -33,7 +33,7 @@ You must have:
 If the user has NOT provided the checklist path, **ASK for it**.
 Also ask for the verification guide and DB changes doc paths if not provided.
 
-**YOLO mode** (token `YOLO` in the input, an active `/goal`, or `PLAYBOOK_YOLO=1`):
+**YOLO mode** (token `YOLO` in the input or `PLAYBOOK_YOLO=1`):
 pass the word `YOLO` into the verifier's brief verbatim. The verifier then treats every
 approval in its rules as pre-approved (starting apps, running Automated deployment steps,
 installing tools), logs decisions under `## YOLO Decisions`, verifies **every** item, and

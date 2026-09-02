@@ -8,7 +8,7 @@
  * record kinds: `miss` (opened), `miss-fix` (closed), `miss-amend`
  * (completes a null closed-vocabulary field; never overwrites a value).
  *
- * Design: docs/Miss-Telemetry-AI-First-Playbook.md. Provenance rules that
+ * Contract: docs/Telemetry-Guide.md. Provenance rules that
  * this library enforces mechanically, not by prose:
  *   - an agent may classify, but may never report a number (or a provenance
  *     verdict): origin_model / origin_confidence / every token & cost field
@@ -25,7 +25,7 @@ import { dirname, join } from "node:path";
 
 export const MISS_SCHEMA = 1;
 
-// ── closed vocabularies (docs/Miss-Telemetry-AI-First-Playbook.md §4.1) ─────
+// ── closed vocabularies (docs/Telemetry-Guide.md §7) ───────────────────────
 export const MISS_CLASS = [
   "missed-requirement", "partial-implementation", "wrong-behaviour", "regression",
   "unspecified-gap", "spec-contradiction", "scope-creep", "hallucinated-api",
@@ -55,7 +55,7 @@ export const PHASE_GATES = ["PASS", "FAIL", "PASS (code-audit)", "FAIL (code-aud
 // verdict_after reuses the checklist's own status vocabulary
 // (templates/checklist-metadata.yml), never a parallel one.
 export const VERDICTS_AFTER = ["pass", "fail", "data-gap", "blocked", "deferred", "abandoned"];
-export const HARNESS = ["opencode", "claude-code"];
+export const HARNESS = ["opencode"];
 // Only closed-vocabulary JUDGEMENTS are amendable: a judgement may be
 // completed, an observation may not. Everything the emitter/joiner derives
 // (model, confidence, tokens, cost, attribution) is excluded outright.

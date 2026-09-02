@@ -1,17 +1,16 @@
 /**
- * spec-guardrails.ts — OpenCode carrier for the spec-guardrails policy.
+ * spec-guardrails.ts — OpenCode plugin for the spec-guardrails policy.
  *
  * Mechanical enforcement of process rules that the Verifier / Orchestrator
  * agents have repeatedly violated despite explicit prompt instructions.
  *
- * Hooks into OpenCode's tool.execute.before event and BLOCKS any write/edit
+ * Uses OpenCode's tool.execute.before event and BLOCKS any write/edit
  * to forbidden filenames before the tool actually runs. The agent sees the
  * thrown error in its tool result, which forces it to redirect.
  *
  * The policy itself (forbidden patterns, path normalization, verifier
- * write-scope, block message) lives in ./write-policy.mjs — a pure module
- * shared verbatim with the Claude Code PreToolUse hook carrier. Keep policy
- * changes there; this file only adapts it to the OpenCode plugin API.
+ * write-scope, block message) lives in ./write-policy.mjs. Keep policy changes
+ * there; this file only adapts it to the OpenCode plugin API.
  *
  * Activated automatically by OpenCode at startup. No agent configuration
  * needed.
@@ -43,7 +42,7 @@ export const SpecGuardrails: Plugin = async ({ client }) => {
         },
       });
     } catch {
-      // logging is best-effort; never crash a hook
+      // logging is best-effort; never crash the plugin
     }
   };
 
@@ -74,7 +73,7 @@ export const SpecGuardrails: Plugin = async ({ client }) => {
     },
 
     /**
-     * After-hook for observability: log every successful file write so we
+     * After-event observability: log every successful file write so we
      * can see in the OpenCode log what files the agents are touching.
      * Cheap and non-blocking.
      */

@@ -1,0 +1,6 @@
+   601 docs/Getting-Started.md
+   537 docs/Brownfield-Case-Study.md
+   540 docs/Greenfield-Case-Study.md
+   232 docs/Telemetry-Guide.md
+   244 docs/YOLO-Mode-Guide.md
+  2154 total

@@ -10,7 +10,7 @@ Completion contract: a build or fix phase is finished only when every item in sc
 implemented, built, self-tested and marked to-verify (or tagged with an external blocker).
 Never hand back "run the phase again for the remaining items" — plan another wave.
 
-YOLO mode (token `YOLO`, an active `/goal`, or `PLAYBOOK_YOLO=1`): all approval gates are
+YOLO mode (token `YOLO` or `PLAYBOOK_YOLO=1`): all approval gates are
 pre-approved; decide, log under `## YOLO Decisions`, continue; pass `YOLO` into every
 builder brief; git history writes stay denied; end with `PLAYBOOK_RUN_COMPLETE:` or
 `PLAYBOOK_RUN_BLOCKED:` as the very last line. See AGENTS.md → "YOLO mode".

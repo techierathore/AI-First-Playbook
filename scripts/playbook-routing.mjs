@@ -3,13 +3,12 @@
  * playbook-routing.mjs — the ONE command for model routing.
  *
  *   node scripts/playbook-routing.mjs status                       what is routing doing right now?
- *   node scripts/playbook-routing.mjs on                           turn routing ON  (stamps model: into harness files)
+ *   node scripts/playbook-routing.mjs on                           turn routing ON  (stamps model: into OpenCode files)
  *   node scripts/playbook-routing.mjs off                          turn routing OFF (removes every stamp)
  *   node scripts/playbook-routing.mjs set-tier <command|agent> <tier>
  *                                                                  e.g. set-tier verify economy · set-tier builder inherit
- *   node scripts/playbook-routing.mjs set-model <tier> <harness> <model>
- *                                                                  e.g. set-model standard opencode opencode/hy3-free
- *                                                                  e.g. set-model frontier claude-code opus
+ *   node scripts/playbook-routing.mjs set-model <tier> <model>
+ *                                                                  e.g. set-model standard opencode/hy3-free
  *   node scripts/playbook-routing.mjs set-escalation <command> <attempts> <tier>
  *                                                                  e.g. set-escalation fix 2 frontier
  *                                                                  ADVISORY: applied by whoever launches the command;
@@ -18,7 +17,7 @@
  *
  * Every verb edits playbook/model-tiers.yml IN PLACE (comments preserved) and
  * then re-applies it through scripts/apply-model-tiers.mjs, so the map and the
- * harness/ frontmatter never disagree. Idempotent — run it as often as you like.
+ * OpenCode frontmatter never disagrees. Idempotent — run it as often as you like.
  * Ported from TechieFlow's tf-routing.sh; design: docs/Decisions.md 2026-08-21.
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -26,7 +25,6 @@ import { applyTiers, loadConfig, tiersPath, printResolved } from "./apply-model-
 import { routingEnabled, UNROUTED_TIERS } from "./tier-lib.mjs";
 
 const TIERS = ["frontier", "standard", "economy"];
-const HARNESSES = ["opencode", "claude-code"];
 const [verb = "status", ...rest] = process.argv.slice(2);
 
 const usage = (msg) => {
@@ -40,7 +38,7 @@ const write = (text) => writeFileSync(tiersPath, text.endsWith("\n") ? text : te
 const isTop = (line) => /^\S/.test(line) && !line.trimStart().startsWith("#");
 const topKey = (line) => line.split(":")[0].trim();
 
-/** Re-apply the map to the harness files and report; exit 1 on problems. */
+/** Re-apply the map to the OpenCode files and report; exit 1 on problems. */
 function bind() {
   const r = applyTiers({ log: console.log });
   if (r.problems.length) { console.error(r.problems.map((p) => `ERROR ${p}`).join("\n")); process.exit(1); }
@@ -106,10 +104,10 @@ switch (verb) {
   }
 
   case "set-model": {
-    const [tier, harness, model] = rest;
-    if (!tier || !harness || !model) usage("usage: playbook-routing.mjs set-model <frontier|standard|economy> <opencode|claude-code> <model-id>");
+    const [tier, model, ...extra] = rest;
+    if (!tier || !model || extra.length) usage("usage: playbook-routing.mjs set-model <frontier|standard|economy> <provider/model-id>");
     if (!TIERS.includes(tier)) usage(`unknown tier '${tier}' — use ${TIERS.join("|")}`);
-    if (!HARNESSES.includes(harness)) usage(`harness must be 'opencode' (provider/model — list with: opencode models) or 'claude-code' (opus|sonnet|haiku or a model id)`);
+    if (!/^[^\s/]+\/[^\s/]+$/.test(model)) usage("OpenCode model must be a provider/model-id (list with: opencode models)");
     const lines = read().split("\n");
     let sect = null, inTier = false, done = false;
     for (let i = 0; i < lines.length && !done; i++) {
@@ -118,14 +116,13 @@ switch (verb) {
       if (sect !== "tiers") continue;
       const t = line.match(/^  ([\w-]+):\s*$/);
       if (t) { inTier = t[1] === tier; continue; }
-      const m = inTier && line.match(new RegExp(`^(    ${harness}:\\s*)(\\S+)(\\s*#.*)?$`));
+      const m = inTier && line.match(/^(    opencode:\s*)(\S+)(\s*#.*)?$/);
       if (m) { lines[i] = `${m[1]}"${model}"${realign(m[2], `"${model}"`, m[3])}`; done = true; }
     }
-    if (!done) usage(`tiers.${tier}.${harness} not found in ${tiersPath}`);
+    if (!done) usage(`tiers.${tier}.opencode not found in ${tiersPath}`);
     write(lines.join("\n"));
-    console.log(`set tiers.${tier}.${harness} -> ${model}`);
+    console.log(`set tiers.${tier}.opencode -> ${model}`);
     bind();
-    if (harness === "claude-code") console.log("Claude Code pack: regenerate with  node scripts/harness-install.mjs claude-code --target=<project>");
     break;
   }
 
@@ -180,7 +177,7 @@ switch (verb) {
     console.log("\nTier models:");
     for (const t of TIERS) {
       const m = config.tiers?.[t] ?? {};
-      console.log(`  ${t.padEnd(9)} opencode: ${(m.opencode ?? "-").padEnd(30)} claude-code: ${m["claude-code"] ?? "-"}`);
+      console.log(`  ${t.padEnd(9)} opencode: ${m.opencode ?? "-"}`);
     }
     console.log("\nCommands by tier:");
     for (const t of [...TIERS, "inherit"]) {
@@ -202,8 +199,7 @@ switch (verb) {
     if (enabled) {
       console.log("Routed phases run on their tier model when entered through their command (/verify, /implement, …);");
       console.log("your default chat is never routed. OpenCode: the command's model STAYS for the session afterwards —");
-      console.log("re-pick your model or start a new session if you keep chatting. Claude Code pack: regenerate after");
-      console.log("any change with  node scripts/harness-install.mjs claude-code --target=<project>");
+      console.log("re-pick your model or start a new session if you keep chatting.");
     } else {
       console.log("Every phase runs on the session model. Turn on with:  node scripts/playbook-routing.mjs on");
     }
@@ -211,7 +207,8 @@ switch (verb) {
   }
 
   case "print":
-    console.log(JSON.stringify(printResolved(loadConfig(), rest[0] ?? "opencode"), null, 2));
+    if (rest.length) usage("usage: playbook-routing.mjs print");
+    console.log(JSON.stringify(printResolved(loadConfig()), null, 2));
     break;
 
   case "-h": case "--help": case "help":

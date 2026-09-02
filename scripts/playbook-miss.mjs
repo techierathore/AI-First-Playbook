@@ -4,7 +4,7 @@
  *
  * A miss is the durable record of a defect the process let escape: what was
  * missed, which practice missed it, who found it, and (via the joiner) what
- * fixing it cost. Design: docs/Miss-Telemetry-AI-First-Playbook.md; fields:
+ * fixing it cost. Field and lifecycle contract:
  * docs/Telemetry-Guide.md §7.
  *
  * Records append to verification/telemetry/misses.ndjson — committed, never
@@ -82,7 +82,7 @@ try {
   if (!command || command === "help" || flags.help) {
     console.log(`playbook-miss.mjs — the miss-stream CLI (open / close / amend / next-id / list)
 stream: ${missesPath} (committed, append-only, never rotated)
-design: docs/Miss-Telemetry-AI-First-Playbook.md · fields: docs/Telemetry-Guide.md §7
+fields and lifecycle: docs/Telemetry-Guide.md §7
 writes are opt-in: PLAYBOOK_TELEMETRY=1`);
   } else if (command === "next-id") {
     console.log(nextMissId(readMisses(missesPath).records));

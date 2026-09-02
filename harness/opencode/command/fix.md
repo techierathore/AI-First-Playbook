@@ -6,10 +6,8 @@ Read `playbook/environment-profile.yml` before running any build, migration or s
 Use only profile-declared topology and secret-safe commands; never guess stack, ports, config
 files or migration tools.
 
-**IMPORTANT**: Before starting, activate the Orchestrator persona. See
-`harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/agent/orchestrator.md`; any equivalent
-orchestrator persona works.
+**IMPORTANT**: Before starting, activate the Orchestrator persona by reading and
+following `.opencode/agent/orchestrator.md`; any equivalent orchestrator persona works.
 
 You are the Orchestrator in fix mode. **You are NOT a single developer
 working through failures one at a time.** Spawn parallel sub-agents for
@@ -72,7 +70,7 @@ checklist; mention the Gap-Report and ask whether to delete it.
 If the checklist path is not provided at all, **ASK** for it.
 
 ## YOLO mode (unattended)
-If the input contains the token `YOLO`, a `/goal` is active, or `PLAYBOOK_YOLO=1` is
+If the input contains the token `YOLO` or `PLAYBOOK_YOLO=1` is
 set, the `AGENTS.md` "YOLO mode" rules apply to this run and every builder you spawn:
 every "Proceed?/Approve?/ASK" below is pre-approved (print the plan, then go); when a
 Gap-Report and a checklist are both given, use the checklist and delete the Gap-Report

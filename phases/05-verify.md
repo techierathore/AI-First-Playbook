@@ -8,7 +8,7 @@ item. It did not write the code, so it has no reason to believe the work is done
 never modifies product code; its writes are restricted to the checklist (inline
 annotations) and `verification/` (integration tests and runners).
 
-Full agent spec: [`templates/verifier-agent.md`](../templates/verifier-agent.md).
+Full installed agent instructions: [`.opencode/agent/verifier.md`](../.opencode/agent/verifier.md).
 
 ## Step 0 — Deployment Steps first
 

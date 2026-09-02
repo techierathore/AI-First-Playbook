@@ -18,7 +18,7 @@ with a build + smoke-test self-check before declaring done.
   implemented, built, self-tested and marked to-verify (or tagged `[INFRA BLOCKER]` /
   `[EXTERNAL BLOCKER]` with what is missing). It never hands back "run again for the
   remaining items" — it plans more waves instead, and hands off to `/verify` once.
-- **YOLO mode** (token `YOLO`, an active `/goal`, or `PLAYBOOK_YOLO=1`): every approval
+- **YOLO mode** (token `YOLO` or `PLAYBOOK_YOLO=1`): every approval
   gate is pre-approved, decisions are logged under `## YOLO Decisions`, git history writes
   stay denied, and the run ends with `PLAYBOOK_RUN_COMPLETE:` / `PLAYBOOK_RUN_BLOCKED:` so
   the supervisor (`scripts/playbook-yolo.mjs`) can wait out usage limits and resume. See

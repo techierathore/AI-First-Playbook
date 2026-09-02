@@ -1,35 +1,31 @@
 # Per-phase model routing for the AI-First Playbook.
 #
 # Each command (the unit a phase is entered through) declares the model TIER
-# it needs; tiers resolve to concrete models per harness. The one command that
-# edits this file and applies it (docs/Model-Routing-Guide.md §5):
+# it needs; tiers resolve to concrete OpenCode models. Target installs retain
+# this map for telemetry attribution. A full framework source checkout also
+# provides the optional routing utilities:
 #
 #   node scripts/playbook-routing.mjs status | on | off | set-tier | set-model | set-escalation | bind
 #
 # Lower level, still supported:
 #   node scripts/apply-model-tiers.mjs          # stamps/strips harness/opencode frontmatter
-#   node scripts/harness-install.mjs claude-code <target>   # uses the same map
 #
-# The models below are working defaults — substitute your provider/models and
-# re-run the apply script. Rationale for each assignment:
-# docs/Adapter-Design.md ("Starting tier mapping").
+# The models below are working defaults. Source-checkout operators may substitute
+# their provider/models and re-run the apply script.
 version: 1
 
-# Master switch — OFF by default (docs/Decisions.md 2026-08-21). While off, no
-# harness file carries a model: stamp and every phase runs on the session
+# Master switch — OFF by default. While off, no
+# OpenCode file carries a model: stamp and every phase runs on the session
 # model; the map below is kept but dormant. Flip with: playbook-routing.mjs on|off
 enabled: false
 
 tiers:
   frontier:
     opencode: "anthropic/claude-opus-5"
-    claude-code: "opus"
   standard:
     opencode: "anthropic/claude-sonnet-5"
-    claude-code: "sonnet"
   economy:
     opencode: "anthropic/claude-haiku-4-5"
-    claude-code: "haiku"
 
 # Phase-entry commands. "none" would mean deterministic/human - no such
 # command exists today; gates run without model turns.
@@ -47,7 +43,6 @@ commands:
   create-issue-list: economy    # mechanical tracker-to-markdown transcription
   amend-checklist: economy      # mechanical in-place edits
   archive-checklist: economy    # mechanical rotation
-  update-context: economy       # mechanical sync
   generate-html: economy        # mechanical conversion
 
 # Agent fallbacks: apply when something invokes the agent without going

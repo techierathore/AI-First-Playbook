@@ -1,0 +1,4 @@
+installed_files=73
+required_assets_present=15/15
+prohibited_artifacts_present=0
+installed_target_asset_assertions=PASS

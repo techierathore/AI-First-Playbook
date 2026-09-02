@@ -1,0 +1,6 @@
+docs/Getting-Started.md: lines=601/601 headings=41 fences=16 table_rows=75 words=5363 required_sections=5/5
+docs/Brownfield-Case-Study.md: lines=537/537 headings=33 fences=12 table_rows=69 words=4420 required_sections=5/5
+docs/Greenfield-Case-Study.md: lines=540/540 headings=32 fences=12 table_rows=45 words=3847 required_sections=4/4
+docs/Telemetry-Guide.md: lines=232/232 headings=20 fences=16 table_rows=21 words=2231 required_sections=4/4
+docs/YOLO-Mode-Guide.md: lines=244/244 headings=16 fences=4 table_rows=51 words=2217 required_sections=5/5
+long_form_documentation_materiality=PASS

@@ -35,8 +35,9 @@ handoff to [Phase 5 — Verify](05-verify.md) happens once, with every item acco
 
 ## YOLO mode — unattended build
 
-Add the token `YOLO` to the command (`/implement YOLO @<checklist>`), set a Claude Code
-`/goal`, or run under `scripts/playbook-yolo.mjs` (which sets `PLAYBOOK_YOLO=1`). Every
+Add the token `YOLO` to the command (`/implement YOLO @<checklist>`), or use the optional
+supervisor from a full framework source checkout (which sets
+`PLAYBOOK_YOLO=1`). Every
 approval gate in this phase — the wave plan, the smoke-test start, deployment steps,
 deletions — is then pre-approved; the orchestrator records each decision under
 `## YOLO Decisions` in the checklist and does not stop until the completion contract is

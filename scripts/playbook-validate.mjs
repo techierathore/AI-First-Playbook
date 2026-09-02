@@ -1,14 +1,82 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readMisses, validateMisses } from "./miss-lib.mjs";
-import { parseTiersYaml, resolveModel, routingEnabled, splitMarkdown, UNROUTED_TIERS } from "./tier-lib.mjs";
+import { parseTiersYaml } from "./tier-lib.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const errors = [];
 const read = (p) => readFileSync(p.startsWith(root) ? p : join(root, p), "utf8");
 const files = (dir, suffix) => readdirSync(join(root, dir)).filter((f) => f.endsWith(suffix));
 const verdicts = ["PASS", "FAIL", "PASS (code-audit)", "FAIL (code-audit)", "DATA-GAP", "BLOCKED"];
+
+const removedHarness = ["harness", ["claude", "code"].join("-")].join("/");
+const removedConfig = `.${["clau", "de"].join("")}`;
+const removedInstructions = ["CLAUDE", ".md"].join("");
+const removedMcpConfig = [".mcp", ".json"].join("");
+const removedGenerator = ["scripts/harness", "-install.mjs"].join("");
+const prohibitedArtifacts = [removedHarness, removedConfig, removedInstructions, removedMcpConfig, removedGenerator];
+const prohibitedMarkers = [
+  ["Claude", "Code"].join(" "),
+  ["Claude", "adapter"].join(" "),
+  ["Claude", "binary"].join(" "),
+  ["Claude", "harness"].join(" "),
+  ["Claude", "hook"].join(" "),
+  ["Claude", "pack"].join(" "),
+  ["Claude", "parity"].join(" "),
+  ["claude", "code"].join("-"),
+  ["claude", " -p"].join(""),
+  ["PLAYBOOK", "CLAUDE", "BIN"].join("_"),
+  ["CLAUDE", "PROJECT", "DIR"].join("_"),
+  ...prohibitedArtifacts,
+];
+const scanExclusions = new Set([
+  "docs/OpenCode-Only-Framework-Implementation-Checklist.md",
+]);
+const ignoredScanDirectories = new Set([".git", "node_modules"]);
+const isFrameworkSource = (path) => path === ".gitignore" || /\.(?:js|mjs|ts|json|jsonc|md|ya?ml)$/.test(path);
+
+function openCodeOnlyErrors(scanRoot) {
+  const failures = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolute = join(directory, entry.name);
+      const path = relative(scanRoot, absolute).replaceAll("\\", "/");
+      if (scanExclusions.has(path) || (entry.isDirectory() && ignoredScanDirectories.has(entry.name))) continue;
+      let forbiddenArtifact = false;
+      for (const artifact of prohibitedArtifacts) {
+        if (path === artifact || path.startsWith(`${artifact}/`)) {
+          failures.push(`prohibited integration artifact "${artifact}": ${path}`);
+          forbiddenArtifact = true;
+          break;
+        }
+      }
+      if (forbiddenArtifact) continue;
+      if (entry.isDirectory()) visit(absolute);
+      else if (entry.isFile() && isFrameworkSource(path)) {
+        const text = readFileSync(absolute, "utf8");
+        for (const marker of prohibitedMarkers) {
+          if (text.includes(marker)) failures.push(`prohibited integration marker "${marker}" in ${path}`);
+        }
+      }
+    }
+  };
+  visit(scanRoot);
+  return failures;
+}
+
+const scanOnlyArg = process.argv.find((arg) => arg.startsWith("--open-code-only-scan-root="));
+if (scanOnlyArg) {
+  const scanRoot = resolve(scanOnlyArg.slice(scanOnlyArg.indexOf("=") + 1));
+  const scanErrors = openCodeOnlyErrors(scanRoot);
+  if (scanErrors.length) {
+    console.error(scanErrors.map((error) => `ERROR ${error}`).join("\n"));
+    process.exit(1);
+  }
+  console.log("OpenCode-only source validation passed");
+  process.exit(0);
+}
+errors.push(...openCodeOnlyErrors(root));
 
 if (!statSync(join(root, "opencode.json"))) errors.push("missing opencode.json");
 for (const required of ["docs/Installation.md", "docs/Getting-Started.md", "docs/Greenfield-Case-Study.md", "docs/Brownfield-Case-Study.md", "scripts/install.mjs"]) {
@@ -35,11 +103,11 @@ if (existsSync(join(root, ".github/workflows/release.yml"))) {
   }
   if (/^\s*environment:/m.test(releaseWorkflow)) errors.push("release.yml: environment gates make npm publication wait for approval");
 }
-if (existsSync(join(root, ".github/workflows/validate.yml")) && !read(".github/workflows/validate.yml").includes("npm run test:misses")) {
-  errors.push("validate.yml: missing miss-telemetry tests");
-}
 if (existsSync(join(root, ".github/workflows/validate.yml"))) {
   const validationWorkflow = read(".github/workflows/validate.yml");
+  for (const test of ["npm run test:misses", "npm run test:install"]) {
+    if (!validationWorkflow.includes(test)) errors.push(`validate.yml: missing ${test}`);
+  }
   for (const action of ["actions/checkout@v7", "actions/setup-node@v7"]) {
     if (!validationWorkflow.includes(action)) errors.push(`validate.yml: missing Node.js 24-compatible ${action}`);
   }
@@ -77,48 +145,6 @@ for (const f of readdirSync(join(root, "harness/opencode/command"))) {
   if (/(curl\s+[^\n]*-u\s+|\s-P\s+(<[^>]+>|\S+))/.test(text)) errors.push(`${f}: credential-bearing command example`);
 }
 
-// ── Claude Code pack (generated by scripts/harness-install.mjs) ─────────────
-const pack = join(root, "harness/claude-code");
-if (!existsSync(pack)) {
-  errors.push("missing harness/claude-code — regenerate with: node scripts/harness-install.mjs claude-code");
-} else {
-  const ccCommands = new Set(files("harness/claude-code/commands", ".md"));
-  for (const f of runnable) if (!ccCommands.has(f)) errors.push(`claude-code pack: missing commands/${f} — regenerate the pack`);
-  for (const f of ccCommands) if (!runnable.has(f)) errors.push(`claude-code pack: stale commands/${f} — regenerate the pack`);
-  const ocAgents = new Set(files("harness/opencode/agent", ".md"));
-  const ccAgents = new Set(files("harness/claude-code/agents", ".md"));
-  for (const f of ocAgents) if (!ccAgents.has(f)) errors.push(`claude-code pack: missing agents/${f} — regenerate the pack`);
-  for (const required of ["hooks/spec-guardrails-hook.mjs", "hooks/write-policy.mjs", "hooks/yolo-hook.mjs", "hooks/yolo-policy.mjs", "settings.json", "CLAUDE.md", "mcp.json"]) {
-    if (!existsSync(join(pack, required))) errors.push(`claude-code pack: missing ${required}`);
-  }
-  // the shared policy must not drift between its three copies
-  if (existsSync(join(pack, "hooks/write-policy.mjs"))) {
-    const master = read("harness/opencode/plugin/write-policy.mjs");
-    if (read("harness/claude-code/hooks/write-policy.mjs") !== master) errors.push("write-policy.mjs drift: harness/claude-code/hooks differs from harness/opencode/plugin — regenerate the pack");
-    if (existsSync(join(root, ".opencode/plugin/write-policy.mjs")) && read(".opencode/plugin/write-policy.mjs") !== master) errors.push("write-policy.mjs drift: .opencode/plugin differs from harness/opencode/plugin");
-  }
-  if (existsSync(join(pack, "hooks/yolo-policy.mjs"))) {
-    const master = read("harness/opencode/plugin/yolo-policy.mjs");
-    if (read("harness/claude-code/hooks/yolo-policy.mjs") !== master) errors.push("yolo-policy.mjs drift: harness/claude-code/hooks differs from harness/opencode/plugin — regenerate the pack");
-    if (existsSync(join(root, ".opencode/plugin/yolo-policy.mjs")) && read(".opencode/plugin/yolo-policy.mjs") !== master) errors.push("yolo-policy.mjs drift: .opencode/plugin differs from harness/opencode/plugin");
-  }
-  if (existsSync(join(pack, "settings.json"))) {
-    const settings = JSON.parse(read("harness/claude-code/settings.json"));
-    const pre = settings.hooks?.PreToolUse ?? [];
-    const uses = (entries, name) => entries.some((e) => (e.hooks ?? []).some((h) => (h.command ?? "").includes(name)));
-    if (!uses(pre, "spec-guardrails-hook.mjs")) errors.push("claude-code pack: settings.json does not register the spec-guardrails PreToolUse hook");
-    if (!uses(pre, "yolo-hook.mjs")) errors.push("claude-code pack: settings.json does not register the yolo PreToolUse hook");
-    if (!uses(settings.hooks?.PermissionRequest ?? [], "yolo-hook.mjs")) errors.push("claude-code pack: settings.json does not register the yolo PermissionRequest hook");
-  }
-  if (existsSync(join(pack, "CLAUDE.md")) && !read("harness/claude-code/CLAUDE.md").includes("@AGENTS.md")) {
-    errors.push("claude-code pack: CLAUDE.md must import @AGENTS.md");
-  }
-  if (existsSync(join(pack, "commands/verify.md")) && !read("harness/claude-code/commands/verify.md").includes("independence gate")) {
-    errors.push("claude-code pack: commands/verify.md is missing the verifier-delegation preamble — regenerate the pack");
-  }
-  if (existsSync(join(pack, "mcp.json"))) JSON.parse(read("harness/claude-code/mcp.json"));
-}
-
 // ── miss stream (verification/telemetry/misses.ndjson — durable, committed) ─
 // Vocabulary and linkage checks run whenever the stream exists (absent is a
 // valid opt-in state). The §0.2 reporting judgements — why_missed "n of N
@@ -127,7 +153,7 @@ if (!existsSync(pack)) {
 // append-only amend invariant all live in miss-lib.mjs, so the emitter, the
 // joiner and this validator can never disagree on a definition.
 const missRuntime = ["scripts/miss-lib.mjs", "scripts/playbook-miss.mjs", "scripts/playbook-telemetry.mjs"];
-const missCommands = ["harness/opencode/command/log-miss.md", "templates/commands/log-miss.md", "harness/claude-code/commands/log-miss.md"];
+const missCommands = ["harness/opencode/command/log-miss.md", "templates/commands/log-miss.md"];
 for (const f of [...missRuntime, ...missCommands]) {
   if (!existsSync(join(root, f))) errors.push(`missing ${f} — the miss-stream contract (docs/Miss-Telemetry-AI-First-Playbook.md)`);
 }
@@ -161,38 +187,6 @@ if (ignoreLines.includes("verification/telemetry/misses.ndjson")) {
 const tierConfig = parseTiersYaml(read("playbook/model-tiers.yml"));
 if (!tierConfig.commands?.["log-miss"]) errors.push("playbook/model-tiers.yml: commands must assign log-miss a tier");
 
-// Check the generated log-miss command byte-for-byte against the same adapter
-// transformation used by harness-install.mjs. This catches stale content, not
-// merely a missing filename.
-if (missCommands.every((f) => existsSync(join(root, f)))) {
-  const { fields, body } = splitMarkdown(read("harness/opencode/command/log-miss.md"));
-  const tier = tierConfig.commands?.["log-miss"];
-  const head = ["---"];
-  if (fields.description) head.push(`description: ${fields.description}`);
-  if (routingEnabled(tierConfig) && tier && !UNROUTED_TIERS.has(tier)) head.push(`model: ${resolveModel(tierConfig.tiers, tier, "claude-code")}`);
-  head.push("---", "");
-  let preamble = "";
-  if (fields.agent === "verifier" || fields.subtask === "true") {
-    preamble += "**IMPORTANT — independence gate:** delegate ALL of the work below to the\n" +
-      "`verifier` subagent in a single Agent call (fresh, isolated context — it must\n" +
-      "have no memory of the build). Pass it the user's input verbatim plus the full\n" +
-      "instructions below. Do NOT verify inline in this session; if the Agent tool is\n" +
-      "unavailable, stop and tell the user instead of proceeding inline.\n\n";
-  }
-  if (body.includes("`task`")) {
-    preamble += "> Harness note (Claude Code): where this prompt says the `task` tool, use the\n" +
-      "> `Agent` tool; spawn the named subagent types it asks for. Parallel means\n" +
-      "> multiple Agent calls in one message.\n\n";
-  }
-  const translated = body
-    .replaceAll(".opencode/agent/", ".claude/agents/")
-    .replaceAll(".opencode/plugin/", ".claude/hooks/")
-    .replaceAll("spec-guardrails.ts", "spec-guardrails-hook.mjs")
-    .replaceAll("--harness=opencode", "--harness=claude-code");
-  if (read("harness/claude-code/commands/log-miss.md") !== head.join("\n") + preamble + translated) {
-    errors.push("claude-code pack: commands/log-miss.md differs from generated OpenCode source — regenerate the pack");
-  }
-}
 const missesPath = join(root, "verification/telemetry/misses.ndjson");
 if (existsSync(missesPath)) {
   const { records, malformed } = readMisses(missesPath);

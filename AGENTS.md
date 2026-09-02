@@ -38,10 +38,9 @@ exactly once, with the Status Table showing every item.
 
 ## YOLO mode — unattended runs
 
-YOLO mode is on when **any** of these holds: the user's message or command arguments contain
-the token `YOLO` (any case, with or without `*`), a Claude Code `/goal` is active, or
-`PLAYBOOK_YOLO=1` is set in the environment (the supervisor
-`scripts/playbook-yolo.mjs` sets it). Once on, it stays on for the whole run and for every
+YOLO mode is on when **either** of these holds: the user's message or command arguments contain
+the token `YOLO` (any case, with or without `*`), or `PLAYBOOK_YOLO=1` is set in the environment (the optional supervisor in a full framework source
+checkout sets it). Once on, it stays on for the whole run and for every
 sub-agent spawned in it — pass it down explicitly in each sub-agent brief.
 
 In YOLO mode the human has pre-approved everything except git history. Therefore:
@@ -58,7 +57,7 @@ In YOLO mode the human has pre-approved everything except git history. Therefore
   plugin permits. Read-only git (`status`, `log`, `diff`, `show`, `blame`, `branch`,
   `fetch`) is allowed and encouraged.
 - **You still never commit.** `git commit/push/tag/add/rebase/reset/merge/checkout/stash`
-  and `gh pr create` are denied mechanically by the YOLO carrier; do not work around it.
+  and `gh pr create` are denied mechanically by the OpenCode YOLO plugin; do not work around it.
   End the run with `git status` and a summary for the human to commit.
 - **Stop only when the goal is complete.** A phase ends when the completion contract above
   is met; a goal run ends when `/verify` reports every item PASS (loop `/fix` → `/verify`

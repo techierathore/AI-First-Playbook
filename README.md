@@ -40,17 +40,16 @@ make commands demand their inputs.
   real-world codebase — not a demo repo.
 - A designated **process owner** who installs and maintains the framework, plus
   developers who drive it day to day.
-- Built on the OpenCode harness with BMAD v4 personas, against a .NET + React stack; the
-  process itself is harness- and stack-portable — a generated
-  [Claude Code pack](harness/claude-code/) ships alongside the OpenCode original.
+- Built for the OpenCode harness with BMAD v4 personas, against a .NET + React stack. The
+  process is stack-portable; OpenCode is the supported execution environment.
 - **Per-phase model routing:** each command declares the model tier it needs
   (frontier / standard / economy) in [`playbook/model-tiers.yml`](playbook/model-tiers.yml),
   so planning runs on a frontier model while mechanical phases run on cheap ones — the
   dominant cost lever. Ships off; `node scripts/playbook-routing.mjs on|off|status` operates it. Operator guide: [`docs/Model-Routing-Guide.md`](docs/Model-Routing-Guide.md);
   design rationale: [`docs/Adapter-Design.md`](docs/Adapter-Design.md). Per-phase cost
   capture plus committed miss/escape/rework history: [`docs/Telemetry-Guide.md`](docs/Telemetry-Guide.md).
-- **YOLO mode — unattended end-to-end runs:** add `YOLO` to any command, set a `/goal`, or
-  run `node scripts/playbook-yolo.mjs --goal "…"` on a VM. Every permission prompt is
+- **YOLO mode — unattended end-to-end runs:** add `YOLO` to any command or run
+  `node scripts/playbook-yolo.mjs --goal "…"` with OpenCode on a VM. Every permission prompt is
   auto-approved mechanically (except git history, which stays denied), every in-command
   approval gate is pre-approved, the build phase must finish the **whole** checklist, and
   provider usage limits (5-hour / weekly) are waited out — reset time + 15 min — with the
@@ -190,8 +189,8 @@ version:
    the Verifier annotates them FAIL inline.
 4. **Run your first feature** through the loop: `/feature-plan` → review → `/implement`
    → `/verify` → `/fix` until ALL PASS.
-5. **Read [Enablement.md](Enablement.md) before rolling out to a team**, then
-   run the first developer through [`onboarding/first-week.md`](onboarding/first-week.md).
+5. **Read [`onboarding/first-week.md`](onboarding/first-week.md) before rolling out to a
+   team**, then run the first developer through its five-rung adoption ladder.
    Steps 1–4 are the easy part; getting a second person to run the loop is the hard one.
 
 ## Relationship to TechieFlow
@@ -218,21 +217,18 @@ proof. It does nothing about the human one: **a team that reads about a process 
 runs it.** Rolling one of these out fails for structural reasons that have nothing to do
 with whether the tooling works, and shipping two polished guides is not a rollout.
 
-[Enablement.md](Enablement.md) is the argument — five reasons adoption stalls
-and what each one costs you. [`onboarding/first-week.md`](onboarding/first-week.md) is the
-answer: a five-rung ladder from one mechanical command to a solo verified feature, a
+[`onboarding/first-week.md`](onboarding/first-week.md) turns that problem into an operating
+plan: a five-rung ladder from one mechanical command to a solo verified feature, a
 definition of "adopted" you can actually measure, and the cliffs that end first
 experiments.
 
-If you only read one thing beyond this README before rolling this out to a team, read
-those two.
+If you only read one thing beyond this README before rolling this out to a team, read that guide.
 
 ## Repo map
 
 ```
 README.md                  ← you are here
 Decisions.md               ← decision log (why sibling repo, license)
-Enablement.md              ← why team rollouts stall, and what to do instead
 onboarding/
   first-week.md            ← the people-runbook: five rungs to "adopted"
 phases/                    ← one file per lifecycle step (01–10)
@@ -256,7 +252,6 @@ scripts/
   playbook-telemetry.mjs   ← per-phase output + miss cost/provenance joiner
   playbook-yolo.mjs        ← YOLO supervisor: auto-approve, wait out usage limits, resume
   opencode/templates/      ← doc-shell.html
-  claude-code/             ← generated Claude Code pack (same bodies, PreToolUse guardrail)
 playbook/
   model-tiers.yml          ← per-phase model routing (frontier / standard / economy)
 docs/                       ← installation, operating model, security, and session case studies

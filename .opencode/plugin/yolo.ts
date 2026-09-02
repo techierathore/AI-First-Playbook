@@ -1,12 +1,12 @@
 /**
- * yolo.ts — OpenCode carrier for the YOLO (unattended-run) policy.
+ * yolo.ts — OpenCode plugin for the YOLO (unattended-run) policy.
  *
- * Inert unless PLAYBOOK_YOLO=1 is set when OpenCode starts (the supervisor
- * `scripts/playbook-yolo.mjs` sets it; a human may export it before the TUI).
+ * Inert unless PLAYBOOK_YOLO=1 is set when OpenCode starts (a human may export
+ * it before the TUI; the optional source-checkout supervisor also sets it).
  * When active it does three things, all driven by ./yolo-policy.mjs:
  *
  *   1. `permission.ask`     — auto-approves every permission request the
- *                             harness would otherwise stop on (edit, bash,
+ *                             OpenCode would otherwise stop on (edit, bash,
  *                             external_directory, doom_loop, webfetch, …),
  *                             EXCEPT git history/index/ref writes and gh
  *                             publishes, which are denied with the reason.
@@ -21,8 +21,7 @@
  *                             resume the session.
  *
  * Everything is wrapped so the plugin can never break a run. Policy changes
- * belong in yolo-policy.mjs — the same file the Claude Code hook and the
- * supervisor import.
+ * belong in yolo-policy.mjs, which the supervisor also imports.
  */
 
 import type { Plugin } from "@opencode-ai/plugin";
@@ -57,7 +56,7 @@ export const PlaybookYolo: Plugin = async ({ directory, client }) => {
           title: input.title, pattern: input.pattern, reason: verdict.reason, sessionID: input.sessionID,
         });
       } catch (err) {
-        await log("error", "permission.ask handler failed; leaving decision to the harness", { err: String(err) });
+        await log("error", "permission.ask handler failed; leaving decision to OpenCode", { err: String(err) });
       }
     },
 

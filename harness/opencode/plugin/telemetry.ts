@@ -16,7 +16,7 @@
  * scripts/playbook-telemetry.mjs joins these rows with the checklist's own
  * Run Log (attempt number) and Verifier Result lines (gate verdict) into the
  * final per-phase records. Capture points and rationale:
- * docs/Telemetry-Hooks.md.
+ * docs/Telemetry-Guide.md.
  *
  * `parentID` on turn rows is null for the main session and the parent's
  * sessionID for subagent (child) sessions — the joiner uses it to split the

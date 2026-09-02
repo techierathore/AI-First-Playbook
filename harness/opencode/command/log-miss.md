@@ -47,7 +47,7 @@ PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open --if-new \
   [--fixed [--verdict-after=<value>] [--fix-run-id=<exact-id>] [--fix-phase=<value>]]
 ```
 
-The harness value is mandatory and set explicitly above as `--harness=opencode`. Never
+The OpenCode telemetry value is mandatory and set explicitly above as `--harness=opencode`. Never
 rely on the CLI default. Include `--fixed` only when the user's input contains `--fixed`; omit
 any run ID that is not exactly known.
 

@@ -10,3 +10,4 @@ jobs:
       - run: npm run validate
       - run: npm run test:guardrails
       - run: npm run test:misses
+      - run: npm run test:install

@@ -107,12 +107,11 @@ The owner's framing was right, and it should be written down so it stops being r
 | Harness | Tokens | Real dollars | Source |
 |---|---|---|---|
 | **OpenCode** | yes | **yes — measured** | `opencode.db`, provider's own per-message cost, rolled up across child sessions by the plugin |
-| **Claude Code** | yes | **no — `null`, permanently** | Transcript JSONL carries `usage` but no cost. SCHEMA.md §4 forbids computing dollars from a rate card and calling them a measurement |
 | **Codex** | yes | **no — `null`** | `codex exec --json` → `turn.completed.usage` via `tf-codex-telemetry.py`. ChatGPT credits are never fabricated as `cost_usd` |
 
-So **"how much money did this miss cost" has a real answer only on OpenCode.** On Claude Code and Codex the answer is a token count.
+So **"how much money did this miss cost" has a real answer only on OpenCode.** On Codex the answer is a token count.
 
-That is not a dead end, and TfLens already solved it: it carries an operator-editable rate card (`data/prices.json`, `RateCard.cs`) whose every output is labelled *"estimate — tokens × rate card, not measured spend"* and whose every JSON key ends in `_usd_estimate` (ADR-009, BRD-59). **Priced dollars for Claude and Codex misses are a read-time estimate produced by TfLens, never a number stored in a stream.** Nothing in this design changes that, and no miss record ever carries an estimated dollar figure.
+That is not a dead end, and TfLens already solved it: it carries an operator-editable rate card (`data/prices.json`, `RateCard.cs`) whose every output is labelled *"estimate — tokens × rate card, not measured spend"* and whose every JSON key ends in `_usd_estimate` (ADR-009, BRD-59). **Priced dollars for Codex misses are a read-time estimate produced by TfLens, never a number stored in a stream.** Nothing in this design changes that, and no miss record ever carries an estimated dollar figure.
 
 ## 4. The design — a fifth stream, `docs/metrics/misses.jsonl`
 
@@ -138,13 +137,13 @@ This is the one existing rule the design changes, and it should be changed delib
 
 ```json
 {"v":1,"ts":"2026-08-28T11:04:19Z","kind":"miss",
- "app":"AstroLyfe","project_type":"app","harness":"claude-code",
+ "app":"AstroLyfe","project_type":"app","harness":"opencode",
  "miss_id":"MISS-AstroLyfe-20260828-03",
  "req_id":"REQ-UI-014","req_class":"UI",
  "miss_class":"partial-implementation","artifact":"src","severity":"major",
  "origin_phase":"build-phase","origin_agent":"trblazeui",
  "origin_run_id":"2026-08-26T09:12:40Z","origin_confidence":"linked",
- "origin_model":"claude-opus-5","origin_harness":"claude-code",
+ "origin_model":"anthropic/claude-opus-5","origin_harness":"opencode",
  "found_by":"gate","found_phase":"verify-phase","found_gate":"render",
  "found_run_id":"2026-08-28T10:41:02Z","failure_class":"blank-data"}
 ```
@@ -199,13 +198,13 @@ This is the one existing rule the design changes, and it should be changed delib
 
 ```json
 {"v":1,"ts":"2026-08-28T14:52:07Z","kind":"miss-fix",
- "app":"AstroLyfe","project_type":"app","harness":"claude-code",
+ "app":"AstroLyfe","project_type":"app","harness":"opencode",
  "miss_id":"MISS-AstroLyfe-20260828-03","req_id":"REQ-UI-014",
  "fix_run_id":"2026-08-28T13:58:11Z","fix_cmd":"fix-issues","fix_attempt":1,
  "verdict_after":"Verified","reopened":false,
  "cost_attribution":"shared:3",
  "tokens_in":812,"tokens_out":38104,"tokens_cache_read":286110,"tokens_cache_write":0,
- "cost_usd":null,"tokens_scope":"tree","model":"claude-opus-5"}
+ "cost_usd":null,"tokens_scope":"tree","model":"anthropic/claude-opus-5"}
 ```
 
 | Field | Type | Notes |
@@ -257,7 +256,7 @@ Six front doors, ordered by volume:
 | `.tfcore/tasks/log-miss.md` + `.tfcore/agents/flow-master.md` | The new command, its help entry and its deps |
 | `.tfcore/tasks/metrics-report.md` + `templates/v4custom/metrics-report-template.md` | The new report section |
 | `WORKFLOW.html` §17, `README.md`, `docs/TechieFlow-Telemetry-Guide.md` | Human-facing documentation |
-| Harness mirrors | `.claude/commands/TechieFlow/` must stay byte-identical; `opencode.jsonc` registration; `tf-codex-bind.py` regeneration for `.agents/skills/` |
+| Harness bindings | `opencode.jsonc` registration; `tf-codex-bind.py` regeneration for `.agents/skills/` |
 
 **`.gitattributes` needs no change** — all three scaffold scripts already manage `docs/metrics/*.jsonl text eol=lf merge=union`, which covers the new file by glob.
 

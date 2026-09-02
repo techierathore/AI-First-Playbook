@@ -6,11 +6,11 @@
 
 Without routing, `/feature-plan` (where a wrong decision poisons every later phase) and `/archive-checklist` (mechanical file rotation) run on the same model at the same price. Over a project's life the mechanical commands plus the builder wave-workers dominate token spend, while the genuinely hard thinking is a handful of runs. Routing assigns each command and agent one of three tiers:
 
-| Tier | Mental model | Default OpenCode model | Default Claude Code model |
-|---|---|---|---|
-| `frontier` | Costliest place to be wrong — spec synthesis, root-cause reasoning, discovery | `anthropic/claude-opus-5` | `opus` |
-| `standard` | Everyday competent execution — building, verifying, fixing | `anthropic/claude-sonnet-5` | `sonnet` |
-| `economy` | Mechanical transcription and rotation | `anthropic/claude-haiku-4-5` | `haiku` |
+| Tier | Mental model | Default OpenCode model |
+|---|---|---|
+| `frontier` | Costliest place to be wrong — spec synthesis, root-cause reasoning, discovery | `anthropic/claude-opus-5` |
+| `standard` | Everyday competent execution — building, verifying, fixing | `anthropic/claude-sonnet-5` |
+| `economy` | Mechanical transcription and rotation | `anthropic/claude-haiku-4-5` |
 
 The defaults are working values — substitute your own provider/models (§5.4). Nothing is stamped until routing is turned on (§5.1).
 
@@ -35,7 +35,7 @@ The single source of truth is [`playbook/model-tiers.yml`](../playbook/model-tie
 
 ## 3. The complete map — agents
 
-Command tier outranks agent tier (in both harnesses the command's `model:` frontmatter wins). Agent tiers are the *fallback* for anything that reaches an agent without going through a tier-stamped command — and they are what the wave workers inherit:
+Command tier outranks agent tier because OpenCode gives command `model:` frontmatter precedence. Agent tiers are the *fallback* for anything that reaches an agent without going through a tier-stamped command — and they are what the wave workers inherit:
 
 | Agent | Tier | Why |
 |---|---|---|
@@ -102,9 +102,9 @@ $ node scripts/playbook-routing.mjs status
 Routing: OFF   (model: stamps on disk: 0/19 mapped files)
 
 Tier models:
-  frontier  opencode: anthropic/claude-opus-5        claude-code: opus
-  standard  opencode: anthropic/claude-sonnet-5      claude-code: sonnet
-  economy   opencode: anthropic/claude-haiku-4-5     claude-code: haiku
+  frontier  opencode: anthropic/claude-opus-5
+  standard  opencode: anthropic/claude-sonnet-5
+  economy   opencode: anthropic/claude-haiku-4-5
 
 Commands by tier:
   frontier  analyze-fix, feature-plan, legacy-audit
@@ -136,18 +136,17 @@ node scripts/playbook-routing.mjs set-tier generate-html inherit
 
 The name must already exist under `commands:` or `agents:` in the map — the script tells you the valid names if it doesn't.
 
-### 5.4 Changing which model a tier means — per tier, per harness
+### 5.4 Changing which OpenCode model a tier means
 
 ```bash
 # your shop uses a different provider for the everyday tier:
 node scripts/playbook-routing.mjs set-model standard opencode myprovider/my-model
 # zero-cost experiments on OpenCode's free models:
 node scripts/playbook-routing.mjs set-model economy opencode opencode/hy3-free
-# Claude Code aliases or full ids:
-node scripts/playbook-routing.mjs set-model frontier claude-code opus
 ```
 
-OpenCode ids are `provider/model` — list what your account offers with `opencode models`. Claude Code accepts the `opus`/`sonnet`/`haiku` aliases or a full model id; the `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL` environment variables re-point the aliases machine-wide.
+OpenCode ids are `provider/model` — list what your account offers with `opencode models`. The
+default `anthropic/claude-*` values are Anthropic models selected through OpenCode.
 
 ### 5.5 Escalation — when the base tier isn't cutting it
 
@@ -165,17 +164,9 @@ node scripts/playbook-routing.mjs bind               # re-apply whatever model-t
 node scripts/apply-model-tiers.mjs --check           # CI: prove stamps, map and the on/off flag agree
 ```
 
-### 5.7 Using the Claude Code pack?
-
-Regenerate it after **any** of the above — the generator reads the same map and the same flag (off → no `model:` stamps in the pack either):
-
-```bash
-node scripts/harness-install.mjs claude-code --target=/path/to/project
-```
-
 ## 6. How it works, and how you see it
 
-**Mechanism (deliberately boring):** `playbook-routing.mjs` edits the map and calls `apply-model-tiers.mjs`, which writes a `model:` field into the YAML frontmatter of `harness/opencode/command/*.md` and `harness/opencode/agent/*.md` when `enabled: true` — and removes it when `enabled: false`; `harness-install.mjs` does the same for the generated Claude Code pack. Command frontmatter has the highest model precedence in both harnesses. There is no runtime layer — what you stamped is what runs.
+**Mechanism (deliberately boring):** `playbook-routing.mjs` edits the map and calls `apply-model-tiers.mjs`, which writes a `model:` field into the YAML frontmatter of `harness/opencode/command/*.md` and `harness/opencode/agent/*.md` when `enabled: true` — and removes it when `enabled: false`. Command frontmatter has the highest model precedence in OpenCode. There is no runtime layer — what you stamped is what runs.
 
 **Where you see it:**
 
@@ -183,10 +174,7 @@ node scripts/harness-install.mjs claude-code --target=/path/to/project
 - `node scripts/apply-model-tiers.mjs --check` — proves stamps and map agree.
 - The telemetry — each per-phase record carries the observed `model` and its reverse-mapped `tier` ([`Telemetry-Guide.md`](Telemetry-Guide.md)), which is how you catch drift and judge the map with data.
 
-**Two session behaviors worth knowing** (verified empirically on OpenCode 1.18.x and Claude Code 2.1.x):
-
-1. **OpenCode: the command's model sticks.** After a stamped command finishes, that session's next plain message *continues on the command's model* — it does not bounce back to your selection. Re-pick your model from the model list (or start a new session) if you keep chatting after an economy command.
-2. **Claude Code: turn-scoped.** A stamped command runs its whole turn on the tier model; your next prompt reverts to the session model automatically.
+**OpenCode session behavior worth knowing:** after a stamped command finishes, that session's next plain message *continues on the command's model* — it does not bounce back to your selection. Re-pick your model from the model list (or start a new session) if you keep chatting after an economy command.
 
 ## 7. Troubleshooting
 
@@ -195,8 +183,8 @@ node scripts/harness-install.mjs claude-code --target=/path/to/project
 | "I ran `on` and my chat model didn't change" | Correct — your default chat is never routed (§3). Run a playbook command to see routing. |
 | "I changed the map and nothing happened" | Routing is OFF (the default) — `status` shows it; run `node scripts/playbook-routing.mjs on` |
 | `--check` fails in CI / `status` says "disagree" | Someone edited a command file's `model:` by hand, or edited the map without re-applying → `node scripts/playbook-routing.mjs bind` |
-| A phase ran on the wrong model | Invoked outside a stamped command (typed at the raw agent), or the Claude pack wasn't regenerated after a map change → §5.7 |
+| A phase ran on the wrong model | It was invoked outside a stamped command, or the map changed without `bind` → §5.6 |
 | Follow-up chat runs on the command's model (OpenCode) | Verified behavior (§6) — re-pick your model or start a new session |
 | Fix keeps failing on standard | That's what escalation is for (§4) — relaunch on frontier after `after_attempts`; tune with `set-escalation` (§5.5) |
-| Misses appear under an unknown/inferred model | Expected when the origin event window has rotated or Claude classification has no compatible event capture. Exclude these from per-tier/model miss rates; do not guess attribution. |
-| "Which models can I even use?" | `opencode models` (OpenCode) · alias envs or full ids (Claude Code) |
+| Misses appear under an unknown/inferred model | Expected when the origin event window has rotated or capture was unavailable. Exclude these from per-tier/model miss rates; do not guess attribution. |
+| "Which models can I even use?" | Run `opencode models`. |

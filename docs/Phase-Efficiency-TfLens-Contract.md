@@ -20,7 +20,7 @@ The current Playbook can now answer, for every instrumented OpenCode phase execu
 | What did each subagent do? | `subagents.sessions[]` | Lifecycle time, tokens, cost, models, turns, and optional harness-provided agent type |
 | What did the phase cost? | `cost_usd` | Provider-reported measured cost only; never blend with estimates |
 
-The answer was previously partial: tokens, one dominant model, cost, and token-contributing child sessions existed, but elapsed time, active effort, mixed-model detail, stable execution identity, and zero-token spawned children did not. Schema 2 closes those OpenCode gaps. Claude Code parity remains unavailable until a Claude adapter emits the normalized schema; TfLens must show that as unsupported, not as zero.
+The answer was previously partial: tokens, one dominant model, cost, and token-contributing child sessions existed, but elapsed time, active effort, mixed-model detail, stable execution identity, and zero-token spawned children did not. Schema 2 closes those OpenCode gaps. TfLens must show any unsupported input as unsupported, not as zero.
 
 ### 1.1 Plain-language scope
 
@@ -231,7 +231,7 @@ Repository, date range, command phase, model, tier, harness, project type, compl
 - No event file: “Telemetry not enabled or already rotated.”
 - Open EOF window: “Phase end not observed; elapsed time unavailable.”
 - Partial active coverage: “Observed active time is a lower bound.”
-- Claude Code without normalized adapter: “Phase effort telemetry unsupported for this harness.”
+- Any input without the normalized schema: “Phase effort telemetry unsupported for this harness.”
 - Zero provider cost with non-zero tokens: show `zero-unverified` and the engine caveat, not “free” or measured `$0`.
 - Fewer than three records in a comparative cohort: `insufficient data (n=<n>)`.
 

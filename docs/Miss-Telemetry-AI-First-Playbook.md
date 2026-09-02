@@ -61,7 +61,10 @@ So the Playbook's version of this work is smaller and better-founded than Techie
 
 ## 2. Two facts that make the Playbook's version simpler than TechieFlow's
 
-**2.1 — Cost is unambiguous.** Telemetry capture is OpenCode-only by design (`docs/Telemetry-Guide.md` §5: *"The Playbook is OpenCode-first; the Claude Code path is documented for parity but no Claude transcript parser is built or planned"*). OpenCode reports **real provider cost per message**. So unlike TechieFlow — where Claude Code and Codex yield tokens with `cost_usd: null` forever — every Playbook miss can carry a genuine dollar figure. The awkward three-harness table in the TechieFlow document has no counterpart here.
+**2.1 — Cost is unambiguous.** Telemetry capture is OpenCode-only by design. OpenCode reports
+**real provider cost per message**, so every linked Playbook miss can carry a genuine dollar
+figure when the engine exposes it. The multi-harness fallback problem described in the
+TechieFlow document has no counterpart here.
 
 The one caveat that already exists carries over unchanged: the v2-engine cost caveat in `docs/Telemetry-Hooks.md` (`cost_usd` may read 0 on some engine versions; tokens are correct everywhere). Same caveat, same workaround, no new one.
 
@@ -181,9 +184,9 @@ session count observed for that window.
 | `scripts/playbook-miss.mjs` | **Implemented.** `open` / `close` / **`amend`** (§0.55) / `next-id` / `list`. Fire-and-forget, error-isolated, exits 0 unconditionally, opt-in under the same `PLAYBOOK_TELEMETRY=1` flag |
 | `scripts/playbook-telemetry.mjs` | **Implemented.** Join miss records to phase windows, fill the `miss-fix` cost half, and emit via `--misses` without mutating either stream |
 | `scripts/playbook-validate.mjs` | Validate the vocabularies and the `miss_id` ↔ `miss-fix` linkage; report orphans. Also (§0.2): the `why_missed` assessed-count `n of N`, and escapes arriving with no `why_missed` |
-| **`/log-miss` harness command** (§0.5) | **Implemented.** The between-phases front door — one sentence in, one record + one checklist line out; never boots, never reproduces, never touches `src/`. Wraps `playbook-miss.mjs open`, carries a `--fixed` mode. Both harness trees |
-| `harness/opencode/command/{analyze-fix,fix,verify,implement}.md` and the `harness/claude-code/commands/` counterparts | The emit steps. **Both harness trees must stay in step** even though only OpenCode captures cost — the classification half of a record is harness-independent and degrades to `cost_usd:null` on Claude, which is exactly how `granularity:"session"` already degrades |
-| `scripts/install.mjs`, `scripts/harness-install.mjs` | Ship the new script; ensure `verification/telemetry/misses.ndjson` is **not** caught by any generated ignore rule |
+| **`/log-miss` harness command** (§0.5) | **Implemented.** The between-phases front door — one sentence in, one record + one checklist line out; never boots, never reproduces, never touches `src/`. Wraps `playbook-miss.mjs open`, carries a `--fixed` mode. OpenCode command tree |
+| `harness/opencode/command/{analyze-fix,fix,verify,implement}.md` | The emit steps. OpenCode captures the classification and, when linked events exist, provider cost |
+| `scripts/install.mjs` | Ship the new script; ensure `verification/telemetry/misses.ndjson` is **not** caught by any generated ignore rule |
 | `docs/Telemetry-Guide.md` | New section; **rewrite §6's gitignore advice** to name `events.ndjson` (rotatable) and `misses.ndjson` (durable, committed) separately |
 | `docs/Telemetry-Hooks.md` | The capture-point evidence for the new records |
 | `docs/Model-Routing-Guide.md` | Miss rate per tier is a stronger routing signal than attempt-count alone — §3's "is the tier map right?" question gains a second axis |
@@ -250,9 +253,9 @@ The same collapse rule as the solo edition applies (`Miss-Telemetry-TechieFlow.m
   cryptographic-entropy numeric suffix. Existing collisions retry instead of relying on a
   process-local daily counter.
 - OpenCode's plugin supplies transient turn/cost events, including provider cost where the engine
-  exposes it. Claude Code can still create complete classifications; without compatible events,
-  origin confidence/model and fix cost degrade honestly instead of being inferred as facts.
-- Both installers deliver the three scripts plus `playbook/model-tiers.yml` and
+  exposes it. Without compatible events, origin confidence/model and fix cost degrade honestly
+  instead of being inferred as facts.
+- The installer delivers the three scripts plus `playbook/model-tiers.yml` and
   `playbook/environment-profile.yml`, verify those runtime files after installation, preserve
   existing target files unless `--force` is explicit, and retain npm-installer ownership history.
 - Repository retention is intentionally asymmetric: ignore only
@@ -263,4 +266,4 @@ The same collapse rule as the solo edition applies (`Miss-Telemetry-TechieFlow.m
   assessed` after `FIELD_SINCE` eligibility.
 - Independent fresh-context audits passed after correcting phase-window attribution, interleaved
   session isolation, emitter command grammar, collision-resistant IDs, amendment folding,
-  `FIELD_SINCE` escape cohorts, Claude harness identity and shared subagent counts.
+  `FIELD_SINCE` escape cohorts, OpenCode harness identity and shared subagent counts.

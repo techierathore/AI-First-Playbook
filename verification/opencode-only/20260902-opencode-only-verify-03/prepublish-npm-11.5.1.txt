@@ -1,0 +1,59 @@
+
+> @techierathore/ai-first-playbook@0.1.0 prepublishOnly
+> npm run validate && npm run test:guardrails && npm run test:misses && npm run test:install && npm run pack:check
+
+
+> @techierathore/ai-first-playbook@0.1.0 validate
+> node scripts/playbook-validate.mjs
+
+misses: why_missed: 4 of 4 assessed
+misses: escapes_missing_why: 0 of 1 eligible escape(s) arrived with no why_missed
+misses: lifecycle: 4 miss record(s); 1 in the backlog (outstanding-work predicate)
+playbook validation passed
+
+> @techierathore/ai-first-playbook@0.1.0 test:guardrails
+> node scripts/test-guardrails.mjs
+
+OpenCode-only negative validation passed
+guardrail policy coverage passed
+yolo policy checks passed
+telemetry subagent accounting passed
+
+> @techierathore/ai-first-playbook@0.1.0 test:misses
+> node scripts/test-misses.mjs
+
+ok 1 - nextMissId combines timestamp and injectable entropy and retries existing collisions
+ok 2 - foldAmends completes null without mutating the raw parent and handles merged order
+ok 3 - foldAmends never applies an invalid closed-vocabulary amend
+ok 4 - amend builder accepts null completion and rejects overwrite and orphan
+ok 5 - live and backlog predicates deliberately diverge for abandoned records
+ok 6 - fixed/close records derive linkage, attempt, reopened and raw attribution
+ok 7 - caller-derived numeric and provenance fields are refused
+ok 8 - origin lookup maps framework phases to commands and failed lookup forces null/inferred
+ok 9 - phaseWindows isolates interleaved roots, follows recursive parents and dedupes by session plus message
+ok 10 - schema-2 windows report elapsed time, overlap-safe active time, model mix, token breakdown and child lifecycle
+ok 11 - EOF windows remain incomplete with null elapsed and deterministic legacy execution ids
+ok 12 - active effort coverage is partial when any finalized turn or started tool lacks a duration
+ok 13 - source timestamps and sequence recover delayed append order
+ok 14 - schema-2 zero-turn windows are invalid rather than free runs
+ok 15 - non-zero-token zero cost is unverified and excluded from measured cost
+ok 16 - invalid numeric events are quarantinable and unavailable cost is null
+ok 17 - event reader reports malformed lines without exposing their content
+ok 18 - assessment and escape notes are computed after amendments and respect FIELD_SINCE
+ok 19 - validation rejects duplicates, orphans, missing values, bad types and raw enrichment
+ok 20 - instruction-ignored is agent-only
+ok 21 - shared fix windows are divided equally and missing windows enrich as none
+ok 22 - fix enrichment honors fix_phase, timestamp and exact repeated window identity
+ok 23 - CLI reads always work, writes are opt-in, --if-new collapses and --fixed closes
+ok 24 - placeholder project_type becomes null and tier appears only on enriched fixes
+miss telemetry checks passed (24)
+
+> @techierathore/ai-first-playbook@0.1.0 test:install
+> node scripts/test-install.mjs
+
+installer tests passed
+
+> @techierathore/ai-first-playbook@0.1.0 pack:check
+> npm pack --dry-run
+
+techierathore-ai-first-playbook-0.1.0.tgz

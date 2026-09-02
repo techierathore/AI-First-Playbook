@@ -1,0 +1,120 @@
+ M .github/workflows/validate.yml
+ M .gitignore
+ M .opencode/agent/orchestrator.md
+ M .opencode/agent/verifier.md
+ M .opencode/plugin/spec-guardrails.ts
+ M .opencode/plugin/telemetry.ts
+ M .opencode/plugin/write-policy.mjs
+ M .opencode/plugin/yolo-policy.mjs
+ M .opencode/plugin/yolo.ts
+ M AGENTS.md
+ M README.md
+ M docs/Adapter-Design.md
+ M docs/Adoption-Metrics.md
+ M docs/Brownfield-Case-Study.html
+ M docs/Brownfield-Case-Study.md
+ M docs/Capability-Matrix.md
+ M docs/Coupling-Points.md
+ M docs/Decisions.md
+ M docs/Getting-Started.html
+ M docs/Getting-Started.md
+ M docs/Greenfield-Case-Study.html
+ M docs/Greenfield-Case-Study.md
+ M docs/Installation.md
+ M docs/Miss-Telemetry-AI-First-Playbook.md
+ M docs/Miss-Telemetry-TechieFlow.md
+ M docs/Miss-Telemetry-TfLens-From-AIFP.md
+ M docs/Model-Routing-Guide.md
+ M docs/Npm-Release-Guide.md
+ M docs/OpenCode-Guide.md
+ M docs/OpenCode-Setup-Guide.md
+ M docs/OpenCode-WSL-Setup-Guide.md
+ M docs/Phase-Efficiency-TfLens-Contract.md
+ M docs/Security.md
+ M docs/Telemetry-Guide.md
+ M docs/Telemetry-Hooks.md
+ M docs/Troubleshooting.md
+ M docs/Usage.md
+ M docs/YOLO-Mode-Guide.md
+ M harness/README.md
+ D harness/claude-code/CLAUDE.md
+ D harness/claude-code/README.md
+ D harness/claude-code/agents/analyst.md
+ D harness/claude-code/agents/builder.md
+ D harness/claude-code/agents/orchestrator.md
+ D harness/claude-code/agents/verifier.md
+ D harness/claude-code/commands/add-doc.md
+ D harness/claude-code/commands/amend-checklist.md
+ D harness/claude-code/commands/analyze-fix.md
+ D harness/claude-code/commands/archive-checklist.md
+ D harness/claude-code/commands/create-issue-list.md
+ D harness/claude-code/commands/feature-plan.md
+ D harness/claude-code/commands/fix.md
+ D harness/claude-code/commands/generate-html.md
+ D harness/claude-code/commands/implement.md
+ D harness/claude-code/commands/legacy-audit.md
+ D harness/claude-code/commands/log-miss.md
+ D harness/claude-code/commands/refresh-doc.md
+ D harness/claude-code/commands/update-context.md
+ D harness/claude-code/commands/upgrade-docs.md
+ D harness/claude-code/commands/verify.md
+ D harness/claude-code/hooks/spec-guardrails-hook.mjs
+ D harness/claude-code/hooks/write-policy.mjs
+ D harness/claude-code/hooks/yolo-hook.mjs
+ D harness/claude-code/hooks/yolo-policy.mjs
+ D harness/claude-code/mcp.json
+ D harness/claude-code/settings.json
+ M harness/opencode/agent/orchestrator.md
+ M harness/opencode/agent/verifier.md
+ M harness/opencode/command/add-doc.md
+ M harness/opencode/command/analyze-fix.md
+ M harness/opencode/command/create-issue-list.md
+ M harness/opencode/command/feature-plan.md
+ M harness/opencode/command/fix.md
+ M harness/opencode/command/implement.md
+ M harness/opencode/command/log-miss.md
+ M harness/opencode/command/refresh-doc.md
+ M harness/opencode/command/upgrade-docs.md
+ M harness/opencode/command/verify.md
+ M harness/opencode/plugin/spec-guardrails.ts
+ M harness/opencode/plugin/telemetry.ts
+ M harness/opencode/plugin/write-policy.mjs
+ M harness/opencode/plugin/yolo-policy.mjs
+ M harness/opencode/plugin/yolo.ts
+ M onboarding/first-week.md
+ M package.json
+ M phases/03-build.md
+ M phases/05-verify.md
+ M playbook/model-tiers.yml
+ M scripts/apply-model-tiers.mjs
+ D scripts/harness-install.mjs
+ M scripts/install.mjs
+ M scripts/miss-lib.mjs
+ M scripts/playbook-miss.mjs
+ M scripts/playbook-routing.mjs
+ M scripts/playbook-telemetry.mjs
+ M scripts/playbook-validate.mjs
+ M scripts/playbook-yolo.mjs
+ M scripts/test-guardrails.mjs
+ M scripts/tier-lib.mjs
+ M templates/agents-md-template.md
+ M templates/commands/implement.md
+?? docs/OpenCode-Only-Framework-Implementation-Checklist.md
+?? docs/Repository-Structure.md
+?? scripts/test-install.mjs
+?? verification/opencode-only/
+?? verification/telemetry/misses.ndjson
+?? verification/yolo/
+!! .opencode/.gitignore
+!! .opencode/node_modules/
+!! .opencode/package-lock.json
+!! .opencode/package.json
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/.opencode/
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/.playbook/
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/AGENTS.md
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/onboarding/
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/opencode.json
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/phases/
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/playbook/
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/scripts/
+!! verification/opencode-only/20260902-opencode-only-verify-01/installed-target/templates/

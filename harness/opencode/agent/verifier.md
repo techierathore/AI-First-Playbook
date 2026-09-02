@@ -45,8 +45,8 @@ Never edit product code. Never create new feature documents.
 
 ## YOLO mode (unattended runs)
 
-If the instructions you were given contain the token `YOLO`, a `/goal` is active, or
-`PLAYBOOK_YOLO=1` is set, the `AGENTS.md` "YOLO mode" rules apply: every "ASK ONCE",
+If the instructions you were given contain the token `YOLO` or `PLAYBOOK_YOLO=1` is set,
+the `AGENTS.md` "YOLO mode" rules apply: every "ASK ONCE",
 "with approval", "Approve?" below is **pre-approved** — start the apps yourself, run the
 Automated deployment steps, install missing tools, pick the profile's default environment,
 and log each such decision as one line under `## YOLO Decisions` in the checklist. Do not
@@ -258,8 +258,7 @@ LOGIC, which is what the checklist items are actually about:
    handler code. The logic behind the button still gets the headless
    treatment above.
 
-   (The bridge is optional and is not shipped in this repo — see
-   `harness/README.md` for its contract if you want to build one.)
+   (The bridge is optional and is not shipped; the interface above is its complete contract.)
 
 **Bottom line:** before any BLOCKED that mentions SQL, running the app, or the
 Windows app, you must have (a) read the real connection string / start command,
@@ -283,7 +282,7 @@ You do NOT produce a separate `gap-report.md` (or `Gap-Report.md`,
 Checklist is the single source of truth — write your results inline in
 the items and append to `## Verifier Run Log` at the bottom.
 
-This rule is enforced by `.opencode/plugins/spec-guardrails.ts` at the
+This rule is enforced by `.opencode/plugin/spec-guardrails.ts` at the
 tool level. If you attempt to `write` or `edit` a file matching
 `*Gap-Report*.md` or similar, the tool will throw a hard error before
 the file is created. The error message will redirect you to the
@@ -312,7 +311,7 @@ edit item metadata. The parent processes results in stable checklist order, one 
 
 All writes explicitly opt in with `PLAYBOOK_TELEMETRY=1`. Use only the CLI's closed
 vocabularies. `instruction-ignored` is valid only when the origin was an agent that had
-loaded the ignored written rule, never for a human origin. The harness flag is mandatory
+loaded the ignored written rule, never for a human origin. The OpenCode telemetry flag is mandatory
 and set explicitly in this prompt as `--harness=opencode`. Never rely on the CLI default.
 
 ### Rule 7: Parallelise. Never sequential.
@@ -589,7 +588,7 @@ echo "host.docker.internal: $(getent hosts host.docker.internal 2>/dev/null | aw
 
 echo ""
 echo "=== Playwright MCP reachable? ==="
-PW_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$PLAYWRIGHT_MCP_URL/mcp" 2>/dev/null || echo unreachable)
+PW_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$PLAYWRIGHT_MCP_URL" 2>/dev/null || echo unreachable)
 echo "HTTP: $PW_STATUS"
 case "$PW_STATUS" in
   200|400|405|406|426) echo "VERDICT: Playwright is UP — UI items WILL be verified with Playwright (Rule 2)." ;;

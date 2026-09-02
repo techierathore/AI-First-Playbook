@@ -1,6 +1,6 @@
 /**
  * tier-lib.mjs — shared helpers for playbook/model-tiers.yml consumers
- * (apply-model-tiers.mjs, harness-install.mjs and playbook-routing.mjs).
+ * (apply-model-tiers.mjs and playbook-routing.mjs).
  */
 
 /**
@@ -33,14 +33,16 @@ export function routingEnabled(config) {
   return String(config.enabled ?? "false").trim() === "true";
 }
 
-/** Tier values that mean "leave unrouted" — the harness session model applies. */
+/** Tier values that mean "leave unrouted" — the OpenCode session model applies. */
 export const UNROUTED_TIERS = new Set(["inherit", "none"]);
 
-export function resolveModel(tiers, tier, forHarness) {
+export function resolveModel(tiers, tier) {
   const entry = tiers[tier];
   if (!entry) throw new Error(`unknown tier '${tier}'`);
-  const model = entry[forHarness];
-  if (!model) throw new Error(`tier '${tier}' has no model for harness '${forHarness}'`);
+  const unexpected = Object.keys(entry).find((key) => key !== "opencode");
+  if (unexpected) throw new Error(`tier '${tier}' supports only the OpenCode model key (unexpected '${unexpected}')`);
+  const model = entry.opencode;
+  if (!model) throw new Error(`tier '${tier}' has no OpenCode model`);
   return model;
 }
 

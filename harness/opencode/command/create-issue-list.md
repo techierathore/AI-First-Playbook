@@ -2,10 +2,8 @@
 description: Create a structured Issues markdown file from Jira tickets or manual input
 ---
 
-**IMPORTANT**: Before starting, activate the Analyst persona. See
-`harness/README.md` → Personas. On a BMAD install that means reading and
-following `.opencode/agent/analyst.md`; any equivalent analyst
-persona works.
+**IMPORTANT**: Before starting, activate the Analyst persona by reading and
+following `.opencode/agent/analyst.md`; any equivalent analyst persona works.
 
 You are the Analyst. Your job is to create a structured **Issues Markdown file**
 that can be used as input for `/analyze-fix` or `/fix`.

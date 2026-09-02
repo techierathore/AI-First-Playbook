@@ -1,0 +1,18 @@
+# >>> AI-First Playbook framework (managed) >>>
+/.opencode/
+/.playbook/
+/AGENTS.md
+/opencode.json
+/onboarding/
+/phases/
+/playbook/
+/scripts/miss-lib.mjs
+/scripts/playbook-miss.mjs
+/scripts/playbook-telemetry.mjs
+/templates/checklist-item-template.md
+/templates/checklist-metadata.yml
+/templates/deployment-steps-template.md
+/templates/handoffs/
+/templates/issues-file-template.md
+/verification/telemetry/events.ndjson
+# <<< AI-First Playbook framework (managed) <<<

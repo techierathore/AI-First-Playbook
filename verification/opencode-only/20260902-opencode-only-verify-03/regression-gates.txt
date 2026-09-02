@@ -1,0 +1,47 @@
+@techierathore/ai-first-playbook@0.1.0 /mnt/c/3AIGenCode/AI-First-Playbook
+└── (empty)
+
+Routing: OFF   (model: stamps on disk: 0/22 mapped files)
+
+Tier models:
+  frontier  opencode: anthropic/claude-opus-5
+  standard  opencode: anthropic/claude-sonnet-5
+  economy   opencode: anthropic/claude-haiku-4-5
+
+Commands by tier:
+  frontier  analyze-fix, feature-plan, legacy-audit
+  standard  add-doc, fix, implement, log-miss, refresh-doc, upgrade-docs, verify
+  economy   amend-checklist, archive-checklist, create-issue-list, generate-html
+Agents:    analyst=frontier, builder=standard, orchestrator=standard, verifier=standard
+
+Escalation (ADVISORY — applied by whoever launches the command; nothing switches a model mid-run):
+  fix                after 2 attempt(s) -> launch the next /fix on frontier (base tier: standard)
+  attempt count: the checklist Run Log (### Run on …) — also the `attempt` field in telemetry records
+  change:        node scripts/playbook-routing.mjs set-escalation <command> <attempts> <tier>
+
+Every phase runs on the session model. Turn on with:  node scripts/playbook-routing.mjs on
+{
+  "enabled": false,
+  "commands": {
+    "feature-plan": "anthropic/claude-opus-5",
+    "upgrade-docs": "anthropic/claude-sonnet-5",
+    "add-doc": "anthropic/claude-sonnet-5",
+    "refresh-doc": "anthropic/claude-sonnet-5",
+    "implement": "anthropic/claude-sonnet-5",
+    "verify": "anthropic/claude-sonnet-5",
+    "fix": "anthropic/claude-sonnet-5",
+    "analyze-fix": "anthropic/claude-opus-5",
+    "log-miss": "anthropic/claude-sonnet-5",
+    "legacy-audit": "anthropic/claude-opus-5",
+    "create-issue-list": "anthropic/claude-haiku-4-5",
+    "amend-checklist": "anthropic/claude-haiku-4-5",
+    "archive-checklist": "anthropic/claude-haiku-4-5",
+    "generate-html": "anthropic/claude-haiku-4-5"
+  },
+  "agents": {
+    "analyst": "anthropic/claude-opus-5",
+    "orchestrator": "anthropic/claude-sonnet-5",
+    "builder": "anthropic/claude-sonnet-5",
+    "verifier": "anthropic/claude-sonnet-5"
+  }
+}

@@ -1,12 +1,8 @@
 /**
- * write-policy.mjs — the harness-independent spec-guardrails policy.
+ * write-policy.mjs — the OpenCode spec-guardrails policy.
  *
- * Pure functions only: no OpenCode imports, no Claude Code imports. This is
- * the single source of truth for the write rules; the harness carriers are
- * thin adapters around it:
- *   - OpenCode:    ./spec-guardrails.ts        (tool.execute.before plugin)
- *   - Claude Code: harness/claude-code/hooks/spec-guardrails-hook.mjs
- *                                              (PreToolUse hook)
+ * Pure functions only: no OpenCode imports. This is the single source of
+ * truth for the write rules used by ./spec-guardrails.ts.
  *
  * Uses the .mjs extension deliberately: OpenCode auto-discovers
  * {plugin,plugins}/*.{ts,js} as plugins, so a .js policy file here would be
@@ -60,17 +56,14 @@ export const FORBIDDEN_PATH_PATTERNS = [
 ];
 
 /**
- * Tool names whose file-write behaviour we police.
- * write, edit, patch all eventually land on disk. Claude Code's capitalized
- * tool names are included so the same set serves both carriers.
+ * OpenCode tool names whose file-write behaviour we police.
  */
 export const FILE_WRITING_TOOLS = new Set([
   "write", "edit", "apply_patch", "patch", "create_file", "delete_file", "move_file",
-  "Write", "Edit", "NotebookEdit",
 ]);
 
 /** Tool names that reach the shell. */
-export const SHELL_TOOLS = new Set(["bash", "shell", "run", "Bash"]);
+export const SHELL_TOOLS = new Set(["bash"]);
 
 const MISS_EMITTER = "scripts/playbook-miss.mjs";
 const MISS_STREAM = "verification/telemetry/misses.ndjson";
@@ -145,15 +138,11 @@ export function isApprovedMissEmitterCommand(command) {
 }
 
 /**
- * Extract the file path from a tool input, if any. Handles the differing
- * parameter names used by write/edit/patch across harnesses.
+ * Extract the file path from an OpenCode tool input, if any.
  */
 export function extractPath(tool, args) {
   if (!args) return null;
-  // OpenCode write/edit use `filePath`; Claude Code Write/Edit use `file_path`
   if (typeof args.filePath === "string") return args.filePath;
-  if (typeof args.file_path === "string") return args.file_path;
-  if (typeof args.notebook_path === "string") return args.notebook_path;
   if (typeof args.path === "string") return args.path;
   if (typeof args.file === "string") return args.file;
   if (typeof args.target === "string") return args.target;
@@ -232,7 +221,7 @@ export function checkWritePolicy(path, verifier = true) {
  * Full evaluation for one tool call. Returns null when allowed, or
  * { reason, paths, message } when the call must be blocked. `isVerifier`
  * tells the policy whether the stricter verifier write-scope applies; the
- * carrier determines that from its own hook input.
+ * plugin determines that from the OpenCode hook input.
  */
 export function evaluateToolCall({ tool, args, isVerifier }) {
   const shell = SHELL_TOOLS.has(tool);
@@ -267,8 +256,7 @@ export function evaluateToolCall({ tool, args, isVerifier }) {
 }
 
 /**
- * The block text is shared verbatim by both carriers so the agent gets
- * identical remediation instructions in either harness.
+ * Build the remediation text returned to the OpenCode agent.
  */
 export function blockMessage(tool, paths, reason) {
   return (

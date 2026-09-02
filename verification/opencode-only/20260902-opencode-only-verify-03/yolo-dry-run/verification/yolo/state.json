@@ -1,0 +1,12 @@
+{
+  "harness": "opencode",
+  "cwd": "/mnt/c/3AIGenCode/AI-First-Playbook/verification/opencode-only/20260902-opencode-only-verify-03/yolo-dry-run",
+  "startedAt": "2026-09-02T09:55:08.305Z",
+  "cycle": 1,
+  "sessionId": null,
+  "nextPrompt": "/verify YOLO docs/Feature-Implementation-Checklist.md\n\nYOLO mode is ON for this run (unattended; AGENTS.md \"YOLO mode\" applies in full):\n- Never stop to ask a question or wait for approval. Make the sensible decision yourself, record it under \"## YOLO Decisions\" in the checklist, and keep going.\n- Every in-command approval gate (wave plan, smoke-test start, deployment steps, deletes) is pre-approved.\n- You may delete files/folders and run read-only git. You must NEVER commit, stage, push, tag or rewrite history — that is denied mechanically; report `git status` instead.\n- A phase is finished only when EVERY item in scope is done (build: all items implemented, built, self-tested and moved to to-verify; verify: every item has a verdict; fix: every FAIL addressed). Never hand back \"run this phase again for the remaining items\".\n- If the provider's usage limit stops you, a supervisor will resume this same session after the reset; on resume, re-read the checklist Status Table and continue from the first unfinished item — do not redo finished work.\n- When everything is done print, as the very last line: `PLAYBOOK_RUN_COMPLETE: <one-line summary>`. If a genuine external blocker remains after you have finished everything else, print `PLAYBOOK_RUN_BLOCKED: <what is missing and who must supply it>` instead.\n",
+  "nudges": 0,
+  "unparsedWaits": 0,
+  "retryAt": null,
+  "status": "running"
+}

@@ -56,8 +56,8 @@ The rule set, verbatim:
   never hand the remainder back. The phase hands off to /verify once.
 
 ## YOLO mode — unattended runs
-- ON when the message/arguments contain the token YOLO, a Claude Code /goal
-  is active, or PLAYBOOK_YOLO=1 is set. Stays on for the whole run and every
+- ON when the message/arguments contain the token YOLO or PLAYBOOK_YOLO=1 is
+  set. Stays on for the whole run and every
   sub-agent (pass it down in each brief).
 - Never stop to ask: every "Proceed?/Approve?/ASK/with approval" gate is
   pre-approved. Decide, log one line under "## YOLO Decisions" in the
@@ -95,7 +95,7 @@ The rule set, verbatim:
 ## Enforcement note
 
 Rules stated in prompts get forgotten under output pressure. Which is why this framework
-**enforces the report-file ban mechanically** — a harness plugin intercepting write/edit
+**enforces the report-file ban mechanically** — an OpenCode plugin intercepting write/edit
 calls and rejecting forbidden filenames (`Gap-Report*.md`, `Verification-Report*.md`, …)
 with an instructive error ([`spec-guardrails.ts`](../harness/opencode/plugin/spec-guardrails.ts)).
-If your harness supports pre-tool hooks, enforce your hardest rules there, not in prose.
+Enforce the hardest rules in OpenCode's plugin callbacks, not in prose.

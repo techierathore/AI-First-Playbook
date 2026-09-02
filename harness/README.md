@@ -27,15 +27,10 @@ harness/opencode/
                     yolo.ts + yolo-policy.mjs — YOLO mode: auto-approve every permission except
                     git history, record usage-limit reset times (PLAYBOOK_YOLO=1; inert otherwise)
   templates/        doc-shell.html — the self-rendering HTML shell for human docs
-harness/claude-code/
-  GENERATED pack for Claude Code — same command bodies, translated frontmatter, the
-  guardrail as a PreToolUse hook. Regenerate with `node scripts/harness-install.mjs
-  claude-code`; install with `--target=/path/to/repo`. See its README.
 ```
 
-Built first for **[OpenCode](https://opencode.ai)**. The command and agent files are plain
-markdown prompts with YAML frontmatter — see
-[Porting to another harness](#porting-to-another-harness).
+Built for **[OpenCode](https://opencode.ai)**. The command and agent files are markdown prompts
+with OpenCode YAML frontmatter.
 
 ## Model tiers (per-phase routing)
 
@@ -43,17 +38,16 @@ Each command declares the model tier it needs in `playbook/model-tiers.yml`
 (frontier / standard / economy). Routing ships **OFF**; `node scripts/playbook-routing.mjs on`
 stamps the resolved `model:` into the OpenCode frontmatter (command-level `model:` has the
 highest precedence in OpenCode — it overrides even the TUI selection) and `off` removes it
-again; the Claude Code generator resolves the same map and flag to model aliases. Change
+again. Change
 models or tiers with `set-model` / `set-tier` (the script re-applies automatically); CI can
 enforce consistency with `node scripts/apply-model-tiers.mjs --check`. Operator guide:
 `docs/Model-Routing-Guide.md`; rationale per phase: `docs/Adapter-Design.md`.
 
 ## YOLO mode (unattended runs)
 
-Add the token `YOLO` to a command (`/implement YOLO @checklist`), set a Claude Code `/goal`,
-or start the harness with `PLAYBOOK_YOLO=1`. The prompts then treat every approval gate as
-pre-approved and the carriers (`plugin/yolo.ts` for OpenCode, `hooks/yolo-hook.mjs` for
-Claude Code — both thin adapters over `plugin/yolo-policy.mjs`) auto-approve every permission
+Add the token `YOLO` to a command (`/implement YOLO @checklist`) or start OpenCode with
+`PLAYBOOK_YOLO=1`. The prompts then treat every approval gate as pre-approved and
+`plugin/yolo.ts`, backed by `plugin/yolo-policy.mjs`, auto-approves every permission
 request except git history writes, which they deny. For a run that also survives the
 provider's 5-hour / weekly usage limit, use the supervisor — it sets the variable, parses the
 reset time from the limit error, waits it out (+15 min) and resumes the same session until
@@ -103,25 +97,6 @@ The installer also places `scripts/playbook-miss.mjs`, `scripts/miss-lib.mjs`,
 `scripts/playbook-telemetry.mjs`, `playbook/model-tiers.yml` and the environment profile in
 the target. Preserve durable `verification/telemetry/misses.ndjson`; ignore only the transient
 `/verification/telemetry/events.ndjson`, never the whole telemetry directory.
-
-## Install (Claude Code)
-
-```bash
-node scripts/harness-install.mjs claude-code --target=/path/to/your-repo
-```
-
-Installs the generated pack: `.claude/commands/` (same bodies, translated frontmatter,
-tier-stamped models), `.claude/agents/` (verifier, builder, analyst, orchestrator),
-`.claude/hooks/` (the guardrail as a PreToolUse hook sharing `write-policy.mjs` with the
-OpenCode plugin), `.claude/settings.json`, `CLAUDE.md` (imports `@AGENTS.md`) and
-`.mcp.json`. Steps 3–5 above apply unchanged — same `AGENTS.md`, same profile, same
-smoke test. `/verify` delegates to the `verifier` subagent for its fresh-context
-guarantee; the hook enforces the verifier write-scope via the subagent's `agent_type`.
-Verified end-to-end on Claude Code 2.1.237 (`docs/Decisions.md`).
-The same telemetry scripts and profile/tier runtime are installed for Claude Code. Miss
-classifications remain usable without OpenCode events; model confidence and cost then degrade
-to inferred/unknown and null rather than being guessed. Existing target files are preserved by
-default; pass `--force` only after reviewing them.
 
 ## Personas
 
@@ -191,9 +166,9 @@ If you want to build one, the contract the agents expect is:
 Absence of the bridge is **never** a valid `BLOCKED` reason — that rule is written into the
 Verifier three times because it was violated three times.
 
-## Porting to another harness
+## OpenCode command frontmatter
 
-The command files are markdown with a small frontmatter block:
+The command files are markdown with an OpenCode frontmatter block:
 
 ```yaml
 ---
@@ -203,17 +178,9 @@ subtask: true          # only /verify — runs in a fresh context
 ---
 ```
 
-`$ARGUMENTS` is substituted with whatever the user typed after the command name. To port:
-
-1. Map the frontmatter to your harness's equivalent (Claude Code slash commands, Cursor
-   rules, a plain prompt library — all work).
-2. Map the tool names the prompts reference — `read`, `edit`, `write`, `grep`, `glob`,
-   `bash`, and `task` for spawning parallel sub-agents. The `task` tool is the one that
-   matters: without parallel sub-agents, `/implement`, `/fix`, and `/verify` still run,
-   just serially.
-3. Reimplement `spec-guardrails.ts` against your harness's pre-tool-use hook. It is ~180
-   lines and the logic is a filename regex — the hard part is that your harness must let a
-   hook **abort** a tool call and return the error text to the model.
+`$ARGUMENTS` is substituted with whatever the user typed after the command name. The prompts use
+OpenCode's `read`, `edit`, `write`, `grep`, `glob`, `bash`, and `task` tools. The `task` tool
+provides the parallel subagents used by `/implement`, `/fix`, and `/verify`.
 
 ## Why the guardrail plugin exists
 
