@@ -74,6 +74,15 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+async function waitFor(condition, message, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (condition()) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(message);
+}
+
 function filesUnder(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
@@ -232,7 +241,7 @@ try {
   }
   for (const path of packedFiles) assertNoIntegrationMarkers(join(root, path), `npm package file ${path}`);
   for (const path of maintainerOnly) assert(!packedFiles.has(path), `maintainer-only file leaked into npm package: ${path}`);
-  for (const path of ["scripts/install.mjs", "scripts/reject-dependency-install.mjs", "harness/opencode/opencode.json", "harness/opencode/command/verify.md", "docs/Usage.md", "phases/01-plan.md", "templates/checklist-item-template.md", "templates/checklist-metadata.yml", "templates/deployment-steps-template.md", "templates/handoffs/plan-approval.md", "templates/issues-file-template.md", "AGENTS.md"]) {
+  for (const path of ["scripts/install.mjs", "scripts/npm-lifecycle.mjs", "scripts/npm-cleanup.mjs", "harness/opencode/opencode.json", "harness/opencode/command/verify.md", "docs/Usage.md", "phases/01-plan.md", "templates/checklist-item-template.md", "templates/checklist-metadata.yml", "templates/deployment-steps-template.md", "templates/handoffs/plan-approval.md", "templates/issues-file-template.md", "AGENTS.md"]) {
     assert(packedFiles.has(path), `required file is missing from npm package: ${path}`);
   }
 
@@ -246,11 +255,14 @@ try {
   const npmInstall = process.env.npm_execpath
     ? spawnSync(process.execPath, [process.env.npm_execpath, "install", tarball], { cwd: dependencyTarget, encoding: "utf8" })
     : spawnSync("npm", ["install", tarball], { cwd: dependencyTarget, encoding: "utf8" });
-  assert(npmInstall.status !== 0, "plain npm install unexpectedly accepted the framework as a dependency");
-  assert(`${npmInstall.stdout}${npmInstall.stderr}`.includes("npx @techierathore/ai-first-playbook@latest install"), "plain npm install rejection did not print the supported command");
-  for (const path of [".opencode", ".playbook", "AGENTS.md", "opencode.json"]) assert(!existsSync(join(dependencyTarget, path)), `plain npm install scaffolded ${path}`);
-  assert(!existsSync(join(dependencyTarget, "node_modules/@techierathore/ai-first-playbook")), "failed dependency install retained the framework package");
-  assert(readdirSync(dependencyTarget).length === 0, "failed dependency install left package-manager artifacts in a clean target");
+  if (npmInstall.status !== 0) throw new Error(`plain npm install compatibility test failed:\n${npmInstall.stdout}${npmInstall.stderr}`);
+  await waitFor(
+    () => JSON.stringify(readdirSync(dependencyTarget).sort()) === JSON.stringify([".gitignore", ".opencode", ".playbook"]),
+    "plain npm install did not settle to the hidden-only framework layout",
+  );
+  for (const path of ["node_modules", "package.json", "package-lock.json", "AGENTS.md", "opencode.json"]) {
+    assert(!existsSync(join(dependencyTarget, path)), `plain npm install left deployment artifact ${path}`);
+  }
 
   const npxTarget = join(sandbox, "npx-install");
   mkdirSync(npxTarget);

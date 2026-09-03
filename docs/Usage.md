@@ -9,9 +9,15 @@ cd /path/to/project
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-Do not use `npm install @techierathore/ai-first-playbook`; the package rejects dependency-style
-installation and prints the supported command. `npx` runs the one-shot installer and leaves only
-`.opencode/`, `.playbook/`, and the managed `.gitignore` entries in the project.
+The equivalent compatibility form is:
+
+```bash
+npm i @techierathore/ai-first-playbook
+```
+
+Both forms leave only `.opencode/`, `.playbook/`, and the managed `.gitignore` entries in a fresh
+project. The npm-install form removes its temporary dependency and package-manager artifacts after
+installation; existing Node project metadata is restored.
 
 Preview first when needed:
 

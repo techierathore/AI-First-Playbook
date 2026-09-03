@@ -32,9 +32,15 @@ It does not create visible framework folders. It also does not add the framework
 application dependency, so a fresh target receives no `node_modules`, `package.json`, or
 `package-lock.json`.
 
-Do not use `npm install @techierathore/ai-first-playbook`. That dependency-style installation is
-rejected with the supported command because the framework is distributed through npm but is not
-an application dependency. Use the `npx ... install` command above.
+For compatibility, this one-shot form produces the same result:
+
+```bash
+npm i @techierathore/ai-first-playbook
+```
+
+Its lifecycle installs the hidden framework, then removes the temporary package dependency,
+`node_modules`, and generated package metadata. Existing Node projects have their prior package
+files restored rather than deleted.
 
 After installation, replace every placeholder in `.playbook/environment-profile.yml`, then
 restart OpenCode. The installer does not create secrets, start application services, or guess
