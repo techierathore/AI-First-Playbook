@@ -9,9 +9,9 @@ cd /path/to/project
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-Do not use `npm install @techierathore/ai-first-playbook`; that adds an application dependency and
-creates `node_modules` plus package metadata. `npx` runs the installer from npm's cache and leaves
-only `.opencode/`, `.playbook/`, and the managed `.gitignore` entries.
+Do not use `npm install @techierathore/ai-first-playbook`; the package rejects dependency-style
+installation and prints the supported command. `npx` runs the one-shot installer and leaves only
+`.opencode/`, `.playbook/`, and the managed `.gitignore` entries in the project.
 
 Preview first when needed:
 

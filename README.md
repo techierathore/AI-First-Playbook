@@ -159,8 +159,8 @@ npx @techierathore/ai-first-playbook@latest install
 
 Use a normal macOS/Linux path instead of `C:\work\my-project`. A fresh target receives only
 `.opencode/`, `.playbook/`, and managed `.gitignore` entries. It does not receive visible framework
-folders, `node_modules`, `package.json`, or `package-lock.json`. Do not use plain `npm install`;
-that is npm's dependency command. Restart OpenCode and replace the placeholders in
+folders, `node_modules`, `package.json`, or `package-lock.json`. Plain `npm install` is rejected
+with the supported `npx` command because this framework is not an application dependency. Restart OpenCode and replace the placeholders in
 `.playbook/environment-profile.yml`. The [repository structure guide](docs/Repository-Structure.md)
 explains the hidden runtime and source-only folders.
 See the [usage guide](docs/Usage.md) for upgrades, uninstalling, installed files, and first-run
