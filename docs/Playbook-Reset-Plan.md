@@ -981,3 +981,10 @@ once.
 Each session ends with an independent grader run. Any line that still lacks a real script or fixture
 is reported as ungraded with its reason. The reset is complete only when the owner accepts the
 remaining review lines and the grader reports every script and fixture line without guessing.
+
+### Session Record
+
+Each line states what the session delivered and the grader headline at its close
+(`node scripts/playbook-grade.mjs docs/Playbook-Requirements.md`).
+
+- **Session 1 — Done 2026-09-26:** `docs/Playbook-Requirements.md` (PB-01 to PB-18), `scripts/playbook-grade.mjs`, the grader-verdict stream in `scripts/miss-lib.mjs`, `tests/grader/` and `tests/package/` (the packed install is resolved by OpenCode 1.18.32); `AGENTS.md` cut from 943 to 485 words (WSL procedure moved to the WSL guide §10f); the profile names the four secret channels and the 7-day / 1-year retention. Grader: **6 of 18 graded**, pass 6, fail 0, ungraded 12.
