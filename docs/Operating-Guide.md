@@ -207,7 +207,10 @@ command's `model:` front matter overrides the TUI choice by design. In a source 
 ## 12. Releases of the Playbook itself
 
 The owner releases the npm package; agents never publish or tag. CI
-(`.github/workflows/validate.yml`) runs the npm test scripts on every push. The procedure is in
+(`.github/workflows/validate.yml`) runs the four npm test scripts and the grader on every push, on
+Node 22.14.0, npm 11.5.1 and the supported OpenCode, and keeps the grader output as the
+`grader-output` artefact for 90 days; the release workflow runs the same checks before publishing.
+The procedure is in
 [maintainer/Npm-Release-Guide.md](maintainer/Npm-Release-Guide.md).
 
 ## 13. Troubleshooting

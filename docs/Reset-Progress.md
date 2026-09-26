@@ -14,7 +14,28 @@ first session not marked Done. The headline is the grader's output after that se
 | 6 | Document tools | Done 2026-09-26 | 25 of 32 graded; pass 25, fail 0, ungraded 7 |
 | 7 | Reader navigation | Done 2026-09-26 | 27 of 32 graded; pass 27, fail 0, ungraded 5 |
 | 8 | Historical proof and retention | Done 2026-09-26 | 29 of 32 graded; pass 29, fail 0, ungraded 3 |
-| 9 | Grading campaign and CI | Not started | — |
+| 9 | Grading campaign and CI | Done 2026-09-26 | 31 of 34 graded; pass 31, fail 0, ungraded 3 |
+
+## Session 9 campaign
+
+- Package: `techierathore-ai-first-playbook-0.1.0.tgz`, 95 files, sha256
+  `c7febe36b0ae90f7685ab1bf01d14e3d2baa0b1196c692e5b3bfc87e22383121` (not published; version not
+  bumped). The same hash came out on every run.
+- Grader run `campaign-s9` (in `verification/telemetry/grades.ndjson`): Node 22.22.2, npm 11.20.0,
+  OpenCode 1.18.32 — **31 of 34 graded; pass 31, fail 0, ungraded 3; 16 of 34 proved by a script.**
+- Repeated at the declared minimums: Node 22.14.0 with npm 11.20.0 gave the same 31 of 34 (scratch
+  stream, not kept); `tests/campaign/run.mjs PB-33` passed on Node 22.14.0 with npm 11.5.1.
+- The campaign found one real defect: the probe read the profile's path template
+  `verification/<feature>/<run-id>` as an unfilled placeholder, so every real project would have
+  probed as blocked. Recorded as `MISS-20260926-01` (protocol outcome `weak-check`: PB-21's check
+  existed and missed it), fixed in `profile-lib.mjs`, PB-21 given the missing case, closed `pass`.
+- Misses from the reset recorded through the CLI: `MISS-20260926-02` (the Verifier's live identity,
+  `weak-check`, fixed in Session 2 and closed `pass` by PB-19) and `MISS-20260926-03` (the Verifier
+  blocks safe test commands, `ignored-rule`, **open** — the owner decision on PB-04).
+- CI: `.github/workflows/validate.yml` now runs the four npm test scripts and the grader on every
+  push with Node 22.14.0, npm 11.5.1 and the supported OpenCode, and uploads `grader-output/` as an
+  artefact; `release.yml` runs `test:install` and the grader before publishing. No Actions run
+  could be observed from this session.
 
 ## Word counts (prose removed or moved)
 
@@ -88,4 +109,8 @@ Decisions the run took alone, each the smaller reversible choice.
 | 8 | The historical campaigns stay inside the repository under `docs/archive/opencode-only-2026-09-02/`, protected by `MANIFEST.sha256` and `scripts/archive-manifest.mjs --check`, instead of an external release asset. | Owner decision: no external location is approved. | Export the folder to an approved store, record its hash there, and delete it here. |
 | 8 | The sweep runs itself: the first `verification/runs/` folder a runtime script creates in a process sweeps folders past `retention.raw_runs_days`; `playbook-sweep.mjs --apply` also prunes grader verdicts past 365 days. No scheduled CI job was added, because CI checkouts never hold raw runs. | A cron-style job would need every team to schedule it; the runtime is already where raw runs are born. | Remove the call in `profile-lib.mjs runDirectory()` and schedule the script instead. |
 | 8 | `/verification/yolo/` is git-ignored (plugin and supervisor runtime state) in the repository and in the installer's managed block. | That state is per-run, like raw evidence; the one historical copy is archived. | Remove the ignore line. |
+| 9 | Grader verdicts from CI go to the `grader-output` artefact (90 days, the public-repository maximum); the committed `verification/telemetry/grades.ndjson` keeps the year the owner asked for. | Actions cannot hold artefacts for a year on a public repository. | Point `--telemetry` elsewhere. |
+| 9 | The "live OpenCode part" is PB-34, ungraded, with `docs/runbooks/live-campaign.md`; the packed-install campaign that needs no model is PB-33, graded. | Owner decision: the live part is an ungraded line with a runbook. | — |
+| 9 | Misses found or fixed during the reset were recorded in the repository's own miss stream with `--protocol` answers; two closed `pass` on the grader's independent checks, one left open for the owner. | "Updated miss records" is a Session 9 output; the grader is the independent check for framework code. | Append `miss-fix` records; never edit the stream. |
 | 1 | Local checks ran on Node 22.22.2 with npm 10.9.7 (the container's npm); npm 11.20.0 is installed for the Session 9 campaign. | The container ships npm 10; every existing check passes on it. | — |
+| all | Every `git push` to `claude/kind-goldberg-0rvdkw` was refused with HTTP 403 ("Claude doesn't have GitHub access to techierathore/AI-First-Playbook"); all commits are local on that branch. | The GitHub App lacks write access for this repository; not something the run can change. | Reconnect GitHub or install the app, then push the branch. |
