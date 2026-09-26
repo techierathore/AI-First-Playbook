@@ -13,14 +13,14 @@ gate, and telemetry metric. The table below is the authoritative crosswalk.
 | SDLC Stage | AIFP Phase | Command | Agent | Inputs | Outputs | Gate | Metrics |
 |---|---|---|---|---|---|---|---|
 | Discovery/Audit | Pre-entry | `/legacy-audit` | Analyst | Module, profile, checklist | Evidence under `verification/` | Audit complete | `legacy-audit` |
-| Requirements | [Phase 1 — Plan](../phases/01-plan.md) | `/feature-plan` | Analyst | Audit evidence, requirements, standards | Checklist, architecture | [Phase 2 — Plan Review](../phases/02-plan-review-gate.md) human gate | `feature-plan` |
-| Design | [Phase 1 — Plan](../phases/01-plan.md) (continued) | `/feature-plan` | Analyst | Audit + requirements | Compatible design, safe seams | Plan approval | `feature-plan` |
-| Development | [Phase 3 — Build](../phases/03-build.md) + [Phase 4 — Self-Review](../phases/04-self-review.md) | `/implement` | Orchestrator → Builders | Approved checklist | Compatible code, old path preserved | `implementation-summary` | `implement` |
-| Testing/Verification | [Phase 5 — Verify](../phases/05-verify.md) + [Phase 6 — Results Gate](../phases/06-verification-results-gate.md) | `/verify` | Fresh Verifier | Checklist, baseline, matrix | Before/after evidence, verdicts | `verification-results` | `verify` |
-| Bug Fixing | [Phase 7 — Fix](../phases/07-fix.md) | `/fix` | Orchestrator → Builders | FAIL items | Fixed code | Fresh `/verify` | `fix` |
-| Acceptance | [Phase 8 — Human Acceptance](../phases/08-human-acceptance.md) | Human gate | QA/Product | PASS checklist, before/after | `acceptance.md` | Human approval | None |
+| Requirements | [Phase 1 — Plan](../../phases/01-plan.md) | `/feature-plan` | Analyst | Audit evidence, requirements, standards | Checklist, architecture | [Phase 2 — Plan Review](../../phases/02-plan-review-gate.md) human gate | `feature-plan` |
+| Design | [Phase 1 — Plan](../../phases/01-plan.md) (continued) | `/feature-plan` | Analyst | Audit + requirements | Compatible design, safe seams | Plan approval | `feature-plan` |
+| Development | [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) | `/implement` | Orchestrator → Builders | Approved checklist | Compatible code, old path preserved | `implementation-summary` | `implement` |
+| Testing/Verification | [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Results Gate](../../phases/06-verification-results-gate.md) | `/verify` | Fresh Verifier | Checklist, baseline, matrix | Before/after evidence, verdicts | `verification-results` | `verify` |
+| Bug Fixing | [Phase 7 — Fix](../../phases/07-fix.md) | `/fix` | Orchestrator → Builders | FAIL items | Fixed code | Fresh `/verify` | `fix` |
+| Acceptance | [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md) | Human gate | QA/Product | PASS checklist, before/after | `acceptance.md` | Human approval | None |
 | Release | Human gate | Release team | Acceptance, rollback drill | `release-readiness.md` | Release approval | None | None |
-| Maintenance | [Phase 9](../phases/09-post-verification-bugs.md) / [Phase 10](../phases/10-production-bugs.md) | `/analyze-fix` | Analyst | Issues, incidents | Updated checklist | `analyze-fix` | `miss`/`miss-fix` |
+| Maintenance | [Phase 9](../../phases/09-post-verification-bugs.md) / [Phase 10](../../phases/10-production-bugs.md) | `/analyze-fix` | Analyst | Issues, incidents | Updated checklist | `analyze-fix` | `miss`/`miss-fix` |
 
 ## 1. Objective, Audience, Roles, and Safety
 
@@ -213,7 +213,7 @@ are sound.
 
 ### Step 2 — Legacy Audit (SDLC: Discovery/Audit)
 
-- **Phase:** Pre-entry — `/legacy-audit` ([Pre-entry](../phases/01-plan.md))
+- **Phase:** Pre-entry — `/legacy-audit` ([Pre-entry](../../phases/01-plan.md))
 - **Role / agent:** Analyst; Legacy, Security and data owners answer factual questions.
 - **Inputs:** Profile, discovery checklist, target, baseline and fixture controls.
 - **Command:**
@@ -229,7 +229,7 @@ are sound.
 
 ### Step 3 — Evidence-Based Feature Plan (SDLC: Requirements + Design)
 
-- **Phase:** [Phase 1 — Plan](../phases/01-plan.md) — `/feature-plan`
+- **Phase:** [Phase 1 — Plan](../../phases/01-plan.md) — `/feature-plan`
 - **Role / agent:** Analyst with Product, Engineering, QA, Security and Operations.
 - **Inputs:** Requirements, standards, architecture/data references, audit evidence, preserved
   behavior, known defects, risks and desired change.
@@ -249,7 +249,7 @@ are sound.
 
 ### Step 4 — Plan Review Gate (SDLC: Design Review)
 
-- **Phase:** [Phase 2 — Plan Review Gate](../phases/02-plan-review-gate.md) — human gate
+- **Phase:** [Phase 2 — Plan Review Gate](../../phases/02-plan-review-gate.md) — human gate
 - **Role / agent:** Human Product, Engineering, QA, Security and Operations approvers.
 - **Inputs:** Planned docs, audit links, matrix, risks, verification and rollback plan.
 - **Command:** No gate command; revise with `/feature-plan` as needed and use
@@ -263,7 +263,7 @@ are sound.
 
 ### Step 5 — Compatible Implementation (SDLC: Development)
 
-- **Phase:** [Phase 3 — Build](../phases/03-build.md) + [Phase 4 — Self-Review](../phases/04-self-review.md) — `/implement`
+- **Phase:** [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) — `/implement`
 - **Role / agent:** Orchestrator and builders under Engineering ownership.
 - **Inputs:** Approved checklist, standards, sibling docs and profile.
 - **Command:**
@@ -280,7 +280,7 @@ are sound.
 
 ### Step 6 — Embedded Self-Review (SDLC: Development, continued)
 
-- **Phase:** [Phase 4 — Self-Review](../phases/04-self-review.md) (part of `/implement`)
+- **Phase:** [Phase 4 — Self-Review](../../phases/04-self-review.md) (part of `/implement`)
 - **Role / agent:** Same Orchestrator; this is part of `/implement`, not another command.
 - **Inputs:** Built code, Verify fields, profile and Developer Flow Guide if present.
 - **Command:** Profile build/test/start/stop plus focused smoke, data-side-effect and log probes.
@@ -293,7 +293,7 @@ are sound.
 
 ### Step 7 — Fresh Verification of Old and New Paths (SDLC: Testing/Verification)
 
-- **Phase:** [Phase 5 — Verify](../phases/05-verify.md) + [Phase 6 — Verification Results Gate](../phases/06-verification-results-gate.md) — `/verify`
+- **Phase:** [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Verification Results Gate](../../phases/06-verification-results-gate.md) — `/verify`
 - **Role / agent:** Fresh-context Verifier that did not implement the change.
 - **Inputs:** Checklist, verification guide, baseline, matrix, profile, deploy steps and fixture.
 - **Command:**
@@ -309,7 +309,7 @@ are sound.
 
 ### Step 8 — Fix and Reverify (SDLC: Bug Fixing)
 
-- **Phase:** [Phase 7 — Fix](../phases/07-fix.md) — `/fix` then `/verify`
+- **Phase:** [Phase 7 — Fix](../../phases/07-fix.md) — `/fix` then `/verify`
 - **Role / agent:** Orchestrator/builders fix; fresh Verifier proves.
 - **Inputs:** Inline findings, linked miss IDs, baseline and approved plan.
 - **Command:**
@@ -325,7 +325,7 @@ are sound.
 
 ### Step 9 — Human Acceptance (SDLC: Acceptance)
 
-- **Phase:** [Phase 8 — Human Acceptance](../phases/08-human-acceptance.md) — human gate
+- **Phase:** [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md) — human gate
 - **Role / agent:** QA and Product/BA; policy owners join when relevant.
 - **Inputs:** All-PASS checklist, before/after evidence, guide and accepted differences.
 - **Command:** Human scenarios; persist with `templates/handoffs/acceptance.md`.
@@ -363,7 +363,7 @@ are sound.
 
 ### Step 12 — Operations Transfer and Incident Route (SDLC: Maintenance)
 
-- **Phase:** [Phase 9](../phases/09-post-verification-bugs.md) / [Phase 10](../phases/10-production-bugs.md) — `/analyze-fix`
+- **Phase:** [Phase 9](../../phases/09-post-verification-bugs.md) / [Phase 10](../../phases/10-production-bugs.md) — `/analyze-fix`
 - **Role / agent:** Engineering producer to Operations consumer; service owner approves.
 - **Inputs:** Final checklist, baseline, release, monitoring, rollback and contacts.
 - **Command:** Use `templates/handoffs/operations-transfer.md`; for an event use
@@ -440,7 +440,7 @@ node .playbook/scripts/playbook-telemetry.mjs --misses \
   > <approved-checkpoint>/miss-lifecycle.ndjson
 ```
 
-Follow [`Phase-Efficiency-TfLens-Contract.md`](Phase-Efficiency-TfLens-Contract.md): ingest stdout;
+Follow [`Phase-Efficiency-TfLens-Contract.md`](../maintainer/cross-framework/Phase-Efficiency-TfLens-Contract.md): ingest stdout;
 upsert phase rows by repository identity plus `phase_execution_id`; upsert miss lines by immutable
 identity while preserving order; retain schema, harness, importer, repository and import time; and
 checkpoint completed windows before rotating events. Re-imports must be idempotent.

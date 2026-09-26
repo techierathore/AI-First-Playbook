@@ -73,14 +73,14 @@ gate, and telemetry metric. The table below is the authoritative crosswalk.
 | SDLC Stage | AIFP Phase | Command | Agent | Inputs | Outputs | Gate | Metrics |
 |---|---|---|---|---|---|---|---|
 | Discovery/Audit | Pre-entry | `/legacy-audit` | Analyst | Module, profile, checklist | Evidence under `verification/` | Audit complete | `legacy-audit` |
-| Requirements | [Phase 1 — Plan](../phases/01-plan.md) | `/feature-plan` | Analyst | Audit evidence, requirements, standards | Checklist, architecture | [Phase 2 — Plan Review](../phases/02-plan-review-gate.md) human gate | `feature-plan` |
-| Design | [Phase 1 — Plan](../phases/01-plan.md) (continued) | `/feature-plan` | Analyst | Audit + requirements | Compatible design, safe seams | Plan approval | `feature-plan` |
-| Development | [Phase 3 — Build](../phases/03-build.md) + [Phase 4 — Self-Review](../phases/04-self-review.md) | `/implement` | Orchestrator → Builders | Approved checklist | Compatible code, old path preserved | `implementation-summary` | `implement` |
-| Testing/Verification | [Phase 5 — Verify](../phases/05-verify.md) + [Phase 6 — Results Gate](../phases/06-verification-results-gate.md) | `/verify` | Fresh Verifier | Checklist, baseline, matrix | Before/after evidence, verdicts | `verification-results` | `verify` |
-| Bug Fixing | [Phase 7 — Fix](../phases/07-fix.md) | `/fix` | Orchestrator → Builders | FAIL items | Fixed code | Fresh `/verify` | `fix` |
-| Acceptance | [Phase 8 — Human Acceptance](../phases/08-human-acceptance.md) | Human gate | QA/Product | PASS checklist, before/after | `acceptance.md` | Human approval | None |
+| Requirements | [Phase 1 — Plan](../../phases/01-plan.md) | `/feature-plan` | Analyst | Audit evidence, requirements, standards | Checklist, architecture | [Phase 2 — Plan Review](../../phases/02-plan-review-gate.md) human gate | `feature-plan` |
+| Design | [Phase 1 — Plan](../../phases/01-plan.md) (continued) | `/feature-plan` | Analyst | Audit + requirements | Compatible design, safe seams | Plan approval | `feature-plan` |
+| Development | [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) | `/implement` | Orchestrator → Builders | Approved checklist | Compatible code, old path preserved | `implementation-summary` | `implement` |
+| Testing/Verification | [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Results Gate](../../phases/06-verification-results-gate.md) | `/verify` | Fresh Verifier | Checklist, baseline, matrix | Before/after evidence, verdicts | `verification-results` | `verify` |
+| Bug Fixing | [Phase 7 — Fix](../../phases/07-fix.md) | `/fix` | Orchestrator → Builders | FAIL items | Fixed code | Fresh `/verify` | `fix` |
+| Acceptance | [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md) | Human gate | QA/Product | PASS checklist, before/after | `acceptance.md` | Human approval | None |
 | Release | Human gate | Release team | Acceptance, rollback drill | `release-readiness.md` | Release approval | None | None |
-| Maintenance | [Phase 9](../phases/09-post-verification-bugs.md) / [Phase 10](../phases/10-production-bugs.md) | `/analyze-fix` | Analyst | Issues, incidents | Updated checklist | `analyze-fix` | `miss`/`miss-fix` |
+| Maintenance | [Phase 9](../../phases/09-post-verification-bugs.md) / [Phase 10](../../phases/10-production-bugs.md) | `/analyze-fix` | Analyst | Issues, incidents | Updated checklist | `analyze-fix` | `miss`/`miss-fix` |
 
 ## 1. Objective, Audience, Roles, and Safety
 
@@ -109,8 +109,8 @@ defect; an unknown is a risk to investigate, not permission to redesign.
 
 ## 2. Prerequisites
 
-1. Install AIFP in the target repository and read root `AGENTS.md`.
-2. Replace relevant placeholders in `playbook/environment-profile.yml` with reviewed project facts.
+1. Install AIFP in the target repository and read `.playbook/AGENTS.md`.
+2. Replace relevant placeholders in `.playbook/environment-profile.yml` with reviewed project facts.
 3. Confirm the profile declares the real topology, build/test/start/stop commands, application
    endpoints, database method/config path, browser endpoint, log paths and cleanup command.
 4. Never infer a command, port, config file, migration tool, database or secret source from this
@@ -123,7 +123,7 @@ defect; an unknown is a risk to investigate, not permission to redesign.
    unredacted PII, raw credentials or restricted business data.
 9. Locate the actual coding standards and any existing architecture, data, API, UI, deployment,
    support and incident documents. Missing documents remain named unknowns.
-10. Choose a stable `<feature>` token and unique UTC `<run-id>`.
+10. Choose a stable `&lt;feature&gt;` token and unique UTC `&lt;run-id&gt;`.
 
 ## 3. Discovery Input Pack
 
@@ -155,17 +155,17 @@ repository-approved path. This is not the feature implementation plan. It record
 - expected inventory, dependency, ownership, behavior, characterization, classification, risk and
   safe-seam evidence;
 - items for every already-known preserved behavior; and
-- exact evidence destination `verification/<feature>/legacy-audit-<run-id>/`.
+- exact evidence destination `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/`.
 
 Invoke the installed OpenCode command from the target repository root:
 
 ```text
-/legacy-audit @playbook/environment-profile.yml @<discovery-checklist-path> <target, feature token, run ID, scope and approved constraints>
+/legacy-audit @.playbook/environment-profile.yml @&lt;discovery-checklist-path&gt; &lt;target, feature token, run ID, scope and approved constraints&gt;
 ```
 
 Do not claim that the command generates named files such as `legacy-audit.md`, `baseline.md` or
 `risk-register.md`; no such filename contract exists. Its guaranteed handoff is produced evidence
-under `verification/<feature>/legacy-audit-<run-id>/` plus links/preservation items in the supplied
+under `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/` plus links/preservation items in the supplied
 checklist. If an installed variant does not require a checklist, pass its evidence directory
 directly into `/feature-plan`; never invent an audit summary file as an intermediary.
 
@@ -228,20 +228,20 @@ fix/reverify cycle and human gates.
 
 ```mermaid
 flowchart TD
-    A[Pre-entry: Legacy Audit] -->|Audit evidence| B[Phase 1: Feature Plan]
-    B --> C{Phase 2: Plan Review Gate}
-    C -->|Approve| D[Phase 3 + 4: Implement &amp; Self-Review]
-    C -->|Revise| B
-    D --> E{Phase 5 + 6: Verify Old &amp; New Paths}
-    E -->|All PASS| F[Phase 8: Human Acceptance]
-    E -->|FAIL / DATA-GAP| G[Phase 7: Fix]
-    G -->|Fixed code| E
-    F -->|Approved| H[Release Readiness &amp; Rollback Drill]
-    H --> I[Deploy &amp; Post-Deploy]
-    I --> J{Phase 9 / 10: Production Issues?}
-    J -->|Yes| K[Phase 9/10: Analyze &amp; Fix]
-    K --> E
-    J -->|No| L[Operations Transfer]
+    A[Pre-entry: Legacy Audit] --&gt;|Audit evidence| B[Phase 1: Feature Plan]
+    B --&gt; C{Phase 2: Plan Review Gate}
+    C --&gt;|Approve| D[Phase 3 + 4: Implement &amp;amp; Self-Review]
+    C --&gt;|Revise| B
+    D --&gt; E{Phase 5 + 6: Verify Old &amp;amp; New Paths}
+    E --&gt;|All PASS| F[Phase 8: Human Acceptance]
+    E --&gt;|FAIL / DATA-GAP| G[Phase 7: Fix]
+    G --&gt;|Fixed code| E
+    F --&gt;|Approved| H[Release Readiness &amp;amp; Rollback Drill]
+    H --&gt; I[Deploy &amp;amp; Post-Deploy]
+    I --&gt; J{Phase 9 / 10: Production Issues?}
+    J --&gt;|Yes| K[Phase 9/10: Analyze &amp;amp; Fix]
+    K --&gt; E
+    J --&gt;|No| L[Operations Transfer]
 ```
 
 ## 8. End-to-End SDLC Runbook
@@ -273,14 +273,14 @@ are sound.
 
 ### Step 2 — Legacy Audit (SDLC: Discovery/Audit)
 
-- **Phase:** Pre-entry — `/legacy-audit` ([Pre-entry](../phases/01-plan.md))
+- **Phase:** Pre-entry — `/legacy-audit` ([Pre-entry](../../phases/01-plan.md))
 - **Role / agent:** Analyst; Legacy, Security and data owners answer factual questions.
 - **Inputs:** Profile, discovery checklist, target, baseline and fixture controls.
 - **Command:**
   ```text
-  /legacy-audit @playbook/environment-profile.yml @<discovery-checklist-path> <scope>
+  /legacy-audit @.playbook/environment-profile.yml @&lt;discovery-checklist-path&gt; &lt;scope&gt;
   ```
-- **Artifact / evidence:** `verification/<feature>/legacy-audit-<run-id>/` evidence and linked
+- **Artifact / evidence:** `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/` evidence and linked
   must-not-change items in the supplied checklist.
 - **Exit / gate:** No product edit; inventory/maps/behavior/tests/classification/risks/seams are
   evidenced; unresolved data gaps have owners.
@@ -289,15 +289,15 @@ are sound.
 
 ### Step 3 — Evidence-Based Feature Plan (SDLC: Requirements + Design)
 
-- **Phase:** [Phase 1 — Plan](../phases/01-plan.md) — `/feature-plan`
+- **Phase:** [Phase 1 — Plan](../../phases/01-plan.md) — `/feature-plan`
 - **Role / agent:** Analyst with Product, Engineering, QA, Security and Operations.
 - **Inputs:** Requirements, standards, architecture/data references, audit evidence, preserved
   behavior, known defects, risks and desired change.
 - **Command:**
   ```text
-  /feature-plan @<requirements> @<standards> @<reference-docs> \
-    @verification/<feature>/legacy-audit-<run-id>/ \
-    <output folder and compatibility constraints>
+  /feature-plan @&lt;requirements&gt; @&lt;standards&gt; @&lt;reference-docs&gt; \
+    @verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/ \
+    &lt;output folder and compatibility constraints&gt;
   ```
 - **Artifact / evidence:** Project-convention docs and full checklist; every desired/preserved
   behavior has Behavior/Location/UI ref/Logging/Acceptance/Verify/Coding Standards plus `Type`,
@@ -309,7 +309,7 @@ are sound.
 
 ### Step 4 — Plan Review Gate (SDLC: Design Review)
 
-- **Phase:** [Phase 2 — Plan Review Gate](../phases/02-plan-review-gate.md) — human gate
+- **Phase:** [Phase 2 — Plan Review Gate](../../phases/02-plan-review-gate.md) — human gate
 - **Role / agent:** Human Product, Engineering, QA, Security and Operations approvers.
 - **Inputs:** Planned docs, audit links, matrix, risks, verification and rollback plan.
 - **Command:** No gate command; revise with `/feature-plan` as needed and use
@@ -323,12 +323,12 @@ are sound.
 
 ### Step 5 — Compatible Implementation (SDLC: Development)
 
-- **Phase:** [Phase 3 — Build](../phases/03-build.md) + [Phase 4 — Self-Review](../phases/04-self-review.md) — `/implement`
+- **Phase:** [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) — `/implement`
 - **Role / agent:** Orchestrator and builders under Engineering ownership.
 - **Inputs:** Approved checklist, standards, sibling docs and profile.
 - **Command:**
   ```text
-  /implement @<implementation-checklist> @<coding-standards>
+  /implement @&lt;implementation-checklist&gt; @&lt;coding-standards&gt;
   ```
 - **Artifact / evidence:** Checklist-scoped code; preserved old path; approved flag/selection/default;
   target-specific deploy/rollback scripts only if needed; updated checklist deployment/infra.
@@ -340,7 +340,7 @@ are sound.
 
 ### Step 6 — Embedded Self-Review (SDLC: Development, continued)
 
-- **Phase:** [Phase 4 — Self-Review](../phases/04-self-review.md) (part of `/implement`)
+- **Phase:** [Phase 4 — Self-Review](../../phases/04-self-review.md) (part of `/implement`)
 - **Role / agent:** Same Orchestrator; this is part of `/implement`, not another command.
 - **Inputs:** Built code, Verify fields, profile and Developer Flow Guide if present.
 - **Command:** Profile build/test/start/stop plus focused smoke, data-side-effect and log probes.
@@ -353,14 +353,14 @@ are sound.
 
 ### Step 7 — Fresh Verification of Old and New Paths (SDLC: Testing/Verification)
 
-- **Phase:** [Phase 5 — Verify](../phases/05-verify.md) + [Phase 6 — Verification Results Gate](../phases/06-verification-results-gate.md) — `/verify`
+- **Phase:** [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Verification Results Gate](../../phases/06-verification-results-gate.md) — `/verify`
 - **Role / agent:** Fresh-context Verifier that did not implement the change.
 - **Inputs:** Checklist, verification guide, baseline, matrix, profile, deploy steps and fixture.
 - **Command:**
   ```text
-  /verify @<implementation-checklist> @<verification-guide>
+  /verify @&lt;implementation-checklist&gt; @&lt;verification-guide&gt;
   ```
-- **Artifact / evidence:** `verification/<feature>/<verify-run-id>/` runtime evidence; inline
+- **Artifact / evidence:** `verification/&lt;feature&gt;/&lt;verify-run-id&gt;/` runtime evidence; inline
   `**Verifier Result**`, Status Table and Verifier Run Log in the checklist. No separate Gap Report.
 - **Exit / gate:** Every item is PASS (or explicitly limited `PASS (code-audit)`); FAIL, DATA-GAP or
   BLOCKED prevents acceptance/release.
@@ -369,13 +369,13 @@ are sound.
 
 ### Step 8 — Fix and Reverify (SDLC: Bug Fixing)
 
-- **Phase:** [Phase 7 — Fix](../phases/07-fix.md) — `/fix` then `/verify`
+- **Phase:** [Phase 7 — Fix](../../phases/07-fix.md) — `/fix` then `/verify`
 - **Role / agent:** Orchestrator/builders fix; fresh Verifier proves.
 - **Inputs:** Inline findings, linked miss IDs, baseline and approved plan.
 - **Command:**
   ```text
-  /fix @<implementation-checklist>
-  /verify @<implementation-checklist>
+  /fix @&lt;implementation-checklist&gt;
+  /verify @&lt;implementation-checklist&gt;
   ```
 - **Artifact / evidence:** Inline root-cause/fix/self-test notes, revised rollback if needed, new
   verification evidence and lifecycle outcomes after independent PASS.
@@ -385,7 +385,7 @@ are sound.
 
 ### Step 9 — Human Acceptance (SDLC: Acceptance)
 
-- **Phase:** [Phase 8 — Human Acceptance](../phases/08-human-acceptance.md) — human gate
+- **Phase:** [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md) — human gate
 - **Role / agent:** QA and Product/BA; policy owners join when relevant.
 - **Inputs:** All-PASS checklist, before/after evidence, guide and accepted differences.
 - **Command:** Human scenarios; persist with `templates/handoffs/acceptance.md`.
@@ -423,7 +423,7 @@ are sound.
 
 ### Step 12 — Operations Transfer and Incident Route (SDLC: Maintenance)
 
-- **Phase:** [Phase 9](../phases/09-post-verification-bugs.md) / [Phase 10](../phases/10-production-bugs.md) — `/analyze-fix`
+- **Phase:** [Phase 9](../../phases/09-post-verification-bugs.md) / [Phase 10](../../phases/10-production-bugs.md) — `/analyze-fix`
 - **Role / agent:** Engineering producer to Operations consumer; service owner approves.
 - **Inputs:** Final checklist, baseline, release, monitoring, rollback and contacts.
 - **Command:** Use `templates/handoffs/operations-transfer.md`; for an event use
@@ -485,22 +485,22 @@ approved fixture where possible; this table does not prescribe product behavior.
 Export from the target repository root after windows close:
 
 ```bash
-node scripts/playbook-telemetry.mjs \
-  --checklist=<path-to-implementation-checklist>
+node .playbook/scripts/playbook-telemetry.mjs \
+  --checklist=&lt;path-to-implementation-checklist&gt;
 
-node scripts/playbook-telemetry.mjs --misses
+node .playbook/scripts/playbook-telemetry.mjs --misses
 ```
 
 Both emit NDJSON to stdout. Controlled checkpoint examples are:
 
 ```bash
-node scripts/playbook-telemetry.mjs --checklist=<path-to-implementation-checklist> \
-  > <approved-checkpoint>/phase-metrics.ndjson
-node scripts/playbook-telemetry.mjs --misses \
-  > <approved-checkpoint>/miss-lifecycle.ndjson
+node .playbook/scripts/playbook-telemetry.mjs --checklist=&lt;path-to-implementation-checklist&gt; \
+  &gt; &lt;approved-checkpoint&gt;/phase-metrics.ndjson
+node .playbook/scripts/playbook-telemetry.mjs --misses \
+  &gt; &lt;approved-checkpoint&gt;/miss-lifecycle.ndjson
 ```
 
-Follow [`Phase-Efficiency-TfLens-Contract.md`](Phase-Efficiency-TfLens-Contract.md): ingest stdout;
+Follow [`Phase-Efficiency-TfLens-Contract.md`](../maintainer/cross-framework/Phase-Efficiency-TfLens-Contract.md): ingest stdout;
 upsert phase rows by repository identity plus `phase_execution_id`; upsert miss lines by immutable
 identity while preserving order; retain schema, harness, importer, repository and import time; and
 checkpoint completed windows before rotating events. Re-imports must be idempotent.
@@ -508,7 +508,7 @@ checkpoint completed windows before rotating events. Re-imports must be idempote
 Quality filters:
 
 - Duration needs `complete:true`; EOF/incomplete duration is null, not zero.
-- Active comparisons need `complete:true` and `coverage:"complete"`; partial is a lower bound, unavailable is not zero,
+- Active comparisons need `complete:true` and `coverage:&quot;complete&quot;`; partial is a lower bound, unavailable is not zero,
   and active operation time is not human effort.
 - Token totals need a complete window, valid data and complete token status; measured cost also needs complete cost.
 - Keep measured and estimated dollars separate; use `models[]` for mixed-model attribution.
@@ -542,21 +542,21 @@ Feature docs use project conventions. Evidence remains at repository-root `verif
 nested under the feature-doc folder.
 
 ```text
-features/<feature>/
-  <project-convention>-FullStack-Implementation-Checklist.md
-  <other actual feature-plan documents>.md
+features/&lt;feature&gt;/
+  &lt;project-convention&gt;-FullStack-Implementation-Checklist.md
+  &lt;other actual feature-plan documents&gt;.md
   handoffs/
     {plan-approval,implementation-summary,verification-results}.md
     {acceptance,release-readiness,operations-transfer}.md
     incident.md                         # only if an incident exists
-verification/<feature>/
-  legacy-audit-<run-id>/               # actual audit evidence
-  <verify-run-id>/                     # runtime verification evidence
+verification/&lt;feature&gt;/
+  legacy-audit-&lt;run-id&gt;/               # actual audit evidence
+  &lt;verify-run-id&gt;/                     # runtime verification evidence
 verification/telemetry/
   events.ndjson                        # transient; rotate after checkpoint
   misses.ndjson                        # durable append-only history
-deploy/<feature>/
-  <actual target-specific scripts only when required>
+deploy/&lt;feature&gt;/
+  &lt;actual target-specific scripts only when required&gt;
 ```
 
 Do not create empty illustrative scripts or claim named audit files. Retain docs, handoffs and
@@ -577,7 +577,7 @@ support knowledge to durable operations documentation.
 
 - [ ] A human recorded source revision; no agent created a tag/commit; profile-driven build/test and
       relevant UI/API/database/log baselines use approved fixtures and have evidence.
-- [ ] Audit evidence exists at `verification/<feature>/legacy-audit-<run-id>/`; dependencies,
+- [ ] Audit evidence exists at `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/`; dependencies,
       ownership, classification, risks, safe seams and known defects are recorded.
 - [ ] Every preserved behavior maps to the checklist; old/default and new/enabled paths pass the
       matrix; accepted differences, selection control and rollback are documented.

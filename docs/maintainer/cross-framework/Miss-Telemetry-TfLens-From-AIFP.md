@@ -25,7 +25,7 @@ on stdout. Diagnostics go to stderr. TfLens ingests exporter stdout, not plugin 
 - Upsert raw source records by immutable source-line identity/hash and preserve stream order.
 - Fold valid amendments before reporting; surface orphan and overwrite diagnostics.
 
-Full producer fields and CLI behavior are in [`Telemetry-Guide.md`](Telemetry-Guide.md) section 7.
+Full producer fields and CLI behavior are in [`Telemetry-Guide.md`](../Telemetry-Guide.md) section 7.
 
 ## 3. Reporting guards
 

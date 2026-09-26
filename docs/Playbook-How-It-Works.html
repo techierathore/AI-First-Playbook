@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8">
-<title>Getting Started with the AI-First Playbook</title>
+<title>How the AI-First Playbook Works</title>
 <style>
 html{scroll-behavior:smooth}
 body{font:16px/1.6 system-ui;max-width:860px;margin:40px auto;padding:0 20px;color:#211C16}
@@ -58,115 +58,120 @@ pre code{background:transparent;padding:0;color:inherit}
 }
 </style>
 </head><body>
-<textarea id="src" hidden># Getting Started with the AI-First Playbook
+<textarea id="src" hidden># How the AI-First Playbook Works
 
-Audience: anyone bringing the Playbook into a new or existing repository. Read this first, then
-[Playbook-How-It-Works.md](Playbook-How-It-Works.md) for the ten phases and
-[Operating-Guide.md](Operating-Guide.md) for day-to-day operation.
+The Playbook is a ten-phase way to turn a written requirement into tested software. OpenCode is
+the working tool. Its installed commands live in `.opencode/command/`. Its standing rules and
+project profile live in `.playbook/`. A harness is the set of commands, agents, and plugins that
+OpenCode runs. The npm package installs those hidden folders without replacing project files.
 
-## 1. What it is
+## 1. Plan
 
-A spec-driven team workflow for OpenCode: plan against explicit inputs, build from one living
-checklist, verify independently by executing the real behaviour, and feed every escape back into
-that checklist. Markdown is the source of truth; HTML is a convenience for human readers.
+The team starts a fresh OpenCode chat and runs `/feature-plan`. OpenCode loads the standing rules,
+the environment profile, the planning command, and the Analyst role. The Analyst reads the business
+requirement, UI mockup when one exists, coding standards, database design, and named project files.
+It writes the feature document set and the implementation checklist. The checklist is the build and
+test contract. Each item follows `templates/checklist-item-template.md`. Database work also uses
+`templates/deployment-steps-template.md`. OpenCode asks for missing facts instead of guessing them.
+The fixed instruction load is 4 files and 3,675 words before project inputs.
 
-```mermaid
-flowchart TD
-    A[&quot;1 Plan /feature-plan&quot;] --&gt; B{&quot;2 Plan review&quot;}
-    B --&gt;|approved| C[&quot;3 Build + 4 Self-review /implement&quot;]
-    B --&gt;|changes| A
-    C --&gt; E[&quot;5 Verify + 6 Results /verify&quot;]
-    E --&gt;|FAIL| G[&quot;7 Fix /fix&quot;]
-    G --&gt; E
-    E --&gt;|ALL PASS| H[&quot;8 Human acceptance&quot;]
-    H --&gt; I[&quot;Release&quot;]
-    I --&gt;|escaped bug| K[&quot;9 /analyze-fix&quot;]
-    I --&gt;|production bug| L[&quot;10 /analyze-fix&quot;]
-    K --&gt; G
-    L --&gt; G
-```
+## 2. Review the Plan
 
-## 2. Install
+A person reviews the documents in the same chat. The reviewer checks every requirement, mockup
+element, acceptance line, test method, file name, and output path. The decision is recorded with
+`templates/handoffs/plan-approval.md`, or in a tracker with the same fields. OpenCode keeps the plan
+and the review discussion together. Rejected plans return to Phase 1. Approved plans move to build.
+No new OpenCode file is loaded; the chat retains the 4-file, 3,675-word planning instructions plus
+the documents it just produced.
 
-Requires Node.js 22.14.0+ and npm 11.5.1+, OpenCode (supported version in `package.json`
-`opencode.supported`), and your application's own toolchain; the Playbook installs none of that.
-On Windows, run everything inside WSL with repositories under `~/work`
-([WSL guide](maintainer/OpenCode-WSL-Setup-Guide.md)).
+## 3. Build
 
-From the application project root:
+The team starts a fresh OpenCode chat and runs `/implement` with the checklist. OpenCode loads the
+standing rules, profile, implementation command, and Orchestrator role. The Orchestrator reads the
+whole checklist and the relevant standards, architecture, and database documents. It groups work
+into ordered waves. A wave is a set of tasks that can run without editing the same files. Builder
+subagents receive only their assigned checklist items and product files. The Orchestrator owns shared
+checklist and telemetry writes. It writes code, tests, deployment steps, infrastructure needs, item
+status, and an implementation handoff based on `templates/handoffs/implementation-summary.md`. The
+fixed parent load is 4 files and 5,198 words before project documents.
 
-```bash
-npx @techierathore/ai-first-playbook@latest install --dry-run   # preview
-npx @techierathore/ai-first-playbook@latest install
-```
+## 4. Self-Review
 
-The install writes only `.opencode/` (commands, agents, plugins, templates), `.playbook/` (standing
-rules, profile, schemas, runtime scripts, install record) and a managed `.gitignore` block. It adds
-no `node_modules` or package metadata; `npm i @techierathore/ai-first-playbook` is accepted and
-cleans up after itself, but `npx … install` is the supported form.
+Self-review runs inside `/implement`, and later inside `/fix`; it is not a separate command. The
+Orchestrator rereads each item and checks the changed code. It builds touched projects, starts the
+configured application, probes changed behavior, checks data and logs when relevant, and stops any
+process it started. The Developer Flow Guide is used when the feature has one. Results are written
+back into the implementation checklist. A real defect found here may be logged as a miss, which is a
+record of something the process failed to catch earlier. The phase retains the 4-file, 5,198-word
+build instruction set plus the project's files and tool results.
 
-| Task | Command |
-|---|---|
-| Offline guides under `.playbook/guides/` | `npx @techierathore/ai-first-playbook@latest install --with-guides` |
-| Upgrade (review the dry run first) | `npx … install --dry-run --force`, then `npx … install --force` |
-| Uninstall | `npx … uninstall --dry-run`, then `npx … uninstall --force` |
-| From a source clone | `node &lt;clone&gt;/scripts/install.mjs install --target=/abs/path/to/project` |
+## 5. Verify
 
-`--force` replaces or removes only files recorded in `.playbook/installation.json`; unowned files
-are always kept. After installing, restart OpenCode in the project root.
+The team runs `/verify` in a fresh context. OpenCode creates the independent Verifier subagent and
+loads the standing rules, profile, thin verify command, and full Verifier instructions. The Verifier
+reads the checklist and any testing or database guide. It runs approved deployment steps, checks the
+real environment, and tests each item through the UI, API, database, logs, or code as appropriate.
+It must not change product code. It may update the selected checklist and write test evidence under
+`verification/`. Deployment rows follow `templates/deployment-steps-template.md`. This is the
+largest fixed phase load: 4 files and 10,054 words before the checklist and its guides.
 
-## 3. Before the first command
+## 6. Decide the Verification Result
 
-1. **Profile.** Replace every placeholder in `.playbook/environment-profile.yml`: topology,
-   commands, URLs, database method, browser endpoint, logs, secret channels. Then run
-   `node .playbook/scripts/playbook-probe.mjs`; every line should read `ok`.
-2. **Secrets.** Only an approved secret manager, an environment reference, protected stdin or a
-   protected temporary file — never arguments, Markdown, logs, URLs or evidence.
-3. **Standing rules.** `.playbook/AGENTS.md` is loaded into every agent. The approved checklist is
-   authoritative over chat; the Verifier writes results only inside it.
-4. **Telemetry.** Keep `/verification/telemetry/events.ndjson` (transient) and `/verification/runs/`
-   (raw evidence, swept after 7 days) ignored; commit `verification/telemetry/misses.ndjson`. Never
-   ignore the whole `verification/telemetry/` folder. Start with `PLAYBOOK_TELEMETRY=1 opencode`
-   when you want metrics.
-5. **Inputs and owners.** Have the requirements source, the mockup for UI work, the coding
-   standards, and named owners for plan approval, acceptance, release and escalation.
+The Verifier records one evidence-backed outcome on every checklist item. It updates the Status
+Table and appends one run entry. It does not create a separate gap report. Failures and missing test
+data also create linked miss records through the supplied command-line tool. A verification handoff
+uses `templates/handoffs/verification-results.md`. Any failure goes to Phase 7. Missing data or a
+blocked environment must be resolved or formally accepted. Only an all-pass result moves to human
+acceptance. This phase uses the same retained 4-file, 10,054-word Verifier context as Phase 5.
 
-## 4. First smoke test
+## 7. Fix
 
-Before trusting the Playbook on real work:
+The team runs `/fix` against the same checklist. OpenCode loads the standing rules, profile, fix
+command, and Orchestrator role. The Orchestrator reads only active failed items and their evidence,
+then creates safe work waves for Builder subagents. It changes code and tests, records any new
+deployment or infrastructure need, performs the Phase 4 self-review, and marks each repair ready for
+independent testing. It never marks its own repair as verified. The same checklist remains the only
+contract. The fixed parent load is 4 files and 3,933 words before project inputs. The team repeats
+Phases 5 to 7 until every item passes.
 
-1. Pick a disposable feature that runs under the profile and plant one deterministic defect (for
-   example an import that reports success while writing no rows).
-2. Write one checklist item whose Acceptance and Verify lines demand the correct observable result
-   (`checklist-lint.mjs` must pass).
-3. Run `/verify @docs/&lt;Feature&gt;-Implementation-Checklist.md`. Expect an inline
-   `**Verifier Result**: FAIL` with executed evidence, an updated Status Table and Run Log,
-   evidence under `verification/`, no separate report file and no product-code edit.
-4. Run `/fix`, then a fresh `/verify`; the item reaches PASS only after the runtime check passes.
+## 8. Accept the Feature
 
-`DATA-GAP` (seed data missing) and `BLOCKED` (could not run) do not prove the defect was caught:
-fix the setup and repeat.
+QA, a business analyst, or another accountable person reviews the all-pass checklist and runs the
+manual checks that automation cannot settle. These include business meaning, usability, timing,
+edge cases, and cross-browser behavior. The person uses the Verification Guide and, for reports, the
+Business Verification Reference. The decision is stored with `templates/handoffs/acceptance.md` or
+an equivalent tracker record. OpenCode supplies the evidence but does not approve its own work.
+Accepted work moves to release readiness. Bugs move to Phase 9. This human phase has 0 newly loaded
+OpenCode files and 0 new instruction words.
 
-## 5. Quick paths
+## 9. Learn From Escaped Bugs
 
-**New project.** Install and set up (§2–3) → smoke test (§4) → `/feature-plan` → human plan
-approval → `/implement` → fresh `/verify` → `/fix` until ALL PASS → acceptance, release,
-post-deploy checks, ownership transfer. Worked example:
-[examples/Greenfield-Case-Study.md](examples/Greenfield-Case-Study.md).
+A bug found after verification is first written in an Issues file using
+`templates/issues-file-template.md`, often through `/create-issue-list`. The team then runs
+`/analyze-fix` in a fresh OpenCode chat. The Analyst reads the issue, existing checklist, related
+documents, and relevant code. It finds the root cause, explains why verification missed the bug,
+and strengthens the existing checklist with a test that would have caught it. It does not create a
+second checklist. `/fix` and `/verify` then run again. The fixed `/analyze-fix` load is 4 files and
+3,484 words before project inputs; optional issue collection has its own 4-file, 2,430-word load.
 
-**Existing project.** Install without overwriting; fill the profile from observed commands;
-`/legacy-audit` to baseline behaviour before any change; `/feature-plan` with regression items for
-everything that must not change; then the same loop. Worked example:
-[examples/Brownfield-Case-Study.md](examples/Brownfield-Case-Study.md).
+## 10. Handle Production Bugs
 
-## 6. Where next
+Production bugs use the same learning loop with incident controls added. The team preserves logs,
+traces, deployment facts, impact, ownership, and the original reproduction before changing
+anything. `templates/handoffs/incident.md` records the incident. The Analyst runs `/analyze-fix`,
+the Orchestrator runs `/fix`, and the independent Verifier runs `/verify`. Release and operations
+records use `templates/handoffs/release-readiness.md` and
+`templates/handoffs/operations-transfer.md`. These are three separate OpenCode contexts. Together
+they load 12 framework file instances and 17,471 fixed words, not one single prompt. The checklist
+keeps the new regression requirement so the same failure cannot pass silently next time.
 
-| Read | For |
-|---|---|
-| [Playbook-How-It-Works.md](Playbook-How-It-Works.md) | The ten phases in plain English |
-| [phases/](../phases/) | One page per phase: inputs, outputs, gate |
-| [templates/](../templates/) | Checklist item, deployment steps, Issues file, handoffs and command specifications |
-| [Operating-Guide.md](Operating-Guide.md) | Roles, gates, handoffs, commands, scripts, telemetry, measures, YOLO, troubleshooting |
+## OpenCode Installation Note
+
+The repository is packaging source, not an installed project. Its root `.opencode/` contains the
+four agents and plugins, but no command folder. Therefore this source checkout resolves 0 custom
+slash commands. A normal npm installation creates all 14 commands under the target project's
+`.opencode/command/` and places the standing rules, profile, model map, and runtime scripts under
+`.playbook/`. OpenCode remains the primary and only shipped coding harness.
 </textarea>
 <div id="out"></div>
 <button id="to-top" aria-label="Back to top" title="Back to top">↑</button>

@@ -1,6 +1,6 @@
 # Telemetry Guide — phase effort, time, tokens, models and outcome
 
-**Audience:** anyone operating the playbook. **TL;DR:** schema-2 OpenCode records answer wall-clock phase time, observed active agent time, token/cost usage, actual model mix, and spawned/contributing subagents. A separate durable stream covers escaped/reworked defects. Values come from harness events or deterministic framework parsing, never model self-report. **TfLens phase contract:** [`Phase-Efficiency-TfLens-Contract.md`](Phase-Efficiency-TfLens-Contract.md) · **TfLens miss contract:** [`Miss-Telemetry-TfLens-From-AIFP.md`](Miss-Telemetry-TfLens-From-AIFP.md) · **capture evidence:** [`Telemetry-Hooks.md`](Telemetry-Hooks.md).
+**Audience:** anyone operating the playbook. **TL;DR:** schema-2 OpenCode records answer wall-clock phase time, observed active agent time, token/cost usage, actual model mix, and spawned/contributing subagents. A separate durable stream covers escaped/reworked defects. Values come from harness events or deterministic framework parsing, never model self-report. **TfLens phase contract:** [`Phase-Efficiency-TfLens-Contract.md`](cross-framework/Phase-Efficiency-TfLens-Contract.md) · **TfLens miss contract:** [`Miss-Telemetry-TfLens-From-AIFP.md`](cross-framework/Miss-Telemetry-TfLens-From-AIFP.md) · **capture evidence:** [`Telemetry-Hooks.md`](Telemetry-Hooks.md).
 
 ## 1. What you get
 

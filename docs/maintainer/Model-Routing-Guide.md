@@ -16,7 +16,7 @@ The defaults are working values — substitute your own provider/models (§5.4).
 
 ## 2. The complete map — commands
 
-The single source of truth is [`playbook/model-tiers.yml`](../playbook/model-tiers.yml). The shipped assignments and the reasoning behind each:
+The single source of truth is [`playbook/model-tiers.yml`](../../playbook/model-tiers.yml). The shipped assignments and the reasoning behind each:
 
 | Command | Phase | Tier | Why |
 |---|---|---|---|
@@ -81,7 +81,7 @@ Meaning: if a checklist item's Run Log shows two failed fix attempts, launch the
 
 ## 5. Operating routing — one command, every case
 
-Everything goes through **`node scripts/playbook-routing.mjs <verb>`** (alias: `npm run routing -- <verb>`). Each verb edits [`playbook/model-tiers.yml`](../playbook/model-tiers.yml) in place — comments preserved — and immediately re-applies it to the harness files, so the map and the `model:` stamps can never disagree. Every verb is idempotent; run it as often as you like. (`node scripts/apply-model-tiers.mjs` still works underneath; `--check` and `--print` are unchanged.)
+Everything goes through **`node scripts/playbook-routing.mjs <verb>`** (alias: `npm run routing -- <verb>`). Each verb edits [`playbook/model-tiers.yml`](../../playbook/model-tiers.yml) in place — comments preserved — and immediately re-applies it to the harness files, so the map and the `model:` stamps can never disagree. Every verb is idempotent; run it as often as you like. (`node scripts/apply-model-tiers.mjs` still works underneath; `--check` and `--print` are unchanged.)
 
 ### 5.1 Turning it on and off
 

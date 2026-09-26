@@ -1,64 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8">
-<title>Greenfield Project Runbook: Team Inventory</title>
-<style>
-html{scroll-behavior:smooth}
-body{font:16px/1.6 system-ui;max-width:860px;margin:40px auto;padding:0 20px;color:#211C16}
-table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px 10px;vertical-align:top}
-h1,h2,h3,h4,h5,h6{scroll-margin-top:20px;position:relative}
-h1 .anchor,h2 .anchor,h3 .anchor,h4 .anchor,h5 .anchor,h6 .anchor{
-  position:absolute;left:-1.1em;opacity:0;color:#999;text-decoration:none;
-  font-weight:400;transition:opacity .15s ease}
-h1:hover .anchor,h2:hover .anchor,h3:hover .anchor,h4:hover .anchor,h5:hover .anchor,h6:hover .anchor{opacity:1}
-h1 .anchor:hover,h2 .anchor:hover,h3 .anchor:hover,h4 .anchor:hover,h5 .anchor:hover,h6 .anchor:hover{color:#0E6E6A}
-pre{position:relative;background:#1F2530;color:#E7E2D6;border-radius:8px;padding:14px 16px;overflow-x:auto}
-pre.mermaid{background:transparent;color:inherit;text-align:center;padding:0;overflow:hidden}
-code{background:#eee;padding:1px 5px;border-radius:4px;font-size:.92em}
-pre code{background:transparent;padding:0;color:inherit}
-.copy-btn{position:absolute;top:8px;right:8px;font:11px/1 ui-monospace,monospace;
-  letter-spacing:.06em;text-transform:uppercase;background:rgba(231,226,214,.08);
-  color:#8FB6B3;border:1px solid rgba(143,182,179,.3);border-radius:6px;
-  padding:4px 10px;cursor:pointer;transition:all .15s ease;z-index:2}
-.copy-btn:hover{background:rgba(231,226,214,.14);color:#E7E2D6;border-color:rgba(231,226,214,.45)}
-.copy-btn.copied{background:rgba(156,207,162,.2);color:#9CCFA2;border-color:rgba(156,207,162,.5)}
-.broken-link{background:#FFEAEA !important;color:#A00 !important;text-decoration:line-through;cursor:help}
-.broken-link::after{content:" ⚠";font-size:.85em}
-#to-top{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;
-  background:#0E6E6A;color:#fff;border:none;font-size:20px;line-height:1;cursor:pointer;
-  box-shadow:0 4px 12px rgba(0,0,0,.18);opacity:0;pointer-events:none;
-  transition:opacity .2s ease;z-index:10}
-#to-top.visible{opacity:.85;pointer-events:auto}
-#to-top:hover{opacity:1}
-:target{animation:flash 1.2s ease}
-@keyframes flash{0%{background:#FFF4B8}100%{background:transparent}}
-
-/* ---- Mermaid diagram container with toolbar + scroll/pan ---- */
-.mermaid-wrap{position:relative;border:1px solid #DDE2E8;border-radius:8px;
-  background:#FBF8F2;margin:18px 0;overflow:hidden}
-.mermaid-scroll{overflow:auto;max-height:75vh;cursor:grab}
-.mermaid-scroll.grabbing{cursor:grabbing}
-.mermaid-scroll > pre.mermaid{display:inline-block;min-width:100%;margin:0;padding:18px 12px}
-.mermaid-scroll > pre.mermaid > svg{display:inline-block;max-width:none;
-  transition:width .15s ease,height .15s ease}
-.mermaid-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:4px;
-  background:rgba(255,255,255,.92);border:1px solid #D8DEE5;border-radius:8px;
-  padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);z-index:5;
-  font:13px/1 ui-monospace,monospace}
-.mermaid-toolbar button{background:transparent;border:1px solid transparent;
-  color:#574E43;border-radius:5px;padding:5px 9px;cursor:pointer;
-  transition:all .12s ease;line-height:1;min-width:30px}
-.mermaid-toolbar button:hover{background:#EFE8DA;border-color:#D8CFBF;color:#211C16}
-.mermaid-toolbar button:active{background:#E3DACB}
-.mermaid-toolbar .zoom-pct{font-size:11px;color:#857A6B;padding:5px 6px;
-  align-self:center;min-width:42px;text-align:center}
-.mermaid-toolbar .sep{width:1px;background:#D8DEE5;margin:2px 2px}
-@media print{
-  .copy-btn,#to-top,.mermaid-toolbar{display:none !important}
-  .mermaid-scroll{overflow:visible !important;max-height:none !important}
-  .mermaid-wrap{border:none;background:transparent;page-break-inside:avoid}
-}
-</style>
-</head><body>
-<textarea id="src" hidden># Greenfield Project Runbook: Team Inventory
+# Greenfield Project Runbook: Team Inventory
 
 ## 1. Objective and illustrative boundary
 
@@ -74,7 +14,7 @@ credentials and defect patch are illustrative and are not shipped with this Play
 must provide an authorized disposable repository and its own synthetic fixtures.
 
 This runbook does not prescribe an app stack, database, command, port or deployment platform.
-Every operational value comes from the target's `playbook/environment-profile.yml`.
+Every operational value comes from the target's `.playbook/environment-profile.yml`.
 
 ## 2. SDLC-to-AIFP phase mapping
 
@@ -83,14 +23,14 @@ inputs, outputs, gate and expected metrics.
 
 | SDLC Stage | AIFP Phase | Command | Agent | Inputs | Outputs | Gate | Metrics |
 |---|---|---|---|---|---|---|---|
-| Requirements Analysis | [Phase 1 — Plan](../phases/01-plan.md) | `/feature-plan` | Analyst | BRD, mockup, standards, DB arch, profile | Checklist, architecture, DB changes | [Phase 2 — Plan Review](../phases/02-plan-review-gate.md) human gate | `feature-plan` |
-| Design | [Phase 1 — Plan](../phases/01-plan.md) (continued) | `/feature-plan` | Analyst | Same as above | Architecture, ER diagram, verification guide | Plan approval packet | `feature-plan` |
-| Development | [Phase 3 — Build](../phases/03-build.md) + [Phase 4 — Self-Review](../phases/04-self-review.md) | `/implement` | Orchestrator → Builders | Approved checklist, standards | Code, tests, scripts, Status Table | implementation-summary | `implement` |
-| Testing/Verification | [Phase 5 — Verify](../phases/05-verify.md) + [Phase 6 — Results Gate](../phases/06-verification-results-gate.md) | `/verify` | Fresh Verifier | Checklist, guides, profile | Evidence, inline verdicts, Run Log | verification-results | `verify` |
-| Bug Fixing | [Phase 7 — Fix](../phases/07-fix.md) | `/fix` | Orchestrator → Builders | FAIL items, checklist | Fixed code, self-test | Fresh `/verify` | `fix` |
-| Acceptance | [Phase 8 — Human Acceptance](../phases/08-human-acceptance.md) | Human gate | QA/Product | PASS checklist, evidence | `acceptance.md` | Human approval | None (process metric) |
+| Requirements Analysis | [Phase 1 — Plan](../../phases/01-plan.md) | `/feature-plan` | Analyst | BRD, mockup, standards, DB arch, profile | Checklist, architecture, DB changes | [Phase 2 — Plan Review](../../phases/02-plan-review-gate.md) human gate | `feature-plan` |
+| Design | [Phase 1 — Plan](../../phases/01-plan.md) (continued) | `/feature-plan` | Analyst | Same as above | Architecture, ER diagram, verification guide | Plan approval packet | `feature-plan` |
+| Development | [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) | `/implement` | Orchestrator → Builders | Approved checklist, standards | Code, tests, scripts, Status Table | implementation-summary | `implement` |
+| Testing/Verification | [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Results Gate](../../phases/06-verification-results-gate.md) | `/verify` | Fresh Verifier | Checklist, guides, profile | Evidence, inline verdicts, Run Log | verification-results | `verify` |
+| Bug Fixing | [Phase 7 — Fix](../../phases/07-fix.md) | `/fix` | Orchestrator → Builders | FAIL items, checklist | Fixed code, self-test | Fresh `/verify` | `fix` |
+| Acceptance | [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md) | Human gate | QA/Product | PASS checklist, evidence | `acceptance.md` | Human approval | None (process metric) |
 | Release | Human gate | Release team | Acceptance, checklist | `release-readiness.md` | Release approval | None (process metric) | None (process metric) |
-| Maintenance | [Phase 9](../phases/09-post-verification-bugs.md) / [Phase 10](../phases/10-production-bugs.md) | `/analyze-fix` | Analyst | Issues, code | Updated checklist | `analyze-fix` | `miss` / `miss-fix` |
+| Maintenance | [Phase 9](../../phases/09-post-verification-bugs.md) / [Phase 10](../../phases/10-production-bugs.md) | `/analyze-fix` | Analyst | Issues, code | Updated checklist | `analyze-fix` | `miss` / `miss-fix` |
 
 ## 3. Greenfield lifecycle flow
 
@@ -141,7 +81,7 @@ exception expiry.
 
 - An authorized disposable greenfield repository.
 - Supported Node.js/npm and OpenCode; install/restart as described in `docs/Installation.md`.
-- A fully populated `playbook/environment-profile.yml` with no `<replace: ...>` values.
+- A fully populated `.playbook/environment-profile.yml` with no `<replace: ...>` values.
 - Engineering-validated profile build, test, start, cleanup, URLs, database method and log paths.
 - Repository coding standards and approved DB architecture decisions.
 - Approved local/non-production resources for the declared topology.
@@ -182,7 +122,7 @@ Do not plan until all six are available:
 3. **Standards:** actual coding-standards path, including test, logging, security, errors and naming.
 4. **DB architecture:** approved data/migration/compatibility/rollback architecture path, or an
    explicit "no database scope" decision.
-5. **Environment profile:** validated `playbook/environment-profile.yml`.
+5. **Environment profile:** validated `.playbook/environment-profile.yml`.
 6. **Naming/output decisions:** display name, slug, project prefix, docs folder, exact checklist
    name, run-ID convention, evidence path and deploy path.
 
@@ -256,11 +196,11 @@ Feature docs/handoffs belong in the chosen docs folder. Runtime evidence belongs
 
 | Command phase | Conceptual work combined into it |
 |---|---|
-| `feature-plan` | [Phase 1 — Plan](../phases/01-plan.md) |
-| `implement` | [Phase 3 — Build](../phases/03-build.md) + [Phase 4 — Self-Review](../phases/04-self-review.md) |
-| `verify` | [Phase 5 — Verify](../phases/05-verify.md) + [Phase 6 — Results Gate](../phases/06-verification-results-gate.md) |
-| `fix` | [Phase 7 — Fix](../phases/07-fix.md) |
-| `analyze-fix` | [Phase 9 — Post-Verification Bugs](../phases/09-post-verification-bugs.md) / [Phase 10 — Production Bugs](../phases/10-production-bugs.md) |
+| `feature-plan` | [Phase 1 — Plan](../../phases/01-plan.md) |
+| `implement` | [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) |
+| `verify` | [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Results Gate](../../phases/06-verification-results-gate.md) |
+| `fix` | [Phase 7 — Fix](../../phases/07-fix.md) |
+| `analyze-fix` | [Phase 9 — Post-Verification Bugs](../../phases/09-post-verification-bugs.md) / [Phase 10 — Production Bugs](../../phases/10-production-bugs.md) |
 
 Human plan review, acceptance, release, deploy and transfer produce no phase row unless an
 instrumented slash command actually runs. Label the dimension **Command phase**; never split a
@@ -278,7 +218,7 @@ command window by guessed token percentages.
   ```bash
   PLAYBOOK_TELEMETRY=1 opencode
   ```
-- **Expected outputs/artifacts:** Completed `playbook/environment-profile.yml`, retention review,
+- **Expected outputs/artifacts:** Completed `.playbook/environment-profile.yml`, retention review,
   fixture approval record, session UTC start timestamp.
 - **Gate/exit criteria:** No placeholders, secrets, production data or guessed topology values.
   Profile must contain zero `<replace: ...>` entries.
@@ -305,7 +245,7 @@ command window by guessed token percentages.
 ### Step 2 — Plan (SDLC: Requirements Analysis + Design)
 
 - **SDLC stage:** Requirements Analysis and Design.
-- **AIFP phase:** [Phase 1 — Plan](../phases/01-plan.md).
+- **AIFP phase:** [Phase 1 — Plan](../../phases/01-plan.md).
 - **Responsible:** Product supplies intent; Analyst agent produces documents.
 - **Inputs:** All six pack elements (BRD, mockup, standards, DB arch, profile, naming decisions)
   and referenced project files.
@@ -313,7 +253,7 @@ command window by guessed token percentages.
   ```text
   /feature-plan @docs/team-inventory/Team-Inventory-BRD-or-Spec.md
   @<mockup-if-UI> @<coding-standards> @<db-architecture>
-  @playbook/environment-profile.yml
+  @.playbook/environment-profile.yml
   Output to docs/team-inventory/. Use prefix Team-Inventory and the selected checklist name.
   Map every requirement/mockup state; define duplicate atomicity, auth, audit and logging.
   Use synthetic verification. Markdown only.
@@ -328,7 +268,7 @@ command window by guessed token percentages.
 ### Step 3 — Human plan gate (SDLC: Design Review)
 
 - **SDLC stage:** Design review / Approval.
-- **AIFP phase:** [Phase 2 — Plan Review Gate](../phases/02-plan-review-gate.md).
+- **AIFP phase:** [Phase 2 — Plan Review Gate](../../phases/02-plan-review-gate.md).
 - **Responsible:** Product, Engineering, QA, Security; named accountable approver.
 - **Inputs:** Full plan set, traceability matrix, coding standards and open decisions.
 - **Command:** No slash command. Fill `docs/team-inventory/handoffs/plan-approval.md` from
@@ -342,7 +282,7 @@ command window by guessed token percentages.
 ### Step 4 — Implement and self-review (SDLC: Development)
 
 - **SDLC stage:** Development / Implementation.
-- **AIFP phase:** [Phase 3 — Build](../phases/03-build.md) + [Phase 4 — Self-Review](../phases/04-self-review.md).
+- **AIFP phase:** [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md).
 - **Responsible:** Orchestrator, builder subagents, Engineering owner.
 - **Inputs:** Approved checklist, coding standards, architecture/DB docs and environment profile.
 - **Command:**
@@ -375,7 +315,7 @@ command window by guessed token percentages.
 ### Step 6 — Fresh independent verify (SDLC: Testing/Verification)
 
 - **SDLC stage:** Testing / Independent verification.
-- **AIFP phase:** [Phase 5 — Verify](../phases/05-verify.md) + [Phase 6 — Results Gate](../phases/06-verification-results-gate.md).
+- **AIFP phase:** [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Results Gate](../../phases/06-verification-results-gate.md).
 - **Responsible:** Verifier agent; QA observes; facilitator gives no hint.
 - **Inputs:** Checklist, verification guide, DB changes guide, environment profile and
   reset synthetic state.
@@ -396,7 +336,7 @@ command window by guessed token percentages.
 ### Step 7 — Fix every failure (SDLC: Bug Fixing)
 
 - **SDLC stage:** Bug fixing / Defect remediation.
-- **AIFP phase:** [Phase 7 — Fix](../phases/07-fix.md).
+- **AIFP phase:** [Phase 7 — Fix](../../phases/07-fix.md).
 - **Responsible:** Orchestrator and scoped builder subagents.
 - **Inputs:** Inline failures from verifier, Status Table, latest run evidence, coding standards
   and evidence directory.
@@ -415,7 +355,7 @@ command window by guessed token percentages.
 ### Step 8 — Re-verify and loop (SDLC: Regression Testing)
 
 - **SDLC stage:** Regression testing / Re-verification.
-- **AIFP phase:** [Phase 5 — Verify](../phases/05-verify.md) (repeat).
+- **AIFP phase:** [Phase 5 — Verify](../../phases/05-verify.md) (repeat).
 - **Responsible:** Fresh Verifier; Orchestrator only if another fix cycle is needed.
 - **Inputs:** Repaired state, new run ID, unchanged verification criteria and reset fixtures.
 - **Command:** Repeat Step 6 `/verify`; on FAIL / DATA-GAP / BLOCKED return to Step 7.
@@ -428,7 +368,7 @@ command window by guessed token percentages.
 ### Step 9 — Human acceptance (SDLC: Acceptance Testing)
 
 - **SDLC stage:** Acceptance testing / Sign-off.
-- **AIFP phase:** [Phase 8 — Human Acceptance](../phases/08-human-acceptance.md).
+- **AIFP phase:** [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md).
 - **Responsible:** QA/Product acceptance owner; Release consumes.
 - **Inputs:** PASS checklist, Verification Guide, result handoff and runtime evidence.
 - **Command:** Execute the verification guide with profile values; fill
@@ -472,8 +412,8 @@ command window by guessed token percentages.
 ### Step 12 — Post-deploy validation (SDLC: Maintenance / Monitoring)
 
 - **SDLC stage:** Post-deployment validation / Operations handoff readiness.
-- **AIFP phase:** [Phase 9 — Post-Verification Bugs](../phases/09-post-verification-bugs.md) /
-  [Phase 10 — Production Bugs](../phases/10-production-bugs.md) when formal analysis is needed.
+- **AIFP phase:** [Phase 9 — Post-Verification Bugs](../../phases/09-post-verification-bugs.md) /
+  [Phase 10 — Production Bugs](../../phases/10-production-bugs.md) when formal analysis is needed.
 - **Responsible:** Operations and QA; Release decides continue/rollback.
 - **Inputs:** Release record, revision, thresholds and post-deploy checks.
 - **Command:** Use only profile/release health, smoke, log and cleanup commands. Use synthetic
@@ -506,10 +446,10 @@ command window by guessed token percentages.
 After the final command reaches idle, export from the target root:
 
 ```bash
-node scripts/playbook-telemetry.mjs \
+node .playbook/scripts/playbook-telemetry.mjs \
   --checklist="docs/team-inventory/Team-Inventory-FullStack-Implementation-Checklist.md" \
   > "verification/team-inventory/<run-id>/phase-metrics.ndjson"
-node scripts/playbook-telemetry.mjs --misses \
+node .playbook/scripts/playbook-telemetry.mjs --misses \
   > "verification/team-inventory/<run-id>/miss-lifecycle-export.ndjson"
 ```
 
@@ -598,468 +538,3 @@ lifecycle? Why do elapsed, complete active effort and human effort differ? Which
 and full model mix support comparison? Why are attempt/verdict snapshots caveated? When is fix cost
 `sole`, `shared:<n>` or `none`? What is checkpointed before rotation, and what never rotates? Can a
 successor find monitoring, escalation, rollback and the next action without hidden chat context?
-</textarea>
-<div id="out"></div>
-<button id="to-top" aria-label="Back to top" title="Back to top">↑</button>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
-<script>
-  /* ---- Slugifier (deterministic, GitHub-flavored-markdown compatible) ---- */
-  function slugify(text){
-    return (text || '')
-      .toString()
-      .trim()
-      .toLowerCase()
-      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
-      .replace(/[`~!@#$%^&*()+={}\[\]|\\:;"'<>,.?\/]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/ /g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  /* ---- Configure marked with custom heading renderer ---- */
-  const usedSlugs = new Map();
-  function uniqueSlug(base){
-    if (!base) base = 'section';
-    const count = usedSlugs.get(base) || 0;
-    usedSlugs.set(base, count + 1);
-    return count === 0 ? base : `${base}-${count}`;
-  }
-
-  const renderer = new marked.Renderer();
-  renderer.heading = function(text, level, raw){
-    const rawText = (raw || text || '').toString();
-    const stripped = rawText.replace(/<[^>]+>/g, '');
-    const id = uniqueSlug(slugify(stripped));
-    return `<h${level} id="${id}">${text}` +
-           `<a href="#${id}" class="anchor" aria-label="Permalink to this heading">¶</a>` +
-           `</h${level}>\n`;
-  };
-
-  marked.setOptions({ renderer, gfm: true, breaks: false });
-
-  /* ---- Render markdown ---- */
-  document.getElementById('out').innerHTML =
-    marked.parse(document.getElementById('src').value);
-
-  /* ---- Replace mermaid code blocks AND remember the source text ---- */
-  document.querySelectorAll('code.language-mermaid').forEach(c => {
-    const p = document.createElement('pre'); p.className = 'mermaid';
-    /* Stash the original source on a data attribute so the new-tab view can reuse it */
-    p.setAttribute('data-mermaid-src', c.textContent);
-    p.textContent = c.textContent;
-    c.closest('pre').replaceWith(p);
-  });
-  try { mermaid.initialize({ startOnLoad:false, securityLevel:'loose' }); mermaid.run(); } catch(e) {}
-
-  /* ---- After Mermaid renders, wrap each diagram with scroll container + toolbar ---- */
-  /* mermaid.run() is async; poll briefly for the <svg> to appear in each .mermaid */
-  function whenSvgReady(pre, cb, tries){
-    tries = tries || 0;
-    const svg = pre.querySelector('svg');
-    if (svg) return cb(svg);
-    if (tries > 40) return; /* give up after ~4s */
-    setTimeout(() => whenSvgReady(pre, cb, tries + 1), 100);
-  }
-
-  document.querySelectorAll('pre.mermaid').forEach((pre, idx) => {
-    whenSvgReady(pre, (svg) => attachDiagramControls(pre, svg, idx));
-  });
-
-  function attachDiagramControls(pre, svg, idx){
-    /* Skip if already wrapped (e.g., on rerun) */
-    if (pre.closest('.mermaid-wrap')) return;
-
-    /* Note the natural dimensions BEFORE we modify anything */
-    const vb = svg.getAttribute('viewBox');
-    let naturalW = 0, naturalH = 0;
-    if (vb){
-      const parts = vb.split(/\s+/).map(Number);
-      if (parts.length === 4){ naturalW = parts[2]; naturalH = parts[3]; }
-    }
-    if (!naturalW){ naturalW = parseFloat(svg.getAttribute('width')) || 800; }
-    if (!naturalH){ naturalH = parseFloat(svg.getAttribute('height')) || 400; }
-
-    /* Build wrapper structure */
-    const wrap = document.createElement('div'); wrap.className = 'mermaid-wrap';
-    const scroller = document.createElement('div'); scroller.className = 'mermaid-scroll';
-    const toolbar = document.createElement('div'); toolbar.className = 'mermaid-toolbar';
-    toolbar.setAttribute('role','toolbar');
-    toolbar.setAttribute('aria-label','Diagram zoom controls');
-
-    pre.parentNode.insertBefore(wrap, pre);
-    scroller.appendChild(pre);
-    wrap.appendChild(scroller);
-    wrap.appendChild(toolbar);
-
-    /* Remove SVG's max-width:100% inline style if Mermaid set it */
-    svg.style.maxWidth = 'none';
-    svg.removeAttribute('width');
-    svg.removeAttribute('height');
-    /* Use viewBox + naturalW/H baseline */
-    svg.style.width = naturalW + 'px';
-    svg.style.height = naturalH + 'px';
-    svg.dataset.naturalW = naturalW;
-    svg.dataset.naturalH = naturalH;
-
-    /* Internal scale state — SVGs with viewBox scale naturally when width/height attrs change */
-    let scale = 1;
-    function applyScale(s){
-      scale = Math.max(0.25, Math.min(5, s));
-      svg.style.width = (naturalW * scale) + 'px';
-      svg.style.height = (naturalH * scale) + 'px';
-      pctLabel.textContent = Math.round(scale * 100) + '%';
-    }
-
-    /* Toolbar buttons */
-    function mkBtn(label, title, onClick){
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      b.title = title;
-      b.setAttribute('aria-label', title);
-      b.addEventListener('click', (e) => { e.preventDefault(); onClick(); });
-      toolbar.appendChild(b);
-      return b;
-    }
-
-    mkBtn('−', 'Zoom out (Alt+−)', () => applyScale(scale - 0.2));
-    const pctLabel = document.createElement('span');
-    pctLabel.className = 'zoom-pct';
-    pctLabel.textContent = '100%';
-    toolbar.appendChild(pctLabel);
-    mkBtn('+', 'Zoom in (Alt+=)', () => applyScale(scale + 0.2));
-
-    const sep1 = document.createElement('span'); sep1.className = 'sep'; toolbar.appendChild(sep1);
-
-    mkBtn('Fit', 'Fit to width', () => {
-      const scrollerW = scroller.clientWidth - 24; /* minus padding */
-      const fitScale = scrollerW > 0 ? scrollerW / naturalW : 1;
-      applyScale(fitScale);
-    });
-    mkBtn('1:1', 'Actual size (100%)', () => applyScale(1));
-    mkBtn('⛶', 'Toggle full-screen view', () => toggleFullscreen(wrap, scroller));
-
-    const sep2 = document.createElement('span'); sep2.className = 'sep'; toolbar.appendChild(sep2);
-
-    mkBtn('↗', 'Open in new tab (with zoom, pan, print, PNG export)', () => openInNewTab(pre));
-
-    /* Drag-to-pan when content overflows */
-    let dragging = false, dragStartX = 0, dragStartY = 0, scrollStartX = 0, scrollStartY = 0;
-    scroller.addEventListener('mousedown', (e) => {
-      /* Only left-click drag on background (not on SVG text that might be selectable) */
-      if (e.button !== 0) return;
-      dragging = true;
-      scroller.classList.add('grabbing');
-      dragStartX = e.clientX; dragStartY = e.clientY;
-      scrollStartX = scroller.scrollLeft; scrollStartY = scroller.scrollTop;
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
-      scroller.scrollLeft = scrollStartX - (e.clientX - dragStartX);
-      scroller.scrollTop  = scrollStartY - (e.clientY - dragStartY);
-    });
-    window.addEventListener('mouseup', () => {
-      if (dragging){ dragging = false; scroller.classList.remove('grabbing'); }
-    });
-
-    /* Ctrl/⌘ + wheel = zoom; plain wheel = scroll (browser default) */
-    scroller.addEventListener('wheel', (e) => {
-      if (e.ctrlKey || e.metaKey){
-        e.preventDefault();
-        const dir = e.deltaY < 0 ? 1 : -1;
-        applyScale(scale + dir * 0.15);
-      }
-    }, { passive:false });
-
-    /* Initial scale: fit-to-width if the diagram is wider than the container */
-    setTimeout(() => {
-      const containerW = scroller.clientWidth - 24;
-      if (naturalW > containerW){
-        applyScale(containerW / naturalW);
-      } else {
-        applyScale(1);
-      }
-    }, 30);
-  }
-
-  /* ---- Full-screen toggle ---- */
-  function toggleFullscreen(wrap, scroller){
-    if (document.fullscreenElement){
-      document.exitFullscreen();
-    } else if (wrap.requestFullscreen){
-      wrap.requestFullscreen().catch(() => {
-        /* Fallback: simulate full-screen with fixed positioning */
-        wrap.classList.toggle('fake-fullscreen');
-      });
-    }
-  }
-  /* Fake-fullscreen CSS for browsers that block Fullscreen API */
-  const fsStyle = document.createElement('style');
-  fsStyle.textContent = `.mermaid-wrap.fake-fullscreen{position:fixed;inset:0;z-index:9999;
-    background:#FBF8F2;border:0;border-radius:0;margin:0}
-    .mermaid-wrap.fake-fullscreen .mermaid-scroll{max-height:100vh;height:100vh}
-    .mermaid-wrap:fullscreen{background:#FBF8F2;padding:0}
-    .mermaid-wrap:fullscreen .mermaid-scroll{max-height:100vh;height:100vh}`;
-  document.head.appendChild(fsStyle);
-
-  /* ---- Open diagram in new tab with full standalone controls ---- */
-  function openInNewTab(pre){
-    const src = pre.getAttribute('data-mermaid-src') || '';
-    const title = (document.title || 'Diagram') + ' — diagram';
-    const escapedSrc = src
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    const html = `<!doctype html><html><head><meta charset="utf-8">
-<title>${title.replace(/</g,'&lt;')}</title>
-<style>
-html,body{margin:0;padding:0;height:100%;font:14px/1.4 system-ui;background:#FBF8F2;color:#211C16}
-#bar{position:fixed;top:0;left:0;right:0;height:46px;background:#fff;border-bottom:1px solid #D8DEE5;
-  display:flex;align-items:center;padding:0 12px;gap:6px;z-index:10;
-  box-shadow:0 1px 4px rgba(0,0,0,.06)}
-#bar button{background:transparent;border:1px solid #D8DEE5;color:#211C16;border-radius:6px;
-  padding:6px 12px;font:13px/1 ui-monospace,monospace;cursor:pointer;transition:all .12s ease}
-#bar button:hover{background:#EFE8DA}
-#bar .pct{font:12px/1 ui-monospace,monospace;color:#574E43;min-width:50px;text-align:center}
-#bar .title{margin-left:auto;color:#857A6B;font-size:12px;max-width:50%;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#stage{position:absolute;top:46px;left:0;right:0;bottom:0;overflow:auto;
-  background:repeating-linear-gradient(45deg,#FBF8F2 0,#FBF8F2 10px,#F4EFE5 10px,#F4EFE5 20px)}
-#stage.grabbing{cursor:grabbing}
-#stage:not(.grabbing){cursor:grab}
-#render{padding:30px}
-#render > svg{display:block;transform-origin:top left;max-width:none}
-@media print{
-  #bar{display:none}
-  #stage{position:static;overflow:visible;background:#fff}
-  #render{padding:0}
-  #render > svg{width:100% !important;height:auto !important}
-}
-</style></head><body>
-<div id="bar">
-  <button id="zout" title="Zoom out">−</button>
-  <span class="pct" id="pct">100%</span>
-  <button id="zin"  title="Zoom in">+</button>
-  <button id="fit"  title="Fit width">Fit</button>
-  <button id="one"  title="Actual size">1:1</button>
-  <button id="prn"  title="Print this diagram">Print</button>
-  <button id="png"  title="Download as PNG">PNG</button>
-  <button id="svg"  title="Download raw SVG">SVG</button>
-  <span class="title">${title.replace(/</g,'&lt;')}</span>
-</div>
-<div id="stage"><div id="render"><pre class="mermaid">${escapedSrc}</pre></div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"><\/script>
-<script>
-(function(){
-  mermaid.initialize({ startOnLoad:false, securityLevel:'loose' });
-  mermaid.run().then(setup).catch(setup);
-
-  function setup(){
-    const svg = document.querySelector('#render svg');
-    if (!svg) return;
-    const vb = svg.getAttribute('viewBox');
-    let nW=0, nH=0;
-    if (vb){ const p = vb.split(/\\s+/).map(Number); if (p.length===4){ nW=p[2]; nH=p[3]; } }
-    if (!nW) nW = parseFloat(svg.getAttribute('width')) || 800;
-    if (!nH) nH = parseFloat(svg.getAttribute('height')) || 400;
-    svg.removeAttribute('width'); svg.removeAttribute('height');
-    svg.style.maxWidth='none';
-
-    let scale = 1;
-    const pct = document.getElementById('pct');
-    function apply(s){
-      scale = Math.max(0.1, Math.min(8, s));
-      svg.style.width  = (nW * scale) + 'px';
-      svg.style.height = (nH * scale) + 'px';
-      pct.textContent = Math.round(scale * 100) + '%';
-    }
-    document.getElementById('zin').onclick = () => apply(scale + 0.2);
-    document.getElementById('zout').onclick = () => apply(scale - 0.2);
-    document.getElementById('fit').onclick = () => {
-      const stageW = document.getElementById('stage').clientWidth - 60;
-      apply(stageW > 0 ? stageW / nW : 1);
-    };
-    document.getElementById('one').onclick = () => apply(1);
-    document.getElementById('prn').onclick = () => window.print();
-
-    /* PNG export: render the SVG to a canvas and download */
-    document.getElementById('png').onclick = () => {
-      const xml = new XMLSerializer().serializeToString(svg);
-      const svgBlob = new Blob([xml], { type:'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
-      const img = new Image();
-      img.onload = function(){
-        const c = document.createElement('canvas');
-        c.width = nW * 2; c.height = nH * 2; /* 2x for better print quality */
-        const ctx = c.getContext('2d');
-        ctx.fillStyle = '#FBF8F2'; ctx.fillRect(0,0,c.width,c.height);
-        ctx.scale(2,2);
-        ctx.drawImage(img, 0, 0, nW, nH);
-        URL.revokeObjectURL(url);
-        c.toBlob(function(blob){
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = 'diagram.png';
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        });
-      };
-      img.onerror = () => { alert('Could not generate PNG. Try downloading SVG instead.'); URL.revokeObjectURL(url); };
-      img.src = url;
-    };
-
-    /* SVG download */
-    document.getElementById('svg').onclick = () => {
-      const xml = new XMLSerializer().serializeToString(svg);
-      const blob = new Blob([xml], { type:'image/svg+xml;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'diagram.svg';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    };
-
-    /* Drag-to-pan in stage */
-    const stage = document.getElementById('stage');
-    let dragging=false, sx=0, sy=0, ssx=0, ssy=0;
-    stage.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
-      dragging = true; stage.classList.add('grabbing');
-      sx = e.clientX; sy = e.clientY; ssx = stage.scrollLeft; ssy = stage.scrollTop;
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
-      stage.scrollLeft = ssx - (e.clientX - sx);
-      stage.scrollTop  = ssy - (e.clientY - sy);
-    });
-    window.addEventListener('mouseup', () => { dragging=false; stage.classList.remove('grabbing'); });
-    stage.addEventListener('wheel', (e) => {
-      if (e.ctrlKey || e.metaKey){
-        e.preventDefault();
-        apply(scale + (e.deltaY < 0 ? 0.15 : -0.15));
-      }
-    }, { passive:false });
-
-    /* Keyboard shortcuts */
-    document.addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')){ e.preventDefault(); apply(scale + 0.2); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === '-'){ e.preventDefault(); apply(scale - 0.2); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === '0'){ e.preventDefault(); apply(1); }
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p'){ /* let browser print dialog through */ }
-    });
-
-    /* Initial fit-to-width */
-    setTimeout(() => {
-      const stageW = stage.clientWidth - 60;
-      if (nW > stageW) apply(stageW / nW); else apply(1);
-    }, 30);
-  }
-})();
-<\/script></body></html>`;
-
-    const w = window.open('', '_blank');
-    if (!w){
-      alert('Pop-up blocked. Please allow pop-ups for this page to open diagrams in a new tab.');
-      return;
-    }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-  }
-
-  /* ---- Repair broken internal links ---- */
-  function findTarget(rawHash){
-    if (!rawHash || rawHash[0] !== '#') return null;
-    const hash = decodeURIComponent(rawHash.slice(1));
-    if (!hash) return null;
-    let target = document.getElementById(hash);
-    if (target) return hash;
-    const canonical = slugify(hash.replace(/-/g, ' '));
-    if (canonical && document.getElementById(canonical)) return canonical;
-    const lower = slugify(hash);
-    if (lower && document.getElementById(lower)) return lower;
-    const headings = document.querySelectorAll('h1,h2,h3,h4,h5,h6');
-    const normHash = hash.toLowerCase().replace(/[^a-z0-9]+/g, '');
-    for (const h of headings){
-      const headText = h.textContent.replace(/¶$/,'').trim();
-      const normHead = headText.toLowerCase().replace(/[^a-z0-9]+/g, '');
-      if (normHash && normHash === normHead) return h.id;
-      if (normHash && normHead && (normHead.indexOf(normHash) === 0 || normHash.indexOf(normHead) === 0)){
-        if (Math.abs(normHash.length - normHead.length) < 5) return h.id;
-      }
-    }
-    return null;
-  }
-
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    const href = a.getAttribute('href');
-    if (href === '#' || href.startsWith('#:')) return;
-    const resolved = findTarget(href);
-    if (resolved){
-      if (resolved !== href.slice(1)) {
-        a.setAttribute('href', '#' + resolved);
-        a.setAttribute('data-rescued-from', href);
-        a.title = 'Link rescued from "' + href + '" — original anchor not found';
-      }
-    } else {
-      a.classList.add('broken-link');
-      a.title = 'Broken link: no heading matches "' + href + '"';
-    }
-  });
-
-  /* ---- Back-to-top button ---- */
-  const toTop = document.getElementById('to-top');
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 400) toTop.classList.add('visible');
-    else toTop.classList.remove('visible');
-  });
-  toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-
-  /* ---- Copy buttons on every <pre> that contains code (skip mermaid) ---- */
-  document.querySelectorAll('pre').forEach(function(pre){
-    if (pre.classList.contains('mermaid')) return;
-    if (pre.querySelector('.copy-btn')) return;
-    var btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'copy-btn'; btn.textContent = 'Copy';
-    btn.setAttribute('aria-label','Copy code to clipboard');
-    btn.addEventListener('click', function(){
-      var clone = pre.cloneNode(true);
-      clone.querySelectorAll('.copy-btn').forEach(function(n){ n.remove(); });
-      var text = clone.textContent.replace(/^\n/,'').replace(/\s+$/,'');
-      function done(){ btn.textContent='Copied'; btn.classList.add('copied');
-        setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('copied'); }, 1600); }
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).then(done).catch(function(){
-          var ta=document.createElement('textarea'); ta.value=text;
-          ta.style.position='fixed'; ta.style.left='-9999px';
-          document.body.appendChild(ta); ta.select();
-          try{document.execCommand('copy');}catch(e){}
-          document.body.removeChild(ta); done();
-        });
-      } else {
-        var ta=document.createElement('textarea'); ta.value=text;
-        ta.style.position='fixed'; ta.style.left='-9999px';
-        document.body.appendChild(ta); ta.select();
-        try{document.execCommand('copy');}catch(e){}
-        document.body.removeChild(ta); done();
-      }
-    });
-    pre.appendChild(btn);
-  });
-
-  /* ---- If page loaded with a hash, jump to it AFTER all rescue logic ran ---- */
-  if (window.location.hash){
-    const resolved = findTarget(window.location.hash);
-    if (resolved){
-      const el = document.getElementById(resolved);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }
-</script>
-</body></html>

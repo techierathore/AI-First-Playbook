@@ -3,7 +3,7 @@
 **Status:** PLAYBOOK PRODUCER IMPLEMENTED; TFLENS CONSUMER TO IMPLEMENT.
 **Audience:** TfLens ingestion, API, analytics and UI teams.
 **Producer:** AI-First Playbook schema-2 phase metrics.
-**Related:** [`Telemetry-Guide.md`](Telemetry-Guide.md) · [`Telemetry-Hooks.md`](Telemetry-Hooks.md) · [`Miss-Telemetry-TfLens-From-AIFP.md`](Miss-Telemetry-TfLens-From-AIFP.md).
+**Related:** [`Telemetry-Guide.md`](../Telemetry-Guide.md) · [`Telemetry-Hooks.md`](../Telemetry-Hooks.md) · [`Miss-Telemetry-TfLens-From-AIFP.md`](Miss-Telemetry-TfLens-From-AIFP.md).
 
 ## 1. Answer to the product question
 

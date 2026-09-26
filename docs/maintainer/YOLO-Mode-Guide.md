@@ -197,7 +197,7 @@ Before leaving a VM unattended:
   repo" is literal.
 - Git history is the rollback line: because the agent can never commit, `git checkout --`
   / `git clean` by **you** restores any state. Commit your own work before starting a run.
-- Secrets rules are unchanged — see [`Security.md`](Security.md).
+- Secrets rules are unchanged — see [`Security.md`](../Operating-Guide.md).
 - The telemetry plugin (`PLAYBOOK_TELEMETRY=1`) still works under YOLO; the supervisor
   passes the variable through, so you can cost an unattended run per phase afterwards.
 
