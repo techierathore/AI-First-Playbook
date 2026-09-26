@@ -71,11 +71,13 @@ if (id === "PB-01") {
       const config = JSON.parse(text.slice(text.indexOf("{")));
       const commands = Object.keys(config.command ?? {}).sort();
       const agents = Object.keys(config.agent ?? {}).sort();
-      assert(JSON.stringify(commands) === JSON.stringify(expectedCommands), `resolved commands ${commands.join(",")}`);
-      for (const agent of expectedAgents) assert(agents.includes(agent), `agent ${agent} did not resolve`);
       const plugins = (config.plugin ?? []).map((p) => basename(String(p)));
-      assert(plugins.indexOf("spec-guardrails.ts") !== -1 && plugins.indexOf("spec-guardrails.ts") < plugins.indexOf("yolo.ts"), `plugin order ${plugins.join(",")}`);
-      assert((config.instructions ?? []).some((p) => p.endsWith(".playbook/AGENTS.md")), "standing rules are not loaded");
+      const problems = [];
+      if (JSON.stringify(commands) !== JSON.stringify(expectedCommands)) problems.push(`resolved commands ${commands.join(",")}`);
+      for (const agent of expectedAgents) if (!agents.includes(agent)) problems.push(`agent ${agent} did not resolve`);
+      if (!(plugins.indexOf("spec-guardrails.ts") !== -1 && plugins.indexOf("spec-guardrails.ts") < plugins.indexOf("yolo.ts"))) problems.push(`plugin order ${plugins.join(",")}`);
+      if (!(config.instructions ?? []).some((p) => String(p).endsWith(".playbook/AGENTS.md"))) problems.push(`standing rules are not loaded (instructions ${(config.instructions ?? []).join(",")})`);
+      assert(!problems.length, problems.join("; "));
     }],
     ["the supported OpenCode version is recorded and matches the one observed", () => {
       const supported = pkg.opencode?.supported;

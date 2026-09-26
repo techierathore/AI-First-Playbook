@@ -71,6 +71,8 @@ function runCheck(id, check, root, runId, env) {
   const mine = lines.map((l) => l.match(new RegExp(`^${id}\\s+(pass|fail|ungraded)\\b:?\\s*(.*)$`))).filter(Boolean);
   const last = mine[mine.length - 1];
   const tail = `${child.stderr ?? ""}\n${output}`.trim().split("\n").slice(-3).join(" | ");
+  // The failing cases' own lines say why; printed under the verdict, never stored.
+  const details = lines.filter((l) => l.startsWith("not ok")).slice(0, 10);
   if (child.error) return { result: "fail", reason: `check did not run: ${child.error.code ?? child.error.message}`, exit_code: null, duration_ms };
   if (child.status === 0 && last?.[1] === "pass" && !mine.some((m) => m[1] === "fail")) {
     return { result: "pass", reason: last[2] || null, exit_code: 0, duration_ms };
@@ -81,7 +83,7 @@ function runCheck(id, check, root, runId, env) {
   if (child.status === 0) {
     return { result: "fail", reason: `exit 0 without "${id} pass" — missing output is never read as PASS`, exit_code: 0, duration_ms };
   }
-  return { result: "fail", reason: last?.[2] || `exit ${child.status ?? child.signal}: ${tail}`, exit_code: child.status ?? null, duration_ms };
+  return { result: "fail", reason: last?.[2] || `exit ${child.status ?? child.signal}: ${tail}`, exit_code: child.status ?? null, duration_ms, details };
 }
 
 export function grade(requirementsPath, { root = repoRoot, telemetryPath = defaultGradesPath(root), runId, actor = null, env = {}, log = console.log } = {}) {
@@ -110,6 +112,7 @@ export function grade(requirementsPath, { root = repoRoot, telemetryPath = defau
   }
   for (const r of results) {
     log(`${r.id} ${r.result.padEnd(8)} ${(r.kind ?? "-").padEnd(8)} ${r.check ?? ""}${r.reason ? ` — ${redact(r.reason, 200)}` : ""}`);
+    for (const d of r.details ?? []) log(`    ${redact(d, 400)}`);
     appendRecord(telemetryPath, buildGraderRecord({
       run_id: runId, req_id: r.id, check_kind: r.kind ?? "review", check: r.check, result: r.result, reason: r.reason,
       exit_code: r.exit_code, duration_ms: r.duration_ms, grader_version: GRADER_VERSION, actor,
