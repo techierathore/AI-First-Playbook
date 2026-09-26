@@ -34,8 +34,6 @@ rules apply to this whole run and to every builder you spawn (say so in each bri
 - Every approval gate below — the wave plan "Proceed?", the smoke-test "Approve?",
   deployment steps, tool installs, deletions, environment choices — is **pre-approved**.
   Do not pause. Decide, log one line under `## YOLO Decisions` in the checklist, continue.
-- Git history writes are denied mechanically; everything else (deletes, read-only git,
-  process kills, installs) is allowed.
 - Do not stop until the **completion contract** (next section) is met. If the provider's
   usage limit interrupts you, the supervisor resumes this session after the reset; on
   resume re-read the Status Table and continue from the first unfinished item.

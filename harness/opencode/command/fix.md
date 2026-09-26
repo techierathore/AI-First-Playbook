@@ -74,7 +74,7 @@ If the input contains the token `YOLO` or `PLAYBOOK_YOLO=1` is
 set, the `AGENTS.md` "YOLO mode" rules apply to this run and every builder you spawn:
 every "Proceed?/Approve?/ASK" below is pre-approved (print the plan, then go); when a
 Gap-Report and a checklist are both given, use the checklist and delete the Gap-Report
-(log it under `## YOLO Decisions`); git history writes stay denied. `/fix` is finished
+(log it under `## YOLO Decisions`). `/fix` is finished
 only when **every** FAIL / BLOCKED item in scope has been addressed and re-built — never
 "fixed #14 and #17, run `/fix` again for the rest"; add waves instead. End with
 `PLAYBOOK_RUN_COMPLETE: <summary>` or `PLAYBOOK_RUN_BLOCKED: <missing + owner>` as the

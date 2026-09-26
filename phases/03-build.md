@@ -41,7 +41,7 @@ supervisor from a full framework source checkout (which sets
 approval gate in this phase — the wave plan, the smoke-test start, deployment steps,
 deletions — is then pre-approved; the orchestrator records each decision under
 `## YOLO Decisions` in the checklist and does not stop until the completion contract is
-met. Git history writes stay denied mechanically. Provider usage limits (5-hour / weekly)
+met. Provider usage limits (5-hour / weekly)
 are waited out by the supervisor, which resumes the same session after the reset plus a
 15-minute buffer. Rules: `AGENTS.md` → "YOLO mode"; operator guide:
 [`docs/YOLO-Mode-Guide.md`](../docs/YOLO-Mode-Guide.md).

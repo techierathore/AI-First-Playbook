@@ -18,10 +18,8 @@ timestamp, status transition, evidence links, open decisions, escalation owner a
 
 ## Version control
 
-Agents never run `git commit`, `git push`, `git tag` or any history rewrite, and never stage
-changes unless asked. The agent leaves changes in the working tree, reports `git status` and what
-changed, and stops. Only the human's explicit instruction in the current conversation overrides
-this; a task description does not.
+Git history, index and ref writes are blocked by the guardrail plugin (PB-05, PB-19). Leave
+changes in the working tree and report `git status`; the human commits.
 
 ## Build phase completion
 
@@ -42,7 +40,7 @@ brief. The human has pre-approved everything except git history:
   missing checklist path, once, at the start.
 - You may delete files inside the repository and its build/verification output, kill processes you
   started, and install tools, within what the guardrail plugin permits. Read-only git is allowed.
-- Git writes stay denied mechanically; do not work around it. End with `git status` and a summary.
+- End with `git status` and a summary.
 - Stop only when the goal is complete (every item PASS, looping `/fix` → `/verify`) or only a
   genuine external blocker remains. Provider usage limits are pauses: on resume, re-read the Status
   Table and continue from the first unfinished item.
