@@ -10,7 +10,7 @@ first session not marked Done. The headline is the grader's output after that se
 | 2 | Live OpenCode enforcement | Done 2026-09-26 (PB-04 allow half left for the owner) | 8 of 20 graded; pass 8, fail 0, ungraded 12 |
 | 3 | Verifier core plus adapters | Done 2026-09-26 | 12 of 24 graded; pass 12, fail 0, ungraded 12 |
 | 4 | Checklist and handoff schemas | Done 2026-09-26 | 15 of 24 graded; pass 15, fail 0, ungraded 9 |
-| 5 | Plan, build, fix, analyze commands | Not started | — |
+| 5 | Plan, build, fix, analyze commands | Done 2026-09-26 | 21 of 28 graded; pass 21, fail 0, ungraded 7 |
 | 6 | Document tools | Not started | — |
 | 7 | Reader navigation | Not started | — |
 | 8 | Historical proof and retention | Not started | — |
@@ -31,6 +31,14 @@ first session not marked Done. The headline is the grader's output after that se
 | 4 | `AGENTS.md` | 451 | 442 | The ten handoff field names now live in `handoff-schema.json` and are enforced by `handoff-record.mjs` (PB-07). |
 | 4 | `templates/checklist-item-template.md` | 445 | 446 | Rules now in `checklist-lint.mjs` (Type required, misses-only IDs, field shape) shortened; gained the machine schema block and the plan's worked example, whose old free-form acceptance line failed the new rule. |
 | 4 | `templates/handoffs/*.md` (8) | 468 | 1,195 | Grew on purpose: each now carries all 10 standing rows plus a schema block; generated from `handoff-schema.json` so the template and validator cannot drift. |
+| 5 | `harness/opencode/command/implement.md` | 3,939 | 385 | Waves (`checklist-plan.mjs implement`), gates, app start/stop, miss linkage (`checklist-miss-coordinator.mjs`), Status Table (`checklist-create.mjs sync`) and completion (`phase-complete.mjs`) became scripts; YOLO repeat, progress-chat, "no excuses", sqlcmd/.NET/npm stack rules and the deployment tutorial deleted per plan §4 (deployment shape now in the template). |
+| 5 | `harness/opencode/command/fix.md` | 2,702 | 314 | Same scripts in fix mode; Gap-Report handling cut to one sentence; stack rules and progress chat deleted. |
+| 5 | `harness/opencode/command/feature-plan.md` | 2,534 | 482 | Checklist scaffold, lint and requirement/screen coverage became `checklist-create.mjs`, `checklist-lint.mjs`, `plan-coverage.mjs`; repeated flow-guide and business-reference structures replaced by a pointer to `/add-doc`; large-write workaround deleted. |
+| 5 | `harness/opencode/command/analyze-fix.md` | 2,361 | 466 | Miss recording and linkage became the coordinator plus the derived four-question `protocol_outcome`; progress chat and duplicate templates deleted. |
+| 5 | `harness/opencode/agent/orchestrator.md` | 119 | 67 | Completion contract replaced by `phase-complete.mjs`; YOLO detail left to `AGENTS.md`. |
+| 5 | `AGENTS.md` | 442 | 409 | Completion paragraph shortened to the `phase-complete.mjs` rule (PB-26). |
+| 5 | `phases/03-build.md` | 535 | 423 | Completion contract and YOLO repetition shortened to pointers. |
+| 5 | `templates/deployment-steps-template.md` | 303 | 259 | The credential-bearing `sqlcmd` example deleted (plan §4); commands now come from the profile. |
 | 3 | `harness/opencode/command/verify.md` | 458 | 115 | Report and telemetry mechanics removed (the Verifier owns them); example paths removed. |
 
 ## Decisions taken
@@ -56,4 +64,9 @@ Decisions the run took alone, each the smaller reversible choice.
 | 4 | `to-verify` added to item statuses; `incident-open`, `incident-mitigated`, `incident-resolved`, `operations-owned` added to feature states. | `AGENTS.md` already names the to-verify state; incident and transfer handoffs need transitions. Additive only. | Remove them. |
 | 4 | "Verb-led title" is enforced only as a ban on leading articles and filler words; true verb detection is not attempted. | A part-of-speech check would guess. | Replace with a verb list if misses show it matters. |
 | 4 | The three checklists and eight handoff examples are INVENTED from the case studies and labelled so; they are generated or hand-written fixtures, not accepted real records. | No real accepted checklists or handoffs exist in the repository. | Replace with real ones when a team supplies them. |
+| 5 | The miss record gains an optional `protocol_outcome`, derived by `miss-lib.mjs` from `--protocol=spec=…,playbook=…,check=…,ignored=…` answers given in order; a typed outcome is refused; historical misses may receive it once through `amend`. | "Change the miss schema only additively, through the miss CLI"; deriving keeps the order mechanical. | Drop the optional field; old records never carried it. |
+| 5 | Phase 10's maximum is 5,400 words across its three runs, as plan §3 states, not the 4,200 sum of the three tier maxima. | The plan's table is the owner-approved figure. | Change `instruction-budget.mjs`. |
+| 5 | Checklist items carry an optional metadata `trace` array of requirement IDs; `plan-coverage.mjs` reads it. | Coverage needs a machine link from requirement to item; the metadata key order stays as the schema lists, with `trace` after it. | Remove `trace`; coverage falls back to IDs in item text. |
+| 5 | The escaped bug is the greenfield training defect (duplicate import reports success, writes nothing), answered `spec=yes,playbook=yes,check=yes` → `weak-check`; the failed item set is INV-002 and INV-003 from the verification-results example. | Both come from the case study; the miss stream's five records are historical and all closed. | Swap the fixtures. |
+| 5 | `checklist-item-template.md` and `deployment-steps-template.md` now install to `.playbook/templates/`. | The shrunk commands point at them instead of repeating them. | Remove the two runtime mappings. |
 | 1 | Local checks ran on Node 22.22.2 with npm 10.9.7 (the container's npm); npm 11.20.0 is installed for the Session 9 campaign. | The container ships npm 10; every existing check passes on it. | — |
