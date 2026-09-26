@@ -4,8 +4,8 @@
 |---|---|
 | Purpose | The list of things the Playbook must do, each with the one check that proves it. `node scripts/playbook-grade.mjs docs/Playbook-Requirements.md` walks every line. |
 | Audience | Framework maintainers and agents. The owner approves the lines; nobody has to re-read them to know the state, because the grader prints it. Agent document; not rendered to HTML. |
-| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5 and PB-29 to PB-32 in Session 6, one per prose rule that became a script; PB-33 and PB-34 in Session 9 from the owner's campaign decision. |
-| Headline | **16 of 34 proved by a script**, 15 more by a fixture: 31 of 34 graded. Ungraded: PB-04 (owner decision), PB-20 and PB-34 (live model, runbooks). |
+| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5 and PB-29 to PB-32 in Session 6, one per prose rule that became a script; PB-33 and PB-34 in Session 9 from the owner's campaign decision; PB-35 to PB-44 in Session 10, one per group of prose rules that became runtime scripts. |
+| Headline | **16 of 44 proved by a script**, 25 more by a fixture: 41 of 44 graded. Ungraded: PB-04 (owner decision), PB-20 and PB-34 (live model, runbooks). |
 | Sources | `docs/Playbook-Reset-Plan.md` §6 and §8; the miss stream `verification/telemetry/misses.ndjson`; owner decisions of 2026-09-26 (§4). |
 
 ---
@@ -33,6 +33,7 @@
 | Schema fixtures | `tests/checklist/fixtures/` (small 6, medium 14, large 34 items, invented from the case studies) and `tests/handoff/fixtures/good/` (the eight handoff kinds, invented from the greenfield case study) | PB-06, PB-07 |
 | Planning fixtures | `tests/phase/fixtures/`: the Team Inventory BRD and planned checklist (invented from the greenfield case study); the failed item set is derived in the test | PB-13, PB-25 to PB-28 |
 | Document fixtures | `tests/docs/fixtures/`: a Team Inventory flow guide, business reference and code tree (invented from the greenfield case study); legacy inputs are the documents under `docs/` | PB-29 to PB-32 |
+| Runtime project | a disposable project with the Playbook installed; the Session 10 scripts run from `.playbook/scripts/` against copies of the checklist, handoff and phase fixtures, with fake HTTP apps, a fake Jira and a fake desktop bridge on 127.0.0.1 | PB-35 to PB-44 |
 | Packed campaign | `npm pack` of the checkout installed with `npm exec` into a generated project with a tiny HTTP app, a real profile and the Team Inventory fixtures | PB-33 |
 | Scripted model | `tests/live/mock-model.mjs`, an OpenAI-compatible server on 127.0.0.1 that OpenCode uses as its model; it plants tool calls, so a real `opencode run` exercises the live hooks | PB-04, PB-19 |
 
@@ -83,6 +84,16 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-32 | backs up a legacy document byte-for-byte before an upgrade changes it and never overwrites a backup. | fixture: `node tests/docs/run.mjs PB-32` on a copy of the legacy `docs/archive/replaced/Operating-Model.md`. | Reset Plan §4 upgrade-docs 3, 20 |
 | PB-33 | installs from a fresh `npm pack` with Node 22.14.0+ and npm 11.5.1+ into a new project, where every shipped runtime script works from the installed copy and OpenCode resolves the runtime. | script: `node tests/campaign/run.mjs PB-33` (ungraded when Node or npm on `PATH` is below the declared versions). | Reset Plan §8 Session 9 |
 | PB-34 | takes a feature through plan, build, verify and fix with a real model on the installed copy, in normal and YOLO modes. | ungraded: needs a live model; runbook `docs/runbooks/live-campaign.md`. | Session 9 owner decision |
+| PB-35 | writes Verifier outcomes, run-log entries and the Status Table only through a script that refuses an incomplete BLOCKED or DATA-GAP and any secret, runs deployment steps only after approval and stops BLOCKED at the first failure, renders the final summary from the checklist, and lets the Verifier run exactly those scripts. | fixture: `node tests/runtime/run.mjs PB-35` (includes the Status Table item-loss and `PASS (code-audit)` regressions). | Reset Plan §4 verify, verifier.md |
+| PB-36 | hands a configuration secret to a command only through a 0600 file or stdin, never printing it, and reports a missing reference as BLOCKED naming it. | fixture: `node tests/runtime/run.mjs PB-36`. | Reset Plan §4 verify; `AGENTS.md` secret channels |
+| PB-37 | runs the build self-test from a declared probe list and records it per item without ever setting `pass`. | fixture: `node tests/runtime/run.mjs PB-37`. | Reset Plan §4 implement, fix |
+| PB-38 | keeps Infrastructure Requirements and Deployment Steps in one shape and refuses a credential in either. | fixture: `node tests/runtime/run.mjs PB-38`. | Reset Plan §4 implement, amend-checklist |
+| PB-39 | amends a checklist with stable, never-reused IDs, protects verified items, and archives and restores items verbatim. | fixture: `node tests/runtime/run.mjs PB-39`. | Reset Plan §4 amend-checklist, archive-checklist |
+| PB-40 | folds bugs and stories into the checklist without inventing analysis, tracks each escaped bug to its miss, refuses to resolve an incident on an unverified fix, and never picks between two checklists. | fixture: `node tests/runtime/run.mjs PB-40`. | Reset Plan §4 analyze-fix; `phases/` |
+| PB-41 | says whether the plan-review and verification-results gates are ready from the evidence, and catches a record that disagrees with the checklist. | fixture: `node tests/runtime/run.mjs PB-41`. | Reset Plan §4 feature-plan, verify; `phases/` |
+| PB-42 | writes Issues files with absent facts marked `[MISSING]` and fetches Jira tickets with credentials from an allowed channel only, never printing the token. | fixture: `node tests/runtime/run.mjs PB-42` (fake Jira on 127.0.0.1). | Reset Plan §4 create-issue-list |
+| PB-43 | keeps the Context-Prompt command block in step with the command set and names every drift. | fixture: `node tests/runtime/run.mjs PB-43`. | Reset Plan §4 update-context |
+| PB-44 | diagnoses a failed .NET restore without printing a credential, and treats an absent desktop bridge as headless, never BLOCKED. | fixture: `node tests/runtime/run.mjs PB-44` (fixture restore log; fake bridge). | Reset Plan §4 verify, desktop adapter |
 
 ## 5. Owner decisions
 
