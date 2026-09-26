@@ -10,6 +10,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { sweepRuns } from "./playbook-sweep.mjs";
 
 export function profilePath(root = process.cwd()) {
   for (const candidate of [".playbook/environment-profile.yml", "playbook/environment-profile.yml"]) {
@@ -97,8 +98,14 @@ export function runId(prefix = "run", now = new Date()) {
   return `${prefix}-${now.toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z")}`;
 }
 
-/** Raw evidence for one run lives under the git-ignored runs folder. */
+/** Raw evidence for one run lives under the git-ignored runs folder. The
+ *  first call in a process sweeps run folders past the retention period. */
+let swept = false;
 export function runDirectory(root, id) {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(id ?? "")) throw new Error(`invalid run id: ${id}`);
+  if (!swept) {
+    swept = true;
+    try { sweepRuns(root, { apply: true }); } catch {}
+  }
   return join(root, "verification", "runs", id);
 }

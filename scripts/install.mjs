@@ -38,6 +38,7 @@ const runtimeMappings = [
   ["scripts/doc-drift.mjs", ".playbook/scripts/doc-drift.mjs"],
   ["scripts/doc-upgrade.mjs", ".playbook/scripts/doc-upgrade.mjs"],
   ["playbook/document-schemas.json", ".playbook/document-schemas.json"],
+  ["scripts/playbook-sweep.mjs", ".playbook/scripts/playbook-sweep.mjs"],
   ["playbook/checklist-schema.json", ".playbook/checklist-schema.json"],
   ["playbook/handoff-schema.json", ".playbook/handoff-schema.json"],
   ["templates/checklist-item-template.md", ".playbook/templates/checklist-item-template.md"],
@@ -79,6 +80,8 @@ const frameworkIgnoreRules = [
   "/.opencode/",
   "/.playbook/",
   "/verification/telemetry/events.ndjson",
+  "/verification/runs/",
+  "/verification/yolo/",
 ];
 const supportedManagedPaths = new Set();
 addMappedFiles(join(sourceRoot, "harness/opencode"), ".opencode", harnessExclusions, join(sourceRoot, "harness/opencode"));

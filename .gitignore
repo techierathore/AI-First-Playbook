@@ -5,3 +5,7 @@ node_modules/
 Thumbs.db
 jira-config.json
 /verification/telemetry/events.ndjson
+# Raw run evidence: swept after the profile's retention.raw_runs_days (scripts/playbook-sweep.mjs)
+/verification/runs/
+# YOLO supervisor and plugin runtime state
+/verification/yolo/

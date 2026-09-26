@@ -5,7 +5,7 @@
 | Purpose | The list of things the Playbook must do, each with the one check that proves it. `node scripts/playbook-grade.mjs docs/Playbook-Requirements.md` walks every line. |
 | Audience | Framework maintainers and agents. The owner approves the lines; nobody has to re-read them to know the state, because the grader prints it. Agent document; not rendered to HTML. |
 | Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5 and PB-29 to PB-32 in Session 6, one per prose rule that became a script. |
-| Headline | **13 of 32 proved by a script**, 14 more by a fixture: 27 of 32 graded. Every review or ungraded line names what is missing. |
+| Headline | **14 of 32 proved by a script**, 15 more by a fixture: 29 of 32 graded. Every review or ungraded line names what is missing. |
 | Sources | `docs/Playbook-Reset-Plan.md` §6 and §8; the miss stream `verification/telemetry/misses.ndjson`; owner decisions of 2026-09-26 (§4). |
 
 ---
@@ -61,8 +61,8 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-11 | prints the headline `N of M graded`, then pass, fail and ungraded counts. | script: `node tests/grader/run.mjs PB-11` | Reset Plan §6 |
 | PB-12 | appends one redacted `grader-verdict` record per requirement to telemetry. | script: `node tests/grader/run.mjs PB-12` | Reset Plan §6 |
 | PB-13 | stores one protocol outcome on every miss record, from the four questions in order. | fixture: `node tests/phase/run.mjs PB-13` records the escaped duplicate-import bug with `--protocol` answers and checks derivation, order, refusal and the historical stream. | Reset Plan §7 |
-| PB-14 | git-ignores raw run evidence, sweeps it after 7 days and keeps it out of npm. | review: no retention tooling yet; Session 8 builds it. | Reset Plan §5b |
-| PB-15 | keeps durable OpenCode-only proof as a rerunnable self-test plus a historical archive. | review: the V01-V03 campaigns are still loose under `verification/`; Session 8 archives them. | Reset Plan §5b |
+| PB-14 | git-ignores raw run evidence, sweeps it after 7 days and keeps it out of npm. | fixture: `node tests/retention/run.mjs PB-14` ages run folders in an installed project and checks `.gitignore`, `playbook-sweep.mjs`, the automatic sweep and the npm package. | Reset Plan §5b |
+| PB-15 | keeps durable OpenCode-only proof as a rerunnable self-test plus a historical archive. | script: `node tests/retention/run.mjs PB-15` checks the manifest of `docs/archive/opencode-only-2026-09-02/` and reruns the V01-V03 checks on the current tree. | Reset Plan §5b |
 | PB-16 | gives readers one path: Getting Started, ten phases, templates and one operating guide. | script: `node tests/navigation/run.mjs PB-16` runs `scripts/reader-path.mjs` on the repository and on four broken copies. | Reset Plan §5 |
 | PB-17 | keeps TechieFlow and TfLens documents outside the reader path. | script: `node tests/navigation/run.mjs PB-17` | Reset Plan §5 |
 | PB-18 | validates releases on the declared Node and npm versions and runs every graded check. | review: no workflow runs the grader yet; Session 9 adds it. | Reset Plan §6 M30, M31 |

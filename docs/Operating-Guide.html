@@ -207,7 +207,10 @@ All installed under `.playbook/scripts/`; each prints what it did and exits non-
 Start OpenCode with `PLAYBOOK_TELEMETRY=1 opencode`; the plugin appends best-effort events to the
 transient `verification/telemetry/events.ndjson`, which is git-ignored and may be rotated after
 consumers checkpoint every `phase_execution_id`. `verification/telemetry/misses.ndjson` is durable
-and append-only; commit it and never rotate it. Never ignore `verification/telemetry/` as a whole.
+and append-only; commit it and never rotate it. Never ignore `verification/telemetry/` as a whole. Raw run evidence (probe
+results, app logs, gate logs) goes to the git-ignored `verification/runs/&lt;run-id&gt;/` and is removed
+after the profile's `retention.raw_runs_days` (7) — automatically when a new run starts, or with
+`node .playbook/scripts/playbook-sweep.mjs --apply`; grader verdicts are kept 365 days.
 
 Export with `node .playbook/scripts/playbook-telemetry.mjs --checklist=&lt;checklist&gt;` (one
 `phase-metric` row per command execution) and `--misses` (miss lifecycle, joined with exact fix

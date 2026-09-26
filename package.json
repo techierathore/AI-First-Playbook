@@ -72,6 +72,7 @@
     "scripts/doc-drift.mjs",
     "scripts/doc-upgrade.mjs",
     "playbook/document-schemas.json",
+    "scripts/playbook-sweep.mjs",
     "playbook/checklist-schema.json",
     "playbook/handoff-schema.json",
     "LICENSE",
