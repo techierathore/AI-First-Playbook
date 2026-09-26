@@ -1,5 +1,5 @@
 # Human Acceptance Record
-<!-- INVENTED example built from docs/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
+<!-- INVENTED example built from docs/examples/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
 <!-- handoff: acceptance -->
 - Feature and scope: team-inventory, INV-001 to INV-012
 - Producer: QA lead

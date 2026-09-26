@@ -1,6 +1,6 @@
 # Team Inventory — Business Verification Reference
 <!-- document: business-verification-reference -->
-<!-- INVENTED fixture from docs/Greenfield-Case-Study.md; not a real project. -->
+<!-- INVENTED fixture from docs/examples/Greenfield-Case-Study.md; not a real project. -->
 
 | | |
 |---|---|

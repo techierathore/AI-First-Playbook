@@ -66,10 +66,10 @@ for (const relative of harnessPromptFiles) {
     if (result.status !== 0) fail("ordinary OpenCode model ID was rejected", result);
 
     reset();
-    mkdirSync(join(fixture, "docs"), { recursive: true });
-    writeFileSync(join(fixture, "docs", "OpenCode-Only-Framework-Implementation-Checklist.md"), `Deliberate historical ${["Claude", "Code"].join(" ")} wording.\n`);
+    mkdirSync(join(fixture, "docs", "archive", "checklists"), { recursive: true });
+    writeFileSync(join(fixture, "docs", "archive", "checklists", "OpenCode-Only-Framework-Implementation-Checklist.md"), `Deliberate historical ${["Claude", "Code"].join(" ")} wording.\n`);
     result = runScan();
-    if (result.status !== 0) fail("active checklist's deliberate historical wording was rejected", result);
+    if (result.status !== 0) fail("archived checklist's deliberate historical wording was rejected", result);
 
     const markers = [
       ["Claude", "Code"].join(" "),

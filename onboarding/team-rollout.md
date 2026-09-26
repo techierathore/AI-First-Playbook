@@ -5,4 +5,4 @@ the same seeded synthetic repository. Each role completes one exercise: plan app
 parallel build wave, an intentional verification failure, human acceptance, a rollback drill,
 and an ownership transfer. The process owner certifies a champion and backup per team, checks
 least-privilege permissions and a cost budget before production use, and reviews the metrics in
-`docs/Adoption-Metrics.md` after two weeks.
+`docs/Operating-Guide.md` after two weeks.

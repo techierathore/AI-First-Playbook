@@ -46,4 +46,4 @@ brief. The human has pre-approved everything except git history:
   `PLAYBOOK_RUN_BLOCKED: <what is missing and who must supply it>`.
 
 Outside YOLO mode gates ask and approvals are waited for. Windows/WSL file-permission problems:
-see `docs/OpenCode-WSL-Setup-Guide.md` §10f.
+see `docs/maintainer/OpenCode-WSL-Setup-Guide.md` §10f.

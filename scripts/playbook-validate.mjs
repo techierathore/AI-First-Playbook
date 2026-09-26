@@ -31,7 +31,7 @@ const prohibitedMarkers = [
   ...prohibitedArtifacts,
 ];
 const scanExclusions = new Set([
-  "docs/OpenCode-Only-Framework-Implementation-Checklist.md",
+  "docs/archive/checklists/OpenCode-Only-Framework-Implementation-Checklist.md",
 ]);
 const ignoredScanDirectories = new Set([".git", "node_modules"]);
 const isFrameworkSource = (path) => path === ".gitignore" || /\.(?:js|mjs|ts|json|jsonc|md|ya?ml)$/.test(path);
@@ -79,7 +79,7 @@ if (scanOnlyArg) {
 errors.push(...openCodeOnlyErrors(root));
 
 if (!statSync(join(root, "opencode.json"))) errors.push("missing opencode.json");
-for (const required of ["docs/Installation.md", "docs/Getting-Started.md", "docs/Greenfield-Case-Study.md", "docs/Brownfield-Case-Study.md", "scripts/install.mjs"]) {
+for (const required of ["docs/Getting-Started.md", "docs/Operating-Guide.md", "docs/Playbook-How-It-Works.md", "docs/examples/Greenfield-Case-Study.md", "docs/examples/Brownfield-Case-Study.md", "scripts/install.mjs"]) {
   if (!statSync(join(root, required), { throwIfNoEntry: false })) errors.push(`missing ${required}`);
 }
 for (const required of [".github/workflows/release.yml", ".github/workflows/validate.yml"]) {
@@ -119,7 +119,7 @@ const config = JSON.parse(read("opencode.json"));
 if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/plugin/spec-guardrails.ts")) errors.push("plugin is not explicitly registered");
 if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/plugin/yolo.ts")) errors.push("yolo plugin is not explicitly registered in opencode.json");
 if (config.plugin?.indexOf("./.opencode/plugin/spec-guardrails.ts") > config.plugin?.indexOf("./.opencode/plugin/yolo.ts")) errors.push("opencode.json: spec-guardrails.ts must be registered before yolo.ts (forbidden writes are blocked before YOLO can allow them)");
-for (const f of ["harness/opencode/plugin/yolo-policy.mjs", "harness/opencode/plugin/yolo.ts", "scripts/playbook-yolo.mjs", "docs/YOLO-Mode-Guide.md"]) {
+for (const f of ["harness/opencode/plugin/yolo-policy.mjs", "harness/opencode/plugin/yolo.ts", "scripts/playbook-yolo.mjs", "docs/maintainer/YOLO-Mode-Guide.md"]) {
   if (!existsSync(join(root, f))) errors.push(`missing ${f}`);
 }
 if (!read("AGENTS.md").includes("## YOLO mode")) errors.push("AGENTS.md: missing the '## YOLO mode' standing rules");
@@ -155,7 +155,7 @@ for (const f of readdirSync(join(root, "harness/opencode/command"))) {
 const missRuntime = ["scripts/miss-lib.mjs", "scripts/playbook-miss.mjs", "scripts/playbook-telemetry.mjs"];
 const missCommands = ["harness/opencode/command/log-miss.md", "templates/commands/log-miss.md"];
 for (const f of [...missRuntime, ...missCommands]) {
-  if (!existsSync(join(root, f))) errors.push(`missing ${f} — the miss-stream contract (docs/Miss-Telemetry-AI-First-Playbook.md)`);
+  if (!existsSync(join(root, f))) errors.push(`missing ${f} — the miss-stream contract (docs/maintainer/Miss-Telemetry-AI-First-Playbook.md)`);
 }
 for (const f of ["scripts/playbook-miss.mjs", "scripts/playbook-telemetry.mjs", "scripts/playbook-validate.mjs"]) {
   if (existsSync(join(root, f)) && !/from\s+["']\.\/miss-lib\.mjs["']/.test(read(f))) {

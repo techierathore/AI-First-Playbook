@@ -32,23 +32,24 @@ const maintainerOnly = [
   "Context-Prompt.md",
   "harness/README.md",
   "harness/opencode/command/update-context.md",
-  "docs/Adapter-Design.md",
-  "docs/Brownfield-Case-Study.html",
-  "docs/Capability-Matrix.md",
-  "docs/Coupling-Points.md",
-  "docs/Decisions.md",
-  "docs/Getting-Started.html",
-  "docs/Greenfield-Case-Study.html",
-  "docs/Miss-Telemetry-AI-First-Playbook.md",
-  "docs/Miss-Telemetry-TechieFlow.md",
-  "docs/Miss-Telemetry-TfLens-From-AIFP.md",
-  "docs/Model-Routing-Guide.md",
-  "docs/Npm-Publishing-Guide.md",
-  "docs/Npm-Release-Guide.md",
-  "docs/OpenCode-Guide.md",
-  "docs/OpenCode-Setup-Guide.md",
-  "docs/Phase-Efficiency-TfLens-Contract.md",
-  "docs/Telemetry-Hooks.md",
+  "docs/maintainer/Adapter-Design.md",
+  "docs/maintainer/Capability-Matrix.md",
+  "docs/maintainer/Coupling-Points.md",
+  "docs/maintainer/Decisions.md",
+  "docs/maintainer/Miss-Telemetry-AI-First-Playbook.md",
+  "docs/maintainer/Model-Routing-Guide.md",
+  "docs/maintainer/Npm-Release-Guide.md",
+  "docs/maintainer/OpenCode-Guide.md",
+  "docs/maintainer/Telemetry-Hooks.md",
+  "docs/maintainer/cross-framework/Miss-Telemetry-TechieFlow.md",
+  "docs/maintainer/cross-framework/Miss-Telemetry-TfLens-From-AIFP.md",
+  "docs/maintainer/cross-framework/Phase-Efficiency-TfLens-Contract.md",
+  "docs/archive/platform/OpenCode-Setup-Guide.md",
+  "docs/examples/Brownfield-Case-Study.html",
+  "docs/examples/Greenfield-Case-Study.html",
+  "docs/Playbook-Reset-Plan.md",
+  "docs/Playbook-Requirements.md",
+  "docs/Reset-Progress.md",
 ];
 
 function run(script, args, options = {}) {
@@ -226,7 +227,7 @@ try {
 
   const guidesTarget = join(sandbox, "guides");
   run("scripts/install.mjs", ["install", `--target=${guidesTarget}`, "--with-guides"]);
-  for (const path of [".playbook/guides/docs/Usage.md", ".playbook/guides/onboarding/first-week.md", ".playbook/guides/phases/01-plan.md", ".playbook/guides/templates/checklist-item-template.md"]) {
+  for (const path of [".playbook/guides/docs/Operating-Guide.md", ".playbook/guides/onboarding/first-week.md", ".playbook/guides/phases/01-plan.md", ".playbook/guides/templates/checklist-item-template.md"]) {
     assert(existsSync(join(guidesTarget, path)), `--with-guides is missing ${path}`);
   }
   for (const path of ["docs", "onboarding", "phases", "templates"]) assert(!existsSync(join(guidesTarget, path)), `--with-guides leaked visible ${path}/`);
@@ -241,7 +242,7 @@ try {
   }
   for (const path of packedFiles) assertNoIntegrationMarkers(join(root, path), `npm package file ${path}`);
   for (const path of maintainerOnly) assert(!packedFiles.has(path), `maintainer-only file leaked into npm package: ${path}`);
-  for (const path of ["scripts/install.mjs", "scripts/npm-lifecycle.mjs", "scripts/npm-cleanup.mjs", "harness/opencode/opencode.json", "harness/opencode/command/verify.md", "docs/Usage.md", "phases/01-plan.md", "templates/checklist-item-template.md", "templates/checklist-metadata.yml", "templates/deployment-steps-template.md", "templates/handoffs/plan-approval.md", "templates/issues-file-template.md", "AGENTS.md"]) {
+  for (const path of ["scripts/install.mjs", "scripts/npm-lifecycle.mjs", "scripts/npm-cleanup.mjs", "harness/opencode/opencode.json", "harness/opencode/command/verify.md", "docs/Getting-Started.md", "phases/01-plan.md", "templates/checklist-item-template.md", "templates/checklist-metadata.yml", "templates/deployment-steps-template.md", "templates/handoffs/plan-approval.md", "templates/issues-file-template.md", "AGENTS.md"]) {
     assert(packedFiles.has(path), `required file is missing from npm package: ${path}`);
   }
 

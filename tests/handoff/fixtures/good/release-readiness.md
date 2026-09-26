@@ -1,5 +1,5 @@
 # Release Readiness Record
-<!-- INVENTED example built from docs/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
+<!-- INVENTED example built from docs/examples/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
 <!-- handoff: release-readiness -->
 - Feature and release: team-inventory 1.4.0
 - Producer: release owner

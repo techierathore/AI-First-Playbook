@@ -1,6 +1,6 @@
 # Team Inventory — Developer Flow Guide
 <!-- document: developer-flow-guide -->
-<!-- INVENTED fixture from docs/Greenfield-Case-Study.md; not a real project. -->
+<!-- INVENTED fixture from docs/examples/Greenfield-Case-Study.md; not a real project. -->
 
 | | |
 |---|---|

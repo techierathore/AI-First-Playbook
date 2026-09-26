@@ -55,22 +55,19 @@ const operatorAssets = [
   "templates/issues-file-template.md",
 ];
 const userDocs = [
-  "Adoption-Metrics.md",
-  "Brownfield-Case-Study.md",
-  "Environment-Profile.md",
   "Getting-Started.md",
-  "Greenfield-Case-Study.md",
-  "Handoffs.md",
-  "Installation.md",
-  "OpenCode-WSL-Setup-Guide.md",
-  "Operating-Model.md",
-  "Release-And-Operations.md",
-  "Repository-Structure.md",
-  "Security.md",
-  "Telemetry-Guide.md",
-  "Troubleshooting.md",
-  "Usage.md",
-  "YOLO-Mode-Guide.md",
+  "Operating-Guide.md",
+  "Playbook-How-It-Works.md",
+  "examples/Greenfield-Case-Study.md",
+  "examples/Brownfield-Case-Study.md",
+];
+// Guides shipped by earlier releases; kept so upgrade and uninstall still
+// recognise them in an existing .playbook/installation.json.
+const legacyUserDocs = [
+  "Adoption-Metrics.md", "Brownfield-Case-Study.md", "Environment-Profile.md", "Greenfield-Case-Study.md",
+  "Handoffs.md", "Installation.md", "OpenCode-WSL-Setup-Guide.md", "Operating-Model.md",
+  "Release-And-Operations.md", "Repository-Structure.md", "Security.md", "Telemetry-Guide.md",
+  "Troubleshooting.md", "Usage.md", "YOLO-Mode-Guide.md",
 ];
 const harnessExclusions = new Set(["command/update-context.md"]);
 const created = [];
@@ -92,7 +89,7 @@ for (const [source, destination] of runtimeMappings) {
 supportedManagedPaths.add("AGENTS.md");
 supportedManagedPaths.add("opencode.json");
 supportedManagedPaths.add(".playbook/AGENTS.md");
-for (const file of userDocs) {
+for (const file of [...userDocs, ...legacyUserDocs]) {
   supportedManagedPaths.add(`docs/${file}`);
   supportedManagedPaths.add(`.playbook/guides/docs/${file}`);
 }

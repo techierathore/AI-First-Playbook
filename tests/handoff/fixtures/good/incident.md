@@ -1,5 +1,5 @@
 # Incident Record
-<!-- INVENTED example built from docs/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
+<!-- INVENTED example built from docs/examples/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
 <!-- handoff: incident -->
 - Incident: INC-2026-0412 duplicate CSV import reported success while writing zero rows
 - Severity: sev3

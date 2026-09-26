@@ -1,5 +1,5 @@
 # PR Evidence Packet
-<!-- INVENTED example built from docs/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
+<!-- INVENTED example built from docs/examples/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
 <!-- handoff: pr-evidence -->
 - PR: https://git.example.invalid/team-inventory/pulls/42
 - Feature and checklist: team-inventory, `docs/team-inventory/Team-Inventory-Implementation-Checklist.md`

@@ -1,6 +1,6 @@
 # Team Inventory — BRD (INVENTED FIXTURE)
 
-Invented from `docs/Greenfield-Case-Study.md` (Team Inventory). Not a real BRD.
+Invented from `docs/examples/Greenfield-Case-Study.md` (Team Inventory). Not a real BRD.
 
 ## Requirements
 

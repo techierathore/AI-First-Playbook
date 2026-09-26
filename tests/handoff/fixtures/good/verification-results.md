@@ -1,5 +1,5 @@
 # Verification Results Handoff
-<!-- INVENTED example built from docs/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
+<!-- INVENTED example built from docs/examples/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
 <!-- handoff: verification-results -->
 - Feature: team-inventory
 - Run ID: verify-20260926T1200Z

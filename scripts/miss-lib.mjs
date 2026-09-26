@@ -8,7 +8,7 @@
  * record kinds: `miss` (opened), `miss-fix` (closed), `miss-amend`
  * (completes a null closed-vocabulary field; never overwrites a value).
  *
- * Contract: docs/Telemetry-Guide.md. Provenance rules that
+ * Contract: docs/maintainer/Telemetry-Guide.md. Provenance rules that
  * this library enforces mechanically, not by prose:
  *   - an agent may classify, but may never report a number (or a provenance
  *     verdict): origin_model / origin_confidence / every token & cost field
@@ -25,7 +25,7 @@ import { dirname, join } from "node:path";
 
 export const MISS_SCHEMA = 1;
 
-// ── closed vocabularies (docs/Telemetry-Guide.md §7) ───────────────────────
+// ── closed vocabularies (docs/maintainer/Telemetry-Guide.md §7) ───────────────────────
 export const MISS_CLASS = [
   "missed-requirement", "partial-implementation", "wrong-behaviour", "regression",
   "unspecified-gap", "spec-contradiction", "scope-creep", "hallucinated-api",
@@ -40,7 +40,7 @@ export const SEVERITIES = ["blocker", "major", "minor"];
 // (TechieFlow SCHEMA §5.5.6) with an explicitly AGENT-ONLY definition: a
 // written rule existed, in a file an AGENT had loaded, and was not honoured.
 // It must never be applied to a human actor — the person-facing failure is
-// not this field (see docs/Decisions.md, 2026-08-28).
+// not this field (see docs/maintainer/Decisions.md, 2026-08-28).
 export const WHY_MISSED = [
   "missing-checklist-item", "insufficient-verify-method", "code-audit-limitation",
   "ambiguous-acceptance", "dependency-not-declared", "instruction-ignored", "other",
@@ -1028,7 +1028,7 @@ export function enrichFixes(folded, windows) {
 // One record per requirement ID per grader run, written only by
 // scripts/playbook-grade.mjs. Same discipline as the miss stream: closed
 // vocabularies, UTC timestamps, append-only, the team-edition `actor` field
-// (aggregate-only, docs/Decisions.md 2026-08-29 Decision 6), and no free text
+// (aggregate-only, docs/maintainer/Decisions.md 2026-08-29 Decision 6), and no free text
 // that has not passed through redact().
 export const GRADE_SCHEMA = 1;
 export const GRADE_RESULTS = ["pass", "fail", "ungraded"];

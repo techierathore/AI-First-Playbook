@@ -35,7 +35,7 @@ Until it passes the orchestrator plans more waves; the handoff to
 
 Add the token `YOLO` to the command (`/implement YOLO @<checklist>`) or run the source-checkout
 supervisor. Rules: `AGENTS.md` → "YOLO mode"; operator guide:
-[`docs/YOLO-Mode-Guide.md`](../docs/YOLO-Mode-Guide.md).
+[`docs/maintainer/YOLO-Mode-Guide.md`](../docs/maintainer/YOLO-Mode-Guide.md).
 
 ## Standing obligations while building
 

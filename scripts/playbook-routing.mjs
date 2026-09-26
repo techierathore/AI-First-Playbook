@@ -18,7 +18,7 @@
  * Every verb edits playbook/model-tiers.yml IN PLACE (comments preserved) and
  * then re-applies it through scripts/apply-model-tiers.mjs, so the map and the
  * OpenCode frontmatter never disagrees. Idempotent — run it as often as you like.
- * Ported from TechieFlow's tf-routing.sh; design: docs/Decisions.md 2026-08-21.
+ * Ported from TechieFlow's tf-routing.sh; design: docs/maintainer/Decisions.md 2026-08-21.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { applyTiers, loadConfig, tiersPath, printResolved } from "./apply-model-tiers.mjs";

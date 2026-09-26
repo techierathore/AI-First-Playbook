@@ -1,5 +1,5 @@
 # Operations and Ownership Transfer
-<!-- INVENTED example built from docs/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
+<!-- INVENTED example built from docs/examples/Greenfield-Case-Study.md (Team Inventory); not a real record. -->
 <!-- handoff: operations-transfer -->
 - Service: team-inventory API and web
 - Outgoing owner: Feature team (Ana Ruiz)

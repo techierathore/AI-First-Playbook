@@ -23,7 +23,7 @@ with a build + smoke-test self-check before declaring done.
   gate is pre-approved, decisions are logged under `## YOLO Decisions`, git history writes
   stay denied, and the run ends with `PLAYBOOK_RUN_COMPLETE:` / `PLAYBOOK_RUN_BLOCKED:` so
   the supervisor (`scripts/playbook-yolo.mjs`) can wait out usage limits and resume. See
-  [`docs/YOLO-Mode-Guide.md`](../../docs/YOLO-Mode-Guide.md).
+  [`docs/maintainer/YOLO-Mode-Guide.md`](../../docs/maintainer/YOLO-Mode-Guide.md).
 - Demands the checklist and coding-standards paths; reads sibling docs (DB changes,
   architecture) automatically.
 - **Wave-based parallelism**: Wave 1 sequential foundations (DB migrations, shared

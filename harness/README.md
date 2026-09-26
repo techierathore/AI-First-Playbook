@@ -1,10 +1,10 @@
 # Harness — the runnable artifacts
 
-Everything under [`templates/`](../templates/) describes *what* each part of the process
+Everything under [`templates/`](../templates) describes *what* each part of the process
 does. Everything here is the **actual working implementation** — the prompt files a
 harness loads and executes.
 
-| | [`templates/`](../templates/) | `harness/` (here) |
+| | [`templates/`](../templates) | `harness/` (here) |
 |---|---|---|
 | Form | one spec per command, prose | the real `.md` / `.ts` / `.html` files |
 | Audience | someone deciding whether to adopt, or porting to another harness | someone installing it today |
@@ -41,7 +41,7 @@ highest precedence in OpenCode — it overrides even the TUI selection) and `off
 again. Change
 models or tiers with `set-model` / `set-tier` (the script re-applies automatically); CI can
 enforce consistency with `node scripts/apply-model-tiers.mjs --check`. Operator guide:
-`docs/Model-Routing-Guide.md`; rationale per phase: `docs/Adapter-Design.md`.
+`docs/maintainer/Model-Routing-Guide.md`; rationale per phase: `docs/maintainer/Adapter-Design.md`.
 
 ## YOLO mode (unattended runs)
 
@@ -58,7 +58,7 @@ node scripts/playbook-yolo.mjs --harness=opencode --cwd=/path/to/your-repo \
      --goal "Feature X: implement the checklist, verify, fix until every item PASSes"
 ```
 
-Operator guide: `docs/YOLO-Mode-Guide.md`.
+Operator guide: `docs/maintainer/YOLO-Mode-Guide.md`.
 
 ## Install (OpenCode)
 

@@ -34,7 +34,7 @@ const expectFail = (name, text, pattern) => {
 const cases = {
   "PB-29": [
     ["legacy human documents under docs/ render to HTML with their title and full source", () => {
-      for (const f of ["Greenfield-Case-Study.md", "Brownfield-Case-Study.md"]) cpSync(join(repoRoot, "docs", f), join(docs, f));
+      for (const f of ["Greenfield-Case-Study.md", "Brownfield-Case-Study.md"]) cpSync(join(repoRoot, "docs/examples", f), join(docs, f));
       const r = run("render-docs.mjs", [docs]);
       assert(r.status === 0, r.stdout);
       const html = readFileSync(join(docs, "Greenfield-Case-Study.html"), "utf8");
@@ -128,7 +128,7 @@ const cases = {
   ],
   "PB-32": [
     ["a legacy document is backed up byte-for-byte before an upgrade; a second backup is refused", () => {
-      const legacy = put("Operating-Model.md", readFileSync(join(repoRoot, "docs/Operating-Model.md"), "utf8"));
+      const legacy = put("Operating-Model.md", readFileSync(join(repoRoot, "docs/archive/replaced/Operating-Model.md"), "utf8"));
       const a = run("doc-upgrade.mjs", ["backup", legacy, "--run-id=upgrade-1"]);
       assert(a.status === 0, a.stdout);
       assert(readFileSync(join(docs, "_legacy/upgrade-1/Operating-Model.md"), "utf8") === readFileSync(legacy, "utf8"), "backup differs");

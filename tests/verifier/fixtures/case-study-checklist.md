@@ -1,8 +1,8 @@
 # Team Inventory — Verification Fixture Checklist
 
 Items come from the two case studies; the desktop item is SYNTHETIC because neither case study has
-a desktop application. Sources: UI — `docs/Brownfield-Case-Study.md` (Legacy Inventory Owner
-Filter); API and DB — `docs/Greenfield-Case-Study.md` (Team Inventory duplicate asset-tag import).
+a desktop application. Sources: UI — `docs/examples/Brownfield-Case-Study.md` (Legacy Inventory Owner
+Filter); API and DB — `docs/examples/Greenfield-Case-Study.md` (Team Inventory duplicate asset-tag import).
 
 ## Status Table
 
