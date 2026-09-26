@@ -13,7 +13,7 @@ first session not marked Done. The headline is the grader's output after that se
 | 5 | Plan, build, fix, analyze commands | Done 2026-09-26 | 21 of 28 graded; pass 21, fail 0, ungraded 7 |
 | 6 | Document tools | Done 2026-09-26 | 25 of 32 graded; pass 25, fail 0, ungraded 7 |
 | 7 | Reader navigation | Done 2026-09-26 | 27 of 32 graded; pass 27, fail 0, ungraded 5 |
-| 8 | Historical proof and retention | Not started | — |
+| 8 | Historical proof and retention | Done 2026-09-26 | 29 of 32 graded; pass 29, fail 0, ungraded 3 |
 | 9 | Grading campaign and CI | Not started | — |
 
 ## Word counts (prose removed or moved)
@@ -46,6 +46,7 @@ first session not marked Done. The headline is the grader's output after that se
 | 7 | `docs/Getting-Started.md` | 5,309 | 709 | Agent topology, SDLC mapping, operating flow, handoffs, telemetry, adoption and common mistakes moved to `docs/Operating-Guide.md` (2,447 words, which also absorbs nine operator documents); the length limit is now checked by `reader-path.mjs` (PB-16). The original is kept in `docs/archive/replaced/`. |
 | 7 | `README.md` | 1,993 | 1,248 | Reader path first; the repo map, long install and Verifier description replaced by pointers; original kept in `docs/archive/replaced/README-2026-09-26.md`. |
 | 7 | `docs/` root | 31 files | 7 files | 3 reader documents plus 4 reset control files; 4 examples, 16 maintainer documents (3 cross-framework), 13 archived originals and the 2 review files moved; nothing deleted. |
+| 8 | `verification/` | 77 tracked campaign and supervisor files | 0 | V01-V03 and the YOLO supervisor state moved to `docs/archive/opencode-only-2026-09-02/` (marked HISTORICAL, SHA-256 manifest, tree `44168dbe…`); `verification/` now holds only the telemetry streams. |
 | 3 | `harness/opencode/command/verify.md` | 458 | 115 | Report and telemetry mechanics removed (the Verifier owns them); example paths removed. |
 
 ## Decisions taken
@@ -84,4 +85,7 @@ Decisions the run took alone, each the smaller reversible choice.
 | 7 | `Npm-Publishing-Guide.md` was merged into `docs/maintainer/Npm-Release-Guide.md` as an appendix, with the owner named as release owner. | Plan §5 "merge with the publishing guide"; owner decision on release ownership. | Split the appendix out again. |
 | 7 | Four reset control files stay at the `docs/` root (`Playbook-Reset-Plan`, `Playbook-Requirements`, `Reset-Progress`, `Playbook-Document-Schemas`) and are allowed there by `reader-path.mjs`. | The owner's instructions and the grader command name those paths. | Move them to `docs/maintainer/` and update the grader command. |
 | 7 | `--with-guides` now ships Getting Started, the Operating Guide, How It Works and the two examples; the installer still recognises the old guide list for upgrade and uninstall. | Old installations carry the old names in `.playbook/installation.json`. | Edit `userDocs` in `scripts/install.mjs`. |
+| 8 | The historical campaigns stay inside the repository under `docs/archive/opencode-only-2026-09-02/`, protected by `MANIFEST.sha256` and `scripts/archive-manifest.mjs --check`, instead of an external release asset. | Owner decision: no external location is approved. | Export the folder to an approved store, record its hash there, and delete it here. |
+| 8 | The sweep runs itself: the first `verification/runs/` folder a runtime script creates in a process sweeps folders past `retention.raw_runs_days`; `playbook-sweep.mjs --apply` also prunes grader verdicts past 365 days. No scheduled CI job was added, because CI checkouts never hold raw runs. | A cron-style job would need every team to schedule it; the runtime is already where raw runs are born. | Remove the call in `profile-lib.mjs runDirectory()` and schedule the script instead. |
+| 8 | `/verification/yolo/` is git-ignored (plugin and supervisor runtime state) in the repository and in the installer's managed block. | That state is per-run, like raw evidence; the one historical copy is archived. | Remove the ignore line. |
 | 1 | Local checks ran on Node 22.22.2 with npm 10.9.7 (the container's npm); npm 11.20.0 is installed for the Session 9 campaign. | The container ships npm 10; every existing check passes on it. | — |
