@@ -1,42 +1,36 @@
 # Deployment Steps Template
 <!-- template-schema: {"produces":"## Deployment Steps section of a checklist","required":["Purpose","execution point","shape","Automated","Manual","tools/secrets"],"optional":["Rollback","environment branch"],"budget":{"small":[100,180],"medium":[200,320],"large":[320,500]},"rows":"One action per row; automated row has one command or script; no secret values."} -->
 
-Lives inside the implementation checklist as `## Deployment Steps`. Populated by
-`/implement` and `/fix` as work creates deployment needs; executed by the Verifier as
-**Step 0** of every `/verify` run (each Automated step asks for approval; a failure means
-verdict `BLOCKED`, not a cascade of misleading FAILs).
+Lives inside the implementation checklist as `## Deployment Steps`. `/implement` and `/fix` add
+rows as their work creates deployment needs; the Verifier runs the Automated rows before any
+item check (each after approval; a failed row makes the run `BLOCKED`, not a cascade of FAILs).
 
 ## Format
 
-Each **Automated** bullet carries a runnable shell command inline. Each **Manual** bullet
-is one line. No per-step field labels.
+One action per row. An **Automated** row carries one runnable command or script in inline code;
+without one it belongs in **Manual**, which is one plain line.
 
 ```markdown
 ## Deployment Steps
 
-### Automated (Verifier runs these with your approval)
-- [ ] Run <feature> schema migration
-  - `sqlcmd -S "$DB_SERVER" -d "$DB_NAME" -U "$DB_USER" -i deploy/<feature>/01-schema.sql < "$DB_PASSWORD_FILE"`
-- [ ] (only if you ADDED new npm packages this run)
-      Install new dependencies
-  - `npm install` in src/frontend/
+### Automated
+- [ ] Apply the <feature> schema migration
+  - `<profile database.migration_command> deploy/<feature>/01-schema.sql`
+- [ ] Install the dependencies added in this run
+  - `<profile install command>`
 
-### Manual (you do these)
+### Manual
+- [ ] Add the `<Feature>:ApiKey` secret to the approved secret manager
 - [ ] Restart the API service on the host
-- [ ] Add the new `<Feature>:ApiKey` secret to the dev Key Vault
-- [ ] Start the frontend pointing at the right environment:
-      `npm run start:local` (dev DB / dev APIs) OR
-      `npm run start:local:uat` (UAT DB / UAT APIs)
 ```
 
-## Standing tool rules (baked into `/implement`, `/fix`, and the Verifier)
+Write `_None required._` when the feature has no deployment side effect.
 
-- DB migrations use the migration tool declared by `playbook/environment-profile.yml`.
-  Credentials come from a secret manager, protected stdin or a protected temporary file;
-  never command arguments or Markdown.
-- `npm install` only when packages were actually added to `package.json`.
-- Frontend start scripts are environment-specific: the Verifier reads `package.json`,
-  enumerates the real `start:*` variants, **asks which environment to test against**,
-  and records the choice in the Run Log so verdicts have DB context.
-- Backend start: `dotnet run --project <ApiProject>` — project name from the checklist,
-  never guessed.
+## Tools and secrets
+
+- Commands come from `.playbook/environment-profile.yml` (`commands`, `database.migration_command`);
+  a project name or start variant is taken from the checklist or the profile, never guessed.
+- Credentials reach a command only through an approved secret manager, an environment reference,
+  protected stdin or a protected temporary file — never an argument, Markdown, a log or a URL.
+- Add an install step only when dependencies were actually added; do not list the build itself.
+- Scripts written for deployment live under `deploy/<feature>/` and are named in the row.

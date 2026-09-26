@@ -4,8 +4,8 @@
 |---|---|
 | Purpose | The list of things the Playbook must do, each with the one check that proves it. `node scripts/playbook-grade.mjs docs/Playbook-Requirements.md` walks every line. |
 | Audience | Framework maintainers and agents. The owner approves the lines; nobody has to re-read them to know the state, because the grader prints it. Agent document; not rendered to HTML. |
-| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3, one per Verifier rule that became a script. |
-| Headline | **10 of 24 proved by a script**, 5 more by a fixture: 15 of 24 graded. Every review or ungraded line names what is missing. |
+| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5, one per prose rule that became a script. |
+| Headline | **11 of 28 proved by a script**, 10 more by a fixture: 21 of 28 graded. Every review or ungraded line names what is missing. |
 | Sources | `docs/Playbook-Reset-Plan.md` §6 and §8; the miss stream `verification/telemetry/misses.ndjson`; owner decisions of 2026-09-26 (§4). |
 
 ---
@@ -31,6 +31,7 @@
 | Disposable project | a small Node project generated in the temp folder with the Playbook installed; the installed plugins are loaded and their hooks driven offline | PB-04, PB-05 |
 | Verifier project | a disposable project with a tiny Node HTTP app and a real profile; `tests/verifier/fixtures/` holds the case-study checklist | PB-21 to PB-24 |
 | Schema fixtures | `tests/checklist/fixtures/` (small 6, medium 14, large 34 items, invented from the case studies) and `tests/handoff/fixtures/good/` (the eight handoff kinds, invented from the greenfield case study) | PB-06, PB-07 |
+| Planning fixtures | `tests/phase/fixtures/`: the Team Inventory BRD and planned checklist (invented from the greenfield case study); the failed item set is derived in the test | PB-13, PB-25 to PB-28 |
 | Scripted model | `tests/live/mock-model.mjs`, an OpenAI-compatible server on 127.0.0.1 that OpenCode uses as its model; it plants tool calls, so a real `opencode run` exercises the live hooks | PB-04, PB-19 |
 
 ## 3. The four questions for a miss
@@ -48,7 +49,7 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 |---|---|---|---|
 | PB-01 | resolves all 14 OpenCode commands and the four agents from a packed npm install. | script: `node tests/package/run.mjs PB-01` packs, installs into a throwaway target and reads `opencode debug config`. | Reset Plan §1, §6 |
 | PB-02 | ships OpenCode as its only coding harness. | script: `node tests/package/run.mjs PB-02` scans the packed files and the installed target. | Reset Plan §6 |
-| PB-03 | keeps every phase's measured instruction total below its tier maximum. | review: no instruction counter yet; Sessions 3 and 5 shrink the phases and add it. | Reset Plan §3 |
+| PB-03 | keeps every phase's measured instruction total below its tier maximum. | script: `node tests/phase/run.mjs PB-03` runs `scripts/instruction-budget.mjs` (fixed surface per phase, front matter stripped) and a grown-command twin. | Reset Plan §3 |
 | PB-04 | blocks product edits by the Verifier through the live write boundary and allows safe test commands. | review: the block half passes live (PB-19) and offline (`tests/plugin/run.mjs PB-04`); the allow half fails in both — the Verifier shell policy still blocks `npm test`, and widening it was refused as a security relaxation in the unattended Session 2 run. Owner decision needed (Reset-Progress, Session 2). | Reset Plan §6 M06-M08 |
 | PB-05 | denies unapproved Git history changes in normal and YOLO modes. | fixture: `node tests/plugin/run.mjs PB-05` loads the installed plugins in a disposable project and plants git writes in both modes. | Reset Plan §6 M11, P05 |
 | PB-06 | makes every checklist item follow the ordered schema and the acceptance sentence rule. | fixture: `node tests/checklist/run.mjs PB-06` lints the small, medium and large fixtures clean and catches 12 broken twins with the installed `checklist-lint.mjs`. | Reset Plan §5 |
@@ -58,7 +59,7 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-10 | reports one result or one written ungraded reason per requirement, never a PASS inferred from missing output. | script: `node tests/grader/run.mjs PB-10` | Reset Plan §6 |
 | PB-11 | prints the headline `N of M graded`, then pass, fail and ungraded counts. | script: `node tests/grader/run.mjs PB-11` | Reset Plan §6 |
 | PB-12 | appends one redacted `grader-verdict` record per requirement to telemetry. | script: `node tests/grader/run.mjs PB-12` | Reset Plan §6 |
-| PB-13 | stores one protocol outcome on every miss record, from the four questions in order. | review: the miss schema has no outcome field yet; Session 5 adds it through the miss CLI. | Reset Plan §7 |
+| PB-13 | stores one protocol outcome on every miss record, from the four questions in order. | fixture: `node tests/phase/run.mjs PB-13` records the escaped duplicate-import bug with `--protocol` answers and checks derivation, order, refusal and the historical stream. | Reset Plan §7 |
 | PB-14 | git-ignores raw run evidence, sweeps it after 7 days and keeps it out of npm. | review: no retention tooling yet; Session 8 builds it. | Reset Plan §5b |
 | PB-15 | keeps durable OpenCode-only proof as a rerunnable self-test plus a historical archive. | review: the V01-V03 campaigns are still loose under `verification/`; Session 8 archives them. | Reset Plan §5b |
 | PB-16 | gives readers one path: Getting Started, ten phases, templates and one operating guide. | review: navigation is reset in Session 7. | Reset Plan §5 |
@@ -70,6 +71,10 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-22 | starts, polls, records and stops only the application processes a run started, from the profile's commands. | script: `node tests/verifier/run.mjs PB-22` | Reset Plan §4 Verifier blocks 25, 37 |
 | PB-23 | runs the build and test gates from the profile and reports a failing gate as FAIL, a missing command as BLOCKED. | script: `node tests/verifier/run.mjs PB-23` | Reset Plan §4 Verifier block 31; old Step 5.3 |
 | PB-24 | loads a Verifier adapter only for the item kinds present in the checklist. | fixture: `node tests/verifier/run.mjs PB-24` over the case-study checklist (UI, API, DB, synthetic desktop). | Reset Plan §3, §4 Verifier blocks 8, 13, 29, 33 |
+| PB-25 | plans dependency-safe build and fix waves with one owner for every shared file. | fixture: `node tests/phase/run.mjs PB-25` over the medium fixture and the failed item set (INV-002, INV-003). | Reset Plan §4 implement 7, fix 6; §6 P15 |
+| PB-26 | recomputes build and fix completion from item metadata and never lets a builder pass its own work. | fixture: `node tests/phase/run.mjs PB-26` | Reset Plan §4 implement 25, fix 18; §6 P07; misses INSTALL-LAYOUT, OC-005 |
+| PB-27 | maps every requirement ID and every screen of the requirements source to a checklist item. | fixture: `node tests/phase/run.mjs PB-27` over the invented Team Inventory BRD. | Reset Plan §4 feature-plan 12; §6 P12, P13 |
+| PB-28 | links each recorded miss to its checklist item once, serially, and never removes an ID. | fixture: `node tests/phase/run.mjs PB-28` | Reset Plan §4 Verifier 16, implement 11, fix 15; §6 P25 |
 
 ## 5. Owner decisions
 

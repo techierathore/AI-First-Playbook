@@ -23,11 +23,9 @@ changes in the working tree and report `git status`; the human commits.
 
 ## Build phase completion
 
-`/implement` (and `/fix` for its FAIL set) is done only when every item in scope is implemented,
-built, self-tested and moved to the to-verify state, or carries an `[INFRA BLOCKER]` /
-`[EXTERNAL BLOCKER]` annotation naming what is missing and who supplies it. Handing the remainder
-back ("run `/implement` again for #10–#19") is a violation: add waves and smaller sub-agent slices
-instead. The phase hands off to `/verify` once, with the Status Table showing every item.
+`/implement` and `/fix` end only when `scripts/phase-complete.mjs` passes for every item in scope;
+an item that cannot be finished carries `[INFRA BLOCKER]` or `[EXTERNAL BLOCKER]` naming what is
+missing and who supplies it. The remainder is never handed back: add waves instead.
 
 ## YOLO mode
 
