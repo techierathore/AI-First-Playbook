@@ -30,7 +30,7 @@ first session not marked Done. The headline is the grader's output after that se
 | 3 | `harness/opencode/agent/verifier.md` | 8,508 | 484 | Probe, app start/stop, gates and item grouping became `playbook-probe.mjs`, `playbook-app-lifecycle.mjs`, `profile-gates.mjs`, `checklist-plan.mjs` (PB-21 to PB-24); YOLO repeat, Docker/Windows, cloud-CLI, NuGet, sqlcmd, progress-chat, forbidden-phrase and report-file blocks deleted per plan §4; UI, API, DB, logging/infra and desktop evidence moved to five conditional adapters (591 words, loaded only for present item kinds). (`wc -w`; the plan's 8,630 counted the file differently.) |
 | 4 | `AGENTS.md` | 451 | 442 | The ten handoff field names now live in `handoff-schema.json` and are enforced by `handoff-record.mjs` (PB-07). |
 | 4 | `templates/checklist-item-template.md` | 445 | 446 | Rules now in `checklist-lint.mjs` (Type required, misses-only IDs, field shape) shortened; gained the machine schema block and the plan's worked example, whose old free-form acceptance line failed the new rule. |
-| 4 | `templates/handoffs/*.md` (8) | 226 | 1,081 | Grew on purpose: each now carries all 10 standing rows plus a schema block; generated from `handoff-schema.json` so the template and validator cannot drift. |
+| 4 | `templates/handoffs/*.md` (8) | 468 | 1,195 | Grew on purpose: each now carries all 10 standing rows plus a schema block; generated from `handoff-schema.json` so the template and validator cannot drift. |
 | 3 | `harness/opencode/command/verify.md` | 458 | 115 | Report and telemetry mechanics removed (the Verifier owns them); example paths removed. |
 
 ## Decisions taken
