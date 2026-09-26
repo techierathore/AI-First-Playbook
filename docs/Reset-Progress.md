@@ -9,7 +9,7 @@ first session not marked Done. The headline is the grader's output after that se
 | 1 | Requirement list, grader, shared rules | Done 2026-09-26 | 6 of 18 graded; pass 6, fail 0, ungraded 12 |
 | 2 | Live OpenCode enforcement | Done 2026-09-26 (PB-04 allow half left for the owner) | 8 of 20 graded; pass 8, fail 0, ungraded 12 |
 | 3 | Verifier core plus adapters | Done 2026-09-26 | 12 of 24 graded; pass 12, fail 0, ungraded 12 |
-| 4 | Checklist and handoff schemas | Not started | — |
+| 4 | Checklist and handoff schemas | Done 2026-09-26 | 15 of 24 graded; pass 15, fail 0, ungraded 9 |
 | 5 | Plan, build, fix, analyze commands | Not started | — |
 | 6 | Document tools | Not started | — |
 | 7 | Reader navigation | Not started | — |
@@ -28,6 +28,9 @@ first session not marked Done. The headline is the grader's output after that se
 | 2 | `harness/opencode/command/fix.md` | 2,706 | 2,701 | Git-denial clause removed (PB-05, PB-19). |
 | 2 | `phases/03-build.md` | 541 | 535 | Git-denial sentence removed (PB-05, PB-19). |
 | 3 | `harness/opencode/agent/verifier.md` | 8,508 | 484 | Probe, app start/stop, gates and item grouping became `playbook-probe.mjs`, `playbook-app-lifecycle.mjs`, `profile-gates.mjs`, `checklist-plan.mjs` (PB-21 to PB-24); YOLO repeat, Docker/Windows, cloud-CLI, NuGet, sqlcmd, progress-chat, forbidden-phrase and report-file blocks deleted per plan §4; UI, API, DB, logging/infra and desktop evidence moved to five conditional adapters (591 words, loaded only for present item kinds). (`wc -w`; the plan's 8,630 counted the file differently.) |
+| 4 | `AGENTS.md` | 451 | 442 | The ten handoff field names now live in `handoff-schema.json` and are enforced by `handoff-record.mjs` (PB-07). |
+| 4 | `templates/checklist-item-template.md` | 445 | 446 | Rules now in `checklist-lint.mjs` (Type required, misses-only IDs, field shape) shortened; gained the machine schema block and the plan's worked example, whose old free-form acceptance line failed the new rule. |
+| 4 | `templates/handoffs/*.md` (8) | 226 | 1,081 | Grew on purpose: each now carries all 10 standing rows plus a schema block; generated from `handoff-schema.json` so the template and validator cannot drift. |
 | 3 | `harness/opencode/command/verify.md` | 458 | 115 | Report and telemetry mechanics removed (the Verifier owns them); example paths removed. |
 
 ## Decisions taken
@@ -49,4 +52,8 @@ Decisions the run took alone, each the smaller reversible choice.
 | 3 | `desktop` added to the checklist item `Type` values (`scripts/checklist-lib.mjs`). | The desktop adapter needs a bucket; Session 4's schema adopts the same list. | Remove it and route desktop items as `ui`. |
 | 3 | Verifier adapters live in `harness/opencode/templates/verifier/` (installed as `.opencode/templates/verifier/`), not under `agent/`. | OpenCode discovers every `agent/**/*.md` as an agent; templates are not discovered. | Move the folder. |
 | 3 | Run-time raw output of the new scripts goes to `verification/runs/<run-id>/`. | The folder Session 8 git-ignores and sweeps after 7 days. | Change `runDirectory()` in `profile-lib.mjs`. |
+| 4 | Checklist metadata keys follow the plan's order (`schema, id, owner, priority, risk, status, created_at, updated_at, evidence, misses`); `title` left the metadata `required` list because the checkbox line carries it. | Plan §5 worked schema; the old template example never had a metadata title. | Restore `title` in `templates/checklist-metadata.yml` and the schema. |
+| 4 | `to-verify` added to item statuses; `incident-open`, `incident-mitigated`, `incident-resolved`, `operations-owned` added to feature states. | `AGENTS.md` already names the to-verify state; incident and transfer handoffs need transitions. Additive only. | Remove them. |
+| 4 | "Verb-led title" is enforced only as a ban on leading articles and filler words; true verb detection is not attempted. | A part-of-speech check would guess. | Replace with a verb list if misses show it matters. |
+| 4 | The three checklists and eight handoff examples are INVENTED from the case studies and labelled so; they are generated or hand-written fixtures, not accepted real records. | No real accepted checklists or handoffs exist in the repository. | Replace with real ones when a team supplies them. |
 | 1 | Local checks ran on Node 22.22.2 with npm 10.9.7 (the container's npm); npm 11.20.0 is installed for the Session 9 campaign. | The container ships npm 10; every existing check passes on it. | — |
