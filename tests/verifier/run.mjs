@@ -53,6 +53,7 @@ secrets:
   sources: [environment-reference]
 cleanup:
   command: "true"
+  evidence_directory: verification/<feature>/<run-id>
 `;
 
 const run = (dir, script, args, env = {}) => spawnSync(process.execPath, [join(dir, ".playbook/scripts", script), ...args], { cwd: dir, encoding: "utf8", env: { ...process.env, ...env } });
@@ -78,6 +79,11 @@ const cases = {
       assert(r.status === 0, `probe failed: ${r.stdout}`);
       assert(/^ok\s+application\.api_url .* 200/m.test(r.stdout), "api_url not ok with 200");
       assert(existsSync(join(dir, "verification/runs/probe-1/probe.json")), "probe.json not recorded");
+    }],
+    ["the evidence-directory path template is not mistaken for a placeholder (miss found by the Session 9 campaign)", async () => {
+      const dir = target({ profile: realProfile(await freePort()) });
+      const r = run(dir, "playbook-probe.mjs", []);
+      assert(!/blocked\s+cleanup\.evidence_directory/.test(r.stdout), r.stdout);
     }],
     ["a declared but stopped application is reported down, not blocked and not guessed", async () => {
       const dir = target({ profile: realProfile(await freePort()) });

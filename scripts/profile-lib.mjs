@@ -71,7 +71,10 @@ export function readProfile(root = process.cwd()) {
   return { path, profile: parseProfile(readFileSync(path, "utf8")) };
 }
 
-export const isPlaceholder = (value) => typeof value === "string" && /<[^>]+>/.test(value);
+// `<feature>` and `<run-id>` are path templates the commands fill per run
+// (cleanup.evidence_directory), not values left for a person to replace.
+const TEMPLATE_TOKENS = new Set(["<feature>", "<run-id>"]);
+export const isPlaceholder = (value) => typeof value === "string" && (value.match(/<[^>]+>/g) ?? []).some((t) => !TEMPLATE_TOKENS.has(t));
 
 /** Every profile field whose value (or list item) is still a placeholder. */
 export function placeholders(profile, prefix = "") {
