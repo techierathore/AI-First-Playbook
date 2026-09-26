@@ -42,10 +42,16 @@ export function syncStatusTable(text) {
   const s = sections.find((x) => x.level === 2 && x.title === "Status Table");
   if (!s) throw new Error('no "## Status Table" section');
   const lines = text.split("\n");
-  const next = sections.find((x) => x.level <= 2 && x.line > s.line);
   const rows = items.filter((i) => i.metadata?.value?.id).map((i) => `| ${i.metadata.value.id} | ${i.title.replace(/\|/g, "/")} | ${i.metadata.value.status} |`);
-  const table = ["", "| ID | Item | Status |", "|---|---|---|", ...rows, ""];
-  return [...lines.slice(0, s.line), ...table, ...lines.slice(next ? next.line - 1 : lines.length)].join("\n");
+  const table = ["| ID | Item | Status |", "|---|---|---|", ...rows];
+  // Replace only the table itself: the first run of `|` lines after the
+  // heading. Everything else in the section (items included) is kept.
+  let start = s.line;
+  while (start < lines.length && !/^\|/.test(lines[start]) && !/^#{1,2}\s/.test(lines[start])) start += 1;
+  if (start >= lines.length || /^#{1,2}\s/.test(lines[start])) return [...lines.slice(0, s.line), "", ...table, ...lines.slice(s.line)].join("\n");
+  let end = start;
+  while (end < lines.length && /^\|/.test(lines[end])) end += 1;
+  return [...lines.slice(0, start), ...table, ...lines.slice(end)].join("\n");
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

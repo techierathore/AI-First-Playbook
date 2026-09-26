@@ -138,6 +138,31 @@ export function isApprovedMissEmitterCommand(command) {
 }
 
 /**
+ * The Verifier's own runtime scripts, named in its prompt. Same narrow
+ * grammar as the miss emitter: `node`, the exact installed path of one of
+ * these files, then plain arguments. No shell operators, substitution,
+ * quoting or redirection, so nothing else can ride along. The scripts write
+ * only under verification/ and to the selected checklist.
+ */
+const VERIFIER_SCRIPTS = new Set([
+  "playbook-probe.mjs", "checklist-plan.mjs", "checklist-lint.mjs", "profile-gates.mjs",
+  "playbook-app-lifecycle.mjs", "deployment-step-runner.mjs", "verification-result-writer.mjs",
+  "verification-summary.mjs", "smoke-runner.mjs", "secret-safe-config-resolver.mjs", "gate-check.mjs",
+  "dotnet-restore-diagnostics.mjs", "windows-app-bridge-client.mjs",
+]);
+
+export function isApprovedVerifierScript(command) {
+  if (typeof command !== "string") return false;
+  const trimmed = command.trim();
+  if (!trimmed || /[;&|<>`$()'"\\\r\n*?{}[\]]/.test(trimmed)) return false;
+  const tokens = trimmed.split(/\s+/);
+  if (tokens.shift() !== "node") return false;
+  const script = tokens.shift()?.match(/^\.playbook\/scripts\/([a-z-]+\.mjs)$/)?.[1];
+  if (!script || !VERIFIER_SCRIPTS.has(script)) return false;
+  return tokens.every((t) => /^(--[a-z][a-z0-9-]*(=[A-Za-z0-9_.,:/@+-]+)?|[A-Za-z0-9_.,:/@+-]+)$/.test(t) && !t.split("/").includes(".."));
+}
+
+/**
  * Extract the file path from an OpenCode tool input, if any.
  */
 export function extractPath(tool, args) {
@@ -229,6 +254,7 @@ export function evaluateToolCall({ tool, args, isVerifier }) {
 
   const command = args?.command ?? args?.cmd;
   if (shell && isVerifier && isApprovedMissEmitterCommand(command)) return null;
+  if (shell && isVerifier && isApprovedVerifierScript(command)) return null;
   if (shell && isVerifier && typeof command === "string" && command.includes(MISS_EMITTER)) {
     return {
       reason: "miss emitter invocation is not the approved standalone command shape",

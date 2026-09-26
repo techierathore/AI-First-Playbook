@@ -29,7 +29,7 @@ const statusOf = (item) => item.metadata?.value?.status ?? "planned";
 export function latestVerdict(item) {
   const results = item.extra.filter((l) => /^- \*\*Verifier Result\*\*/.test(l));
   const last = results.at(-1);
-  return last ? (last.match(/:\s*(PASS \(code-audit\)|FAIL \(code-audit\)|DATA-GAP|BLOCKED|PASS|FAIL)\b/)?.[1] ?? null) : null;
+  return last ? (last.match(/:\s*(PASS \(code-audit\)|FAIL \(code-audit\)|DATA-GAP|BLOCKED|PASS|FAIL)(?=\s|$)/)?.[1] ?? null) : null;
 }
 
 export function verifyPlan(text) {
