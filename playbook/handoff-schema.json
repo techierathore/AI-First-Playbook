@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "description": "Handoff packet schema. Every gate persists one record; scripts/handoff-record.mjs creates and validates it. Rows are `- <Label>: <value>` in the order below.",
+  "standing": {
+    "Producer": "identity",
+    "Consumer": "identity",
+    "Accountable approver": "identity",
+    "Approver identity": "identity",
+    "Status transition": "transition",
+    "Evidence": "links",
+    "Open decisions": "decisions",
+    "Escalation owner": "identity",
+    "Exception expiry": "expiry",
+    "Recorded at (UTC)": "utc"
+  },
+  "none_allowed": ["Open decisions", "Exception expiry", "Accepted differences", "Blockers", "Non-PASS items", "Notes", "Actions"],
+  "kinds": {
+    "plan-approval": {
+      "title": "Plan Approval Handoff",
+      "fields": ["Feature", "Producer", "Consumer", "Accountable approver", "Approver identity", "Status transition", "Decision", "Scope and checklist", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Notes"],
+      "enums": { "Decision": ["approved", "changes-required"] },
+      "budget": { "small": [100, 150], "medium": [130, 190], "large": [160, 230] }
+    },
+    "implementation-summary": {
+      "title": "Implementation Summary Handoff",
+      "fields": ["Feature and checklist", "Producer", "Consumer", "Accountable approver", "Approver identity", "Status transition", "Status", "Changed files and migration order", "Tests and smoke checks", "Risks and rollback", "Blockers", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Deployment notes"],
+      "enums": { "Status": ["self-reviewed", "incomplete"] },
+      "budget": { "small": [110, 170], "medium": [150, 220], "large": [190, 280] }
+    },
+    "verification-results": {
+      "title": "Verification Results Handoff",
+      "fields": ["Feature", "Run ID", "Producer", "Consumer", "Accountable approver", "Approver identity", "Status transition", "Overall outcome", "Checklist", "Non-PASS items", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Environment"],
+      "enums": { "Overall outcome": ["PASS", "FAIL", "DATA-GAP", "BLOCKED"] },
+      "budget": { "small": [100, 160], "medium": [140, 210], "large": [180, 260] }
+    },
+    "acceptance": {
+      "title": "Human Acceptance Record",
+      "fields": ["Feature and scope", "Producer", "Consumer", "Accountable approver", "Approver identity", "Status transition", "Decision", "Accepted differences", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Notes"],
+      "enums": { "Decision": ["accepted", "rejected", "accepted-with-expiring-exception"] },
+      "budget": { "small": [100, 150], "medium": [130, 190], "large": [160, 230] }
+    },
+    "pr-evidence": {
+      "title": "PR Evidence Packet",
+      "fields": ["PR", "Feature and checklist", "Producer", "Consumer", "Accountable approver", "Approver identity", "Status transition", "Scope and changed files", "CI and verifier runs", "Reviews", "Migration, rollback and monitoring", "Decision", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Reviewer notes"],
+      "enums": { "Decision": ["approved", "changes-requested"] },
+      "budget": { "small": [100, 160], "medium": [140, 210], "large": [180, 270] }
+    },
+    "release-readiness": {
+      "title": "Release Readiness Record",
+      "fields": ["Feature and release", "Producer", "Consumer", "Accountable approver", "Approver identity", "Status transition", "Rollback authority", "Approvals", "Migration order and compatibility", "Feature flag state", "Rollback steps and recovery point", "Monitoring signals and thresholds", "Post-deploy checks", "Decision", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Window"],
+      "enums": { "Decision": ["go", "no-go"] },
+      "budget": { "small": [120, 180], "medium": [170, 250], "large": [220, 320] }
+    },
+    "operations-transfer": {
+      "title": "Operations and Ownership Transfer",
+      "fields": ["Service", "Outgoing owner", "Incoming owner", "Producer", "Consumer", "Accountable approver", "Approver identity", "Status transition", "Resources", "Risks and support hours", "Last verified run", "Open work", "Acceptance by incoming owner", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Training"],
+      "enums": {},
+      "budget": { "small": [120, 180], "medium": [170, 250], "large": [220, 330] }
+    },
+    "incident": {
+      "title": "Incident Record",
+      "fields": ["Incident", "Severity", "Detected at (UTC)", "Producer", "Consumer", "Accountable approver", "Approver identity", "Incident commander", "Communications owner", "Rollback authority", "Status transition", "Customer impact", "Timeline (UTC)", "Root cause", "Regression item", "Actions", "Postmortem due", "Evidence", "Open decisions", "Escalation owner", "Exception expiry", "Recorded at (UTC)"],
+      "optional": ["Detection", "Related incidents"],
+      "enums": { "Severity": ["sev1", "sev2", "sev3", "sev4"] },
+      "budget": { "small": [150, 230], "medium": [220, 320], "large": [300, 450] }
+    }
+  },
+  "feature_states": ["proposed", "planned", "plan-approved", "building", "self-reviewed", "verification-in-progress", "verification-failed", "data-gap", "blocked", "human-accepted", "pr-ready", "pr-approved", "release-ready", "deployed", "post-deploy-validated", "closed", "deferred", "abandoned", "incident-open", "incident-mitigated", "incident-resolved", "operations-owned"]
+}
