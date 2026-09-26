@@ -878,6 +878,27 @@ Access them from Windows when you need to (VS Code, Explorer, Notepad) via:
 
 The exception is 10c: code that must be built by Windows tooling stays on `C:\`.
 
+### 10f. Stale root-owned file metadata under `/mnt/c`
+
+Moved here from the standing rules on 2026-09-26. Repos under `/mnt/c` can carry stale root-owner
+Linux metadata (typically left by earlier root-running container sessions). Symptoms: files and
+directories show `root:root`, writes fail with `EACCES`, and `chown`/`chmod` succeed but change
+nothing (the default drvfs mount lacks the `metadata` option).
+
+- **Agent behaviour:** write the file into a user-owned staging directory and move it into place
+  from the Windows side (`cmd.exe /c move`); files created inside WSL carry no stale metadata.
+  Windows `copy` copies the metadata and does not fix it. Report the condition to the human.
+- **Permanent fix (human, once per machine):** add to `/etc/wsl.conf`:
+
+  ```ini
+  [automount]
+  options = "metadata"
+  ```
+
+  then from Windows run `wsl --shutdown`, reopen the distro, and run
+  `sudo chown -R $USER:$USER <repo-path>`. With several distros (e.g. `docker-desktop`), target
+  the right one: `wsl -d <distro>`. Better still, keep repos in `~/work` (10e).
+
 ---
 
 ## Step 11 — Set up a project

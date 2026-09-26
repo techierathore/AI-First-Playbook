@@ -21,9 +21,12 @@ browser:
   endpoint: "<replace: optional Playwright MCP endpoint>"
 logs:
   paths: ["<replace: log path>"]
-secrets:
-  sources: [environment, local-secret-store]
-  forbidden: [markdown, command-line-arguments, process-environment-dumps, logs]
+secrets: # the four allowed channels (AGENTS.md); values never appear anywhere
+  sources: [secret-manager, environment-reference, protected-stdin, protected-temp-file]
+  forbidden: [markdown, command-line-arguments, process-environment-dumps, logs, urls, evidence]
 cleanup:
   command: "<replace: cleanup command>"
   evidence_directory: verification/<feature>/<run-id>
+retention: # days; raw run evidence is swept, graded verdicts are kept
+  raw_runs_days: 7
+  graded_verdicts_days: 365
