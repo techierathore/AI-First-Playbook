@@ -5,7 +5,7 @@
 | Purpose | The list of things the Playbook must do, each with the one check that proves it. `node scripts/playbook-grade.mjs docs/Playbook-Requirements.md` walks every line. |
 | Audience | Framework maintainers and agents. The owner approves the lines; nobody has to re-read them to know the state, because the grader prints it. Agent document; not rendered to HTML. |
 | Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3, one per Verifier rule that became a script. |
-| Headline | **9 of 24 proved by a script**, 3 more by a fixture: 12 of 24 graded. Every review or ungraded line names what is missing. |
+| Headline | **10 of 24 proved by a script**, 5 more by a fixture: 15 of 24 graded. Every review or ungraded line names what is missing. |
 | Sources | `docs/Playbook-Reset-Plan.md` §6 and §8; the miss stream `verification/telemetry/misses.ndjson`; owner decisions of 2026-09-26 (§4). |
 
 ---
@@ -30,6 +30,7 @@
 | Grader fixtures | `tests/grader/cases/`: one requirement file with a case per grader defect | PB-09 to PB-12 |
 | Disposable project | a small Node project generated in the temp folder with the Playbook installed; the installed plugins are loaded and their hooks driven offline | PB-04, PB-05 |
 | Verifier project | a disposable project with a tiny Node HTTP app and a real profile; `tests/verifier/fixtures/` holds the case-study checklist | PB-21 to PB-24 |
+| Schema fixtures | `tests/checklist/fixtures/` (small 6, medium 14, large 34 items, invented from the case studies) and `tests/handoff/fixtures/good/` (the eight handoff kinds, invented from the greenfield case study) | PB-06, PB-07 |
 | Scripted model | `tests/live/mock-model.mjs`, an OpenAI-compatible server on 127.0.0.1 that OpenCode uses as its model; it plants tool calls, so a real `opencode run` exercises the live hooks | PB-04, PB-19 |
 
 ## 3. The four questions for a miss
@@ -50,9 +51,9 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-03 | keeps every phase's measured instruction total below its tier maximum. | review: no instruction counter yet; Sessions 3 and 5 shrink the phases and add it. | Reset Plan §3 |
 | PB-04 | blocks product edits by the Verifier through the live write boundary and allows safe test commands. | review: the block half passes live (PB-19) and offline (`tests/plugin/run.mjs PB-04`); the allow half fails in both — the Verifier shell policy still blocks `npm test`, and widening it was refused as a security relaxation in the unattended Session 2 run. Owner decision needed (Reset-Progress, Session 2). | Reset Plan §6 M06-M08 |
 | PB-05 | denies unapproved Git history changes in normal and YOLO modes. | fixture: `node tests/plugin/run.mjs PB-05` loads the installed plugins in a disposable project and plants git writes in both modes. | Reset Plan §6 M11, P05 |
-| PB-06 | makes every checklist item follow the ordered schema and the acceptance sentence rule. | review: no checklist validator yet; Session 4 builds `checklist-lint.mjs`. | Reset Plan §5 |
-| PB-07 | persists all 10 standing fields in every handoff. | review: no handoff validator yet; Session 4 builds `handoff-record.mjs`. | `AGENTS.md`; Reset Plan §6 P04 |
-| PB-08 | declares required order, optional parts, TARGET and MAXIMUM in every template. | review: no template linter yet; Sessions 4 and 6 add schema blocks and their linter. | Reset Plan §5 |
+| PB-06 | makes every checklist item follow the ordered schema and the acceptance sentence rule. | fixture: `node tests/checklist/run.mjs PB-06` lints the small, medium and large fixtures clean and catches 12 broken twins with the installed `checklist-lint.mjs`. | Reset Plan §5 |
+| PB-07 | persists all 10 standing fields in every handoff. | fixture: `node tests/handoff/run.mjs PB-07` validates the eight handoff examples and catches each broken twin with the installed `handoff-record.mjs`. | `AGENTS.md`; Reset Plan §6 P04 |
+| PB-08 | declares required order, optional parts, TARGET and MAXIMUM in every template. | script: `node tests/handoff/run.mjs PB-08` runs `scripts/template-lint.mjs` over all 29 templates and over broken copies. | Reset Plan §5 |
 | PB-09 | names, for every script or fixture line, a file that exists and that the grader invokes. | script: `node tests/grader/run.mjs PB-09` | Reset Plan §6 |
 | PB-10 | reports one result or one written ungraded reason per requirement, never a PASS inferred from missing output. | script: `node tests/grader/run.mjs PB-10` | Reset Plan §6 |
 | PB-11 | prints the headline `N of M graded`, then pass, fail and ungraded counts. | script: `node tests/grader/run.mjs PB-11` | Reset Plan §6 |

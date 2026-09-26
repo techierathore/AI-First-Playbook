@@ -1,4 +1,5 @@
 # /archive-checklist
+<!-- template-schema: {"produces":"/archive-checklist history","required":["Contract","usage","checklist","eligibility","dependencies","archive/restore"],"optional":["Restore branch"],"budget":{"small":[150,220],"medium":[180,260],"large":[220,320]},"rows":"One history row; stable ID, title, outcome, run, evidence."} -->
 
 **Persona:** none · **Cost:** 🟢 — this command IS a token-saving lever
 

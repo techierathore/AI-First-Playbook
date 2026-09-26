@@ -1,4 +1,5 @@
 # The Command Library
+<!-- template-schema: {"produces":"Command index","required":["Purpose","universal rules","daily table","admin table","cost table"],"optional":["Install and routing notes"],"budget":{"small":[350,500],"medium":[420,600],"large":[500,700]},"rows":"One command, persona, tier, and purpose per row."} -->
 
 Fifteen commands: **four carry the daily loop**, eleven support it. Each has a spec file
 here — and a **runnable counterpart** in

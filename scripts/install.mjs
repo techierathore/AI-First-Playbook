@@ -24,6 +24,10 @@ const runtimeMappings = [
   ["scripts/profile-gates.mjs", ".playbook/scripts/profile-gates.mjs"],
   ["scripts/checklist-lib.mjs", ".playbook/scripts/checklist-lib.mjs"],
   ["scripts/checklist-plan.mjs", ".playbook/scripts/checklist-plan.mjs"],
+  ["scripts/checklist-lint.mjs", ".playbook/scripts/checklist-lint.mjs"],
+  ["scripts/handoff-record.mjs", ".playbook/scripts/handoff-record.mjs"],
+  ["playbook/checklist-schema.json", ".playbook/checklist-schema.json"],
+  ["playbook/handoff-schema.json", ".playbook/handoff-schema.json"],
   ["playbook/model-tiers.yml", ".playbook/model-tiers.yml"],
   ["playbook/environment-profile.yml", ".playbook/environment-profile.yml"],
 ];
@@ -247,6 +251,8 @@ function install() {
   copyText(join(sourceRoot, "AGENTS.md"), join(target, ".playbook", "AGENTS.md"), [
     ["playbook/environment-profile.yml", ".playbook/environment-profile.yml"],
     ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
+    ["scripts/handoff-record.mjs", ".playbook/scripts/handoff-record.mjs"],
+    ["scripts/checklist-lint.mjs", ".playbook/scripts/checklist-lint.mjs"],
   ]);
   if (includeGuides) {
     for (const file of userDocs) copy(join(sourceRoot, "docs", file), join(target, ".playbook", "guides", "docs", file));

@@ -1,4 +1,5 @@
 # Issues File Template (transient input)
+<!-- template-schema: {"produces":"docs/<feature>/<Name>-Issues.md","required":["Title","lifecycle","repeated issues","ingestion"],"optional":["Jira metadata","attachments","labels"],"budget":{"small":[180,280],"medium":[450,700],"large":[900,1400]},"rows":"One defect; Expected, Actual, Steps, Severity; ordered reproduction."} -->
 
 Created by `/create-issue-list` (from Jira) or written by hand; consumed by
 `/analyze-fix`, which folds every issue into the existing implementation checklist —

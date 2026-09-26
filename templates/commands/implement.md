@@ -1,4 +1,5 @@
 # /implement
+<!-- template-schema: {"produces":"/implement run","required":["Contract","usage","checklist inputs","waves","completion","self-review","handoff"],"optional":["YOLO","DB","UI","platform branches"],"budget":{"small":[260,380],"medium":[350,500],"large":[450,650]},"rows":"Each wave row has dependency, owner, slice, and exit."} -->
 
 **Persona:** Orchestrator · **Cost:** 🔴 · **Chat:** fresh
 

@@ -1,4 +1,5 @@
 # Deployment Steps Template
+<!-- template-schema: {"produces":"## Deployment Steps section of a checklist","required":["Purpose","execution point","shape","Automated","Manual","tools/secrets"],"optional":["Rollback","environment branch"],"budget":{"small":[100,180],"medium":[200,320],"large":[320,500]},"rows":"One action per row; automated row has one command or script; no secret values."} -->
 
 Lives inside the implementation checklist as `## Deployment Steps`. Populated by
 `/implement` and `/fix` as work creates deployment needs; executed by the Verifier as

@@ -1,4 +1,5 @@
 # /create-issue-list
+<!-- template-schema: {"produces":"/create-issue-list issues file","required":["Contract","usage","sources","protected credentials","extraction","output","lifecycle"],"optional":["Manual items","attachments"],"budget":{"small":[150,220],"medium":[180,260],"large":[220,320]},"rows":"One ticket; preserve source ID; mark missing facts."} -->
 
 **Persona:** Analyst · **Cost:** 🟡
 

@@ -1,4 +1,5 @@
 # /amend-checklist
+<!-- template-schema: {"produces":"/amend-checklist mutation","required":["Contract","usage","checklist","exact change","validation","output"],"optional":["Legacy retrofit"],"budget":{"small":[150,220],"medium":[180,260],"large":[220,320]},"rows":"One requested mutation; no speculative additions."} -->
 
 **Persona:** none — mechanical edit · **Cost:** 🟢
 

@@ -1,4 +1,5 @@
 # /analyze-fix
+<!-- template-schema: {"produces":"/analyze-fix checklist changes","required":["Contract","usage","inputs","cause","checklist changes","gap analysis","handoff"],"optional":["Story and escaped-bug branches"],"budget":{"small":[350,500],"medium":[500,700],"large":[650,900]},"rows":"One issue; separate symptom, cause, checklist defect, and regression test."} -->
 
 **Persona:** Analyst · **Cost:** 🟡 · **Chat:** fresh
 

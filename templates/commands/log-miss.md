@@ -1,4 +1,5 @@
 # /log-miss
+<!-- template-schema: {"produces":"/log-miss record","required":["Contract","usage","one-line input","classification","writes","fixed branch","failure"],"optional":[],"budget":{"small":[150,220],"medium":[180,260],"large":[220,320]},"rows":"One miss; closed values; append-only ID."} -->
 
 **Cost:** 🟡 · **Chat:** same or fresh
 

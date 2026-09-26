@@ -1,4 +1,5 @@
 # /upgrade-docs
+<!-- template-schema: {"produces":"/upgrade-docs conversion","required":["Contract","usage","legacy inputs","reconcile","convert","review marks","output"],"optional":["Partial","no-UI","report branches"],"budget":{"small":[260,380],"medium":[350,500],"large":[450,650]},"rows":"One converted requirement; preserve source and mark new findings."} -->
 
 **Persona:** Analyst · **Cost:** 🔴 (one-time per module) · **Owner:** process admin
 

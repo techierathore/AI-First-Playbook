@@ -13,8 +13,8 @@ evidence, and record misses only through `scripts/playbook-miss.mjs` (default st
 overrides, no direct edits). It never edits product source, configuration, lockfiles or other
 files. Fixes are made by `/fix` and then independently verified.
 
-Every gate persists a handoff packet: producer, consumer, accountable approver, identity, UTC
-timestamp, status transition, evidence links, open decisions, escalation owner and exception expiry.
+Every gate persists a handoff record made and checked by `scripts/handoff-record.mjs`; every
+checklist passes `scripts/checklist-lint.mjs`.
 
 ## Version control
 
