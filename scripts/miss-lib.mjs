@@ -972,3 +972,94 @@ export function enrichFixes(folded, windows) {
     };
   });
 }
+
+// ── grader-verdict stream (verification/telemetry/grades.ndjson) ────────────
+// One record per requirement ID per grader run, written only by
+// scripts/playbook-grade.mjs. Same discipline as the miss stream: closed
+// vocabularies, UTC timestamps, append-only, the team-edition `actor` field
+// (aggregate-only, docs/Decisions.md 2026-08-29 Decision 6), and no free text
+// that has not passed through redact().
+export const GRADE_SCHEMA = 1;
+export const GRADE_RESULTS = ["pass", "fail", "ungraded"];
+export const GRADE_CHECK_KINDS = ["script", "fixture", "review", "ungraded"];
+const GRADE_FIELDS = [
+  "kind", "ts", "schema", "run_id", "req_id", "check_kind", "check", "result", "reason",
+  "exit_code", "duration_ms", "grader_version", "node_version", "actor", "harness", "project_type",
+];
+const REQ_ID_RE = /^PB-\d{2,}$/;
+const SECRET_PATTERNS = [
+  /\b(?:ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{16,}\b/g,
+  /\bnpm_[A-Za-z0-9]{20,}\b/g,
+  /\bsk-[A-Za-z0-9_-]{16,}\b/g,
+  /\bxox[abpr]-[A-Za-z0-9-]{10,}\b/g,
+  /\bAKIA[0-9A-Z]{16}\b/g,
+  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
+  /\b[A-Fa-f0-9]{40,}\b/g,
+  /\b[A-Za-z0-9+/]{40,}={0,2}(?![A-Za-z0-9+/=])/g,
+  /(\/\/)[^\s/:@]+:[^\s/@]+@/g,
+  /\b((?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key)\s*[=:]\s*)("[^"]*"|'[^']*'|\S+)/gi,
+];
+
+/** Replace anything that looks like a credential. Used on every free-text
+ *  field the grader stores; the stream must never carry a secret value. */
+export function redact(text, maxLength = 240) {
+  if (text == null) return null;
+  let out = String(text);
+  for (const re of SECRET_PATTERNS) {
+    out = out.replace(re, (match, ...groups) => {
+      if (re.source.startsWith("(\\/\\/)")) return `${groups[0]}[REDACTED]@`;
+      if (re.flags.includes("i") && typeof groups[0] === "string" && /[=:]\s*$/.test(groups[0])) return `${groups[0]}[REDACTED]`;
+      return "[REDACTED]";
+    });
+  }
+  out = out.replace(/\s+/g, " ").trim();
+  return out.length > maxLength ? `${out.slice(0, maxLength - 1)}…` : out;
+}
+
+export function defaultGradesPath(root = process.cwd()) {
+  return join(root, "verification", "telemetry", "grades.ndjson");
+}
+
+export function buildGraderRecord(fields, { now = new Date() } = {}) {
+  const record = {
+    kind: "grader-verdict",
+    ts: now.toISOString(),
+    schema: GRADE_SCHEMA,
+    run_id: fields.run_id,
+    req_id: fields.req_id,
+    check_kind: fields.check_kind,
+    check: redact(fields.check ?? null, 200),
+    result: fields.result,
+    reason: redact(fields.reason ?? null),
+    exit_code: Number.isInteger(fields.exit_code) ? fields.exit_code : null,
+    duration_ms: Number.isFinite(fields.duration_ms) ? Math.round(fields.duration_ms) : null,
+    grader_version: fields.grader_version ?? null,
+    node_version: process.versions.node,
+    actor: fields.actor ?? null,
+    harness: "opencode",
+    project_type: "framework",
+  };
+  const errors = validateGraderRecords([record]).errors;
+  if (errors.length) throw new Error(`grader-verdict record invalid: ${errors.join("; ")}`);
+  return record;
+}
+
+export function validateGraderRecords(records) {
+  const errors = [];
+  records.forEach((r, i) => {
+    const at = `grades line ${i + 1}`;
+    if (r.kind !== "grader-verdict") { errors.push(`${at}: kind must be grader-verdict`); return; }
+    for (const key of Object.keys(r)) if (!GRADE_FIELDS.includes(key)) errors.push(`${at}: unknown field ${key}`);
+    if (r.schema !== GRADE_SCHEMA) errors.push(`${at}: schema must be ${GRADE_SCHEMA}`);
+    if (!ISO_TS_RE.test(r.ts ?? "") || !String(r.ts).endsWith("Z")) errors.push(`${at}: ts must be ISO-8601 UTC`);
+    if (!REQ_ID_RE.test(r.req_id ?? "")) errors.push(`${at}: req_id must look like PB-01`);
+    if (!GRADE_RESULTS.includes(r.result)) errors.push(`${at}: result must be one of ${GRADE_RESULTS.join("|")}`);
+    if (!GRADE_CHECK_KINDS.includes(r.check_kind)) errors.push(`${at}: check_kind must be one of ${GRADE_CHECK_KINDS.join("|")}`);
+    if (typeof r.run_id !== "string" || !TOKEN_RE.test(r.run_id)) errors.push(`${at}: run_id must be a token`);
+    if (r.result === "ungraded" && !r.reason) errors.push(`${at}: an ungraded result needs its written reason`);
+    for (const key of ["check", "reason"]) {
+      if (r[key] != null && redact(r[key], 100000) !== r[key]) errors.push(`${at}: ${key} carries an unredacted secret-like value`);
+    }
+  });
+  return { errors };
+}

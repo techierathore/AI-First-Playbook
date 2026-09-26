@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readMisses, validateMisses } from "./miss-lib.mjs";
+import { readMisses, validateMisses, validateGraderRecords } from "./miss-lib.mjs";
 import { parseTiersYaml } from "./tier-lib.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -194,6 +194,13 @@ if (existsSync(missesPath)) {
   const { errors: missErrors, notes } = validateMisses(records);
   for (const e of missErrors) errors.push(`misses.ndjson: ${e}`);
   for (const n of notes) console.log(`misses: ${n}`);
+}
+
+const gradesPath = join(root, "verification/telemetry/grades.ndjson");
+if (existsSync(gradesPath)) {
+  const { records, malformed } = readMisses(gradesPath);
+  for (const line of malformed) errors.push(`grades.ndjson: unparseable line: ${line.slice(0, 80)}`);
+  for (const e of validateGraderRecords(records).errors) errors.push(`grades.ndjson: ${e}`);
 }
 
 if (errors.length) { console.error(errors.map((e) => `ERROR ${e}`).join("\n")); process.exit(1); }
