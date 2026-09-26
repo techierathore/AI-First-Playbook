@@ -1,0 +1,9 @@
+# recorded 2026-09-26T15:58:16.634Z with OpenCode 1.18.32 and the scripted model
+timestamp=2026-09-26T15:58:15.302Z level=INFO run=73db32c7 message=created id=ses_f218fb8faffemm4lc6tcYnPNCi slug=glowing-planet version=1.18.32 projectID=[REDACTED] directory=<target> path="" workspaceID=undefined parentID=undefined title="New session - 2026-09-26T15:58:15.301Z" agent=undefined model=undefined metadata=undefined permission="[{\"permission\":\"question\",\"pattern\":\"*\",\"actio…
+timestamp=2026-09-26T15:58:15.836Z level=INFO run=73db32c7 message=stream providerID=mock modelID=scripted session.id=ses_f218fb8faffemm4lc6tcYnPNCi small=true agent=title mode=primary
+timestamp=2026-09-26T15:58:15.940Z level=INFO run=73db32c7 message="shell tool using shell" shell=/bin/bash
+timestamp=2026-09-26T15:58:16.374Z level=INFO run=73db32c7 message=stream providerID=mock modelID=scripted session.id=ses_f218fb8faffemm4lc6tcYnPNCi small=false agent=orchestrator mode=primary
+timestamp=2026-09-26T15:58:16.406Z level=WARN run=73db32c7 message="BLOCKED git history write" reason="`git add` writes to the repository history/index/refs — agents never commit, stage, push or rewrite (AGENTS.md)" callId=call_1
+Error: BLOCKED by spec-guardrails: `git add` writes to the repository history/index/refs — agents never commit, stage, push or rewrite (AGENTS.md). Leave changes in the working tree, report `git status` and what changed, and stop.
+timestamp=2026-09-26T15:58:16.496Z level=INFO run=73db32c7 message=stream providerID=mock modelID=scripted session.id=ses_f218fb8faffemm4lc6tcYnPNCi small=false agent=orchestrator mode=primary
+probe finished
