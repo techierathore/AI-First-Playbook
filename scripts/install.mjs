@@ -18,6 +18,12 @@ const runtimeMappings = [
   ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
   ["scripts/miss-lib.mjs", ".playbook/scripts/miss-lib.mjs"],
   ["scripts/playbook-telemetry.mjs", ".playbook/scripts/playbook-telemetry.mjs"],
+  ["scripts/profile-lib.mjs", ".playbook/scripts/profile-lib.mjs"],
+  ["scripts/playbook-probe.mjs", ".playbook/scripts/playbook-probe.mjs"],
+  ["scripts/playbook-app-lifecycle.mjs", ".playbook/scripts/playbook-app-lifecycle.mjs"],
+  ["scripts/profile-gates.mjs", ".playbook/scripts/profile-gates.mjs"],
+  ["scripts/checklist-lib.mjs", ".playbook/scripts/checklist-lib.mjs"],
+  ["scripts/checklist-plan.mjs", ".playbook/scripts/checklist-plan.mjs"],
   ["playbook/model-tiers.yml", ".playbook/model-tiers.yml"],
   ["playbook/environment-profile.yml", ".playbook/environment-profile.yml"],
 ];

@@ -63,6 +63,12 @@
     "scripts/playbook-miss.mjs",
     "scripts/miss-lib.mjs",
     "scripts/playbook-telemetry.mjs",
+    "scripts/profile-lib.mjs",
+    "scripts/playbook-probe.mjs",
+    "scripts/playbook-app-lifecycle.mjs",
+    "scripts/profile-gates.mjs",
+    "scripts/checklist-lib.mjs",
+    "scripts/checklist-plan.mjs",
     "LICENSE",
     "README.md"
   ],

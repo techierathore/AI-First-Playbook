@@ -25,6 +25,7 @@ export async function runCases(id, cases) {
     process.exit(1);
   }
   console.log(`${id} pass: ${cases.length} case(s)`);
+  process.exit(0);
 }
 
 export function ungraded(id, reason) {
