@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "description": "Implementation checklist schema. Enforced by scripts/checklist-lint.mjs; the readable version is templates/checklist-item-template.md.",
+  "metadata": {
+    "keys": ["schema", "id", "owner", "priority", "risk", "status", "created_at", "updated_at", "evidence", "misses"],
+    "id_pattern": "^[A-Z][A-Z0-9]*-\\d{3,}$",
+    "priority": ["P0", "P1", "P2", "P3"],
+    "risk": ["low", "medium", "high"],
+    "status": ["planned", "in-progress", "to-verify", "pass", "fail", "data-gap", "blocked", "deferred", "awaiting-dependency", "out-of-scope", "abandoned"],
+    "miss_pattern": "^MISS-\\d{8}-\\d{2,}$"
+  },
+  "item": {
+    "types": ["ui", "backend-api", "backend-service", "db", "logging", "infrastructure", "cross-cutting", "desktop"],
+    "field_order": ["Type", "Behavior", "Location", "UI ref", "Logging", "Acceptance", "Verify", "Coding Standards", "Depends on"],
+    "required": ["Type", "Behavior", "Location", "Logging", "Acceptance", "Verify", "Coding Standards"],
+    "required_for_type": { "UI ref": ["ui", "desktop"] },
+    "acceptance": {
+      "pattern": "^When \\S.*, then \\S.*$",
+      "target_words": 20,
+      "max_words": 30,
+      "one_behavior_forbids": [" and ", " as well as ", "; "],
+      "subjective_words": ["correctly", "properly", "appropriately", "user-friendly", "intuitive", "nicely", "seamlessly", "gracefully", "fast", "quickly"]
+    },
+    "verify": {
+      "assertion_words": ["assert", "asserts", "compares", "equals", "checks", "confirms"],
+      "evidence_words": ["keeps", "keep", "retains", "retain", "saves", "save", "records", "record", "trace", "screenshot", "log", "hash", "evidence"]
+    },
+    "title_forbidden_first_words": ["the", "a", "an", "this", "new", "misc", "various", "todo"],
+    "budget_words": { "target": 90, "max": 130 }
+  },
+  "checklist": {
+    "required_sections": ["Status Table", "Infrastructure Requirements", "Deployment Steps", "Verifier Run Log"],
+    "optional_sections": ["Verified History", "YOLO Decisions"],
+    "sizes": { "small": [1, 10], "medium": [11, 30], "large": [31, 75] },
+    "split_above": 75,
+    "inactive_status": ["out-of-scope", "abandoned", "deferred"]
+  }
+}

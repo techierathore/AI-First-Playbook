@@ -42,7 +42,7 @@ Filter); API and DB — `docs/Greenfield-Case-Study.md` (Team Inventory duplicat
   - Location: `src/api/imports/ImportRepository.ts`
   - Logging: None — the API item logs the rejection.
   - Acceptance: When an operator posts a CSV with two rows tagged TAG-7 to the import endpoint, then the assets row count is unchanged
-  - Verify: The DB runner counts assets before and after the INV-002 request and asserts equal counts.
+  - Verify: The DB runner counts assets before and after the INV-002 request and asserts equal counts, keeps both counts.
   - Coding Standards: `docs/coding-standards.md`, section 6.1, Transactions.
   - Depends on: INV-002
 
@@ -54,7 +54,7 @@ Filter); API and DB — `docs/Greenfield-Case-Study.md` (Team Inventory duplicat
   - UI ref: Main window, File menu, Export.
   - Logging: INFO with the exported row count.
   - Acceptance: When an operator runs Export in the desktop client, then the CSV row count equals the assets row count
-  - Verify: A console runner calls ExportService.Export with the real configuration and compares its row count with the DB count.
+  - Verify: A console runner calls ExportService.Export with the real configuration and compares its row count with the DB count, keeps the CSV hash.
   - Coding Standards: `docs/coding-standards.md`, section 7, Desktop services.
 
 <!-- metadata: {"schema":1,"id":"INV-005","owner":"inventory-ui","priority":"P3","risk":"low","status":"out-of-scope","created_at":"2026-09-26T00:00:00Z","updated_at":"2026-09-26T00:00:00Z","evidence":[],"misses":[]} -->
