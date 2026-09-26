@@ -4,8 +4,8 @@
 |---|---|
 | Purpose | The list of things the Playbook must do, each with the one check that proves it. `node scripts/playbook-grade.mjs docs/Playbook-Requirements.md` walks every line. |
 | Audience | Framework maintainers and agents. The owner approves the lines; nobody has to re-read them to know the state, because the grader prints it. Agent document; not rendered to HTML. |
-| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5, one per prose rule that became a script. |
-| Headline | **11 of 28 proved by a script**, 10 more by a fixture: 21 of 28 graded. Every review or ungraded line names what is missing. |
+| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5 and PB-29 to PB-32 in Session 6, one per prose rule that became a script. |
+| Headline | **11 of 32 proved by a script**, 14 more by a fixture: 25 of 32 graded. Every review or ungraded line names what is missing. |
 | Sources | `docs/Playbook-Reset-Plan.md` §6 and §8; the miss stream `verification/telemetry/misses.ndjson`; owner decisions of 2026-09-26 (§4). |
 
 ---
@@ -32,6 +32,7 @@
 | Verifier project | a disposable project with a tiny Node HTTP app and a real profile; `tests/verifier/fixtures/` holds the case-study checklist | PB-21 to PB-24 |
 | Schema fixtures | `tests/checklist/fixtures/` (small 6, medium 14, large 34 items, invented from the case studies) and `tests/handoff/fixtures/good/` (the eight handoff kinds, invented from the greenfield case study) | PB-06, PB-07 |
 | Planning fixtures | `tests/phase/fixtures/`: the Team Inventory BRD and planned checklist (invented from the greenfield case study); the failed item set is derived in the test | PB-13, PB-25 to PB-28 |
+| Document fixtures | `tests/docs/fixtures/`: a Team Inventory flow guide, business reference and code tree (invented from the greenfield case study); legacy inputs are the documents under `docs/` | PB-29 to PB-32 |
 | Scripted model | `tests/live/mock-model.mjs`, an OpenAI-compatible server on 127.0.0.1 that OpenCode uses as its model; it plants tool calls, so a real `opencode run` exercises the live hooks | PB-04, PB-19 |
 
 ## 3. The four questions for a miss
@@ -75,6 +76,10 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-26 | recomputes build and fix completion from item metadata and never lets a builder pass its own work. | fixture: `node tests/phase/run.mjs PB-26` | Reset Plan §4 implement 25, fix 18; §6 P07; misses INSTALL-LAYOUT, OC-005 |
 | PB-27 | maps every requirement ID and every screen of the requirements source to a checklist item. | fixture: `node tests/phase/run.mjs PB-27` over the invented Team Inventory BRD. | Reset Plan §4 feature-plan 12; §6 P12, P13 |
 | PB-28 | links each recorded miss to its checklist item once, serially, and never removes an ID. | fixture: `node tests/phase/run.mjs PB-28` | Reset Plan §4 Verifier 16, implement 11, fix 15; §6 P25 |
+| PB-29 | renders only human documents to HTML, by script, with the Markdown escaped into the page. | fixture: `node tests/docs/run.mjs PB-29` renders legacy `docs/` case studies and refuses the checklist and an Issues file. | Reset Plan §4 generate-html 1-6, add-doc 18; §6 P31 |
+| PB-30 | writes every human document from its schema and fails a document that breaks it. | fixture: `node tests/docs/run.mjs PB-30` over the Team Inventory flow guide and business reference, all six scaffolds and seven broken twins. | Reset Plan §4 add-doc 9, 13, 17; `docs/Playbook-Document-Schemas.md` |
+| PB-31 | names every stale code reference and broken link in a document by line. | fixture: `node tests/docs/run.mjs PB-31` (drift over fixture code; links over the reader documents and a V01-style broken README). | Reset Plan §4 refresh-doc 3, 9, 11; §5b V01 |
+| PB-32 | backs up a legacy document byte-for-byte before an upgrade changes it and never overwrites a backup. | fixture: `node tests/docs/run.mjs PB-32` on a copy of `docs/Operating-Model.md`. | Reset Plan §4 upgrade-docs 3, 20 |
 
 ## 5. Owner decisions
 
