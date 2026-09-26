@@ -24,6 +24,7 @@
  *       [--feature=CostReport] [--origin-phase=build] [--origin-agent=builder] \
  *       [--origin-run-id=<session id>] [--found-by=verifier] \
  *       [--found-phase=verify] [--found-phase-gate=FAIL] [--actor=a3f1] \
+ *       [--protocol=spec=yes,playbook=yes,check=yes]   # the four questions in order; the outcome is derived
  *       [--if-new]            # collapse check: same item_id + miss_class still live → write nothing
  *       [--fixed [--verdict-after=pass] [--fix-run-id=<session id>] [--fix-phase=fix]]
  *
