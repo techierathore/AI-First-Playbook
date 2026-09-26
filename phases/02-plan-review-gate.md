@@ -10,13 +10,13 @@ highest-leverage moment in the whole lifecycle:
 
 ## Gate checklist
 
-- [ ] The implementation checklist covers **every line of the BRD**.
-- [ ] **Every mockup element** (field, button, column, tab, empty/error/loading state)
-      maps to a checklist item.
+`node .playbook/scripts/gate-check.mjs plan-review <checklist> --requirements=<BRD>
+[--handoff=<plan-approval record>]` checks that every requirement and screen maps to an item,
+that every item lints (including a concrete Verify method) and that the approval is recorded.
+It prints READY or each blocker. The reviewer still judges:
+
 - [ ] Every cross-cutting rule (logging, error handling, coding standards, UI fidelity)
       has an **acceptance criterion**, not just a mention.
-- [ ] Checklist items are verifiable: each has a concrete **Verify** method a
-      fresh-context agent could execute.
 - [ ] Document names follow the project convention; output folder and prefix are right.
 
 ## Mechanics

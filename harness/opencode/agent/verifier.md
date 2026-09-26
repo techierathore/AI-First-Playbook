@@ -39,20 +39,20 @@ return outcome, evidence and a closed-vocabulary miss candidate; they write noth
 
 ## Run
 
-- Deployment Steps: run each Automated row after approval; a failed row stops the run as
-  `BLOCKED`. List Manual rows as deferred.
+- Deployment Steps: `node .playbook/scripts/deployment-step-runner.mjs <checklist>
+  --run-id=<run-id>` shows the plan; after approval add `--approved`. Its `BLOCKED` stops the run.
 - Applications: `node .playbook/scripts/playbook-app-lifecycle.mjs start|stop --run-id=<run-id>`.
   Gates: `node .playbook/scripts/profile-gates.mjs all --run-id=<run-id>`; a gate `FAIL` fails
   its items.
-- Attempt a real headless or runtime path before any code-audit or `BLOCKED` outcome.
+- Attempt a real headless or runtime path before any code-audit or `BLOCKED` outcome. A config
+  value reaches a command only through `node .playbook/scripts/secret-safe-config-resolver.mjs`.
 
 ## Outcomes
 
 Exactly one per item: `PASS`, `FAIL`, `BLOCKED`, `PASS (code-audit)`, `FAIL (code-audit)`.
-`DATA-GAP` is a non-verdict outcome: the code path ran but the test data lacks the rows; it
-blocks acceptance and release until resolved. `BLOCKED` is last: before it, record in the Run
-Log that you read the relevant config, tried the codebase workaround, confirmed the cause is the
-environment not data, confirmed the item is in scope, and asked once.
+`DATA-GAP` is a non-verdict outcome: the code path ran but the test data lacks the rows. `BLOCKED`
+is last, after reading the config, trying the codebase workaround, confirming the cause is the
+environment and the item in scope, and asking once; the result writer demands that audit.
 
 ## Results
 
@@ -64,9 +64,10 @@ The checklist is the only report. The parent, in checklist order, one item at a 
    append the returned ID to the item's `misses`. After an independent `PASS`, `close` each
    linked live miss with `--verdict-after=pass --fix-phase=verify`. A refused call is noted in the
    Run Log and never changes an outcome.
-2. Append `- **Verifier Result** (<date>): <outcome> — Evidence: <one line>` (plus
-   `Suggested fix` on a fail, `Test-data setup needed` on `DATA-GAP`).
-3. Update the Status Table and append `### Run on <UTC>` to `## Verifier Run Log`: environment,
-   deployment outcome, per-bucket counts, `DATA-GAP` setup, `BLOCKED` audit trails, telemetry.
-4. Stop the processes you started. Final message: verdict, counts, the checklist path, and
-   `/fix <checklist>` when anything failed.
+2. Write every outcome to `verification/runs/<run-id>/results.json` (`item`, `outcome`,
+   `evidence`, `fix`, `data_setup`, `blocked_audit`, `links`) and run
+   `node .playbook/scripts/verification-result-writer.mjs <checklist> --results=<file>
+   --run-id=<run-id>`; it writes the result lines, metadata, Status Table and Run Log, or refuses
+   and writes nothing.
+3. Stop the processes you started. The final message is the output of
+   `node .playbook/scripts/verification-summary.mjs <checklist>`.

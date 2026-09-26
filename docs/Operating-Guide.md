@@ -141,6 +141,17 @@ All installed under `.playbook/scripts/`; each prints what it did and exits non-
 | `doc-drift.mjs`, `reference-lint.mjs` | Name stale code references and broken links |
 | `doc-upgrade.mjs` | Back up legacy documents before an upgrade |
 | `playbook-miss.mjs`, `playbook-telemetry.mjs` | Miss records and telemetry export |
+| `deployment-step-runner.mjs` | Plan, then after approval run, a checklist's Automated deployment rows |
+| `verification-result-writer.mjs`, `verification-summary.mjs` | Write Verifier outcomes into the checklist; render the final summary from it |
+| `secret-safe-config-resolver.mjs` | Hand a config value to a command through a 0600 file or stdin |
+| `smoke-runner.mjs`, `self-test-result-writer.mjs` | Run declared self-test probes; record them per item |
+| `checklist-infra.mjs`, `checklist-deploy.mjs` | Keep Infrastructure Requirements and Deployment Steps in shape |
+| `checklist-amend.mjs`, `checklist-archive.mjs` | Exact checklist edits with stable IDs; archive and restore PASS items |
+| `feature-context.mjs`, `checklist-ingest.mjs` | Find a feature's checklist and documents; fold bugs and stories into it |
+| `escaped-bug-workflow.mjs`, `incident-workflow.mjs` | Track escaped bugs and incidents to verified, miss-linked closure |
+| `gate-check.mjs` | Evidence for the plan-review and verification-results gates |
+| `issues-file.mjs`, `jira-issues.mjs` | Render and check Issues files; fetch Jira tickets |
+| `dotnet-restore-diagnostics.mjs`, `windows-app-bridge-client.mjs` | Optional .NET feed and Windows desktop adapters |
 
 ## 8. Telemetry
 

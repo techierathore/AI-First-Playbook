@@ -35,20 +35,20 @@ Building is not enough; prove the code runs.
 1. `node .playbook/scripts/profile-gates.mjs all --run-id=<run-id>`; a failing gate stops the
    self-test and is annotated on its items.
 2. `node .playbook/scripts/playbook-app-lifecycle.mjs start --run-id=<run-id>` (ask once unless
-   YOLO), probe each changed endpoint, screen and data path as its Verify line says — a success
-   code with no data change is a failure — then `... stop --run-id=<run-id>`. Use the Developer
-   Flow Guide, when present, to check screen, API and data agree.
-3. Append `- **Self-test** (<date>): PASS|FAIL|SKIPPED — <evidence>` to each item; only the user
-   may skip. A defect found here is linked with `found-phase=self-review` and closed with
-   `--verdict-after=deferred --fix-phase=self-review`; never `pass`.
+   YOLO). Declare one probe per changed endpoint, screen and data path, as its Verify line says,
+   in `verification/runs/<run-id>/smoke.json`; a data-changing probe checks the data. Run
+   `node .playbook/scripts/smoke-runner.mjs <smoke.json> --run-id=<run-id>`, then `... stop`.
+3. `node .playbook/scripts/self-test-result-writer.mjs <checklist>
+   --results=verification/runs/<run-id>/smoke-results.json` records each item (PASS moves it to
+   `to-verify`); only the user may skip (`--skip=<IDs> --reason=…`). A defect found here is linked
+   with `found-phase=self-review` and closed with `--verdict-after=deferred
+   --fix-phase=self-review`.
 
 ## Checklist updates
 
-Set each built item's metadata status to `to-verify` and run
-`node .playbook/scripts/checklist-create.mjs sync <checklist>`. Record external resources under
-`## Infrastructure Requirements` and deployment actions under `## Deployment Steps` per
-`.playbook/templates/deployment-steps-template.md` (profile-declared tools, secrets through the allowed
-channels); write `_None required._` when empty. An item you cannot finish carries
+Record external resources with `node .playbook/scripts/checklist-infra.mjs add|none <checklist>`
+and deployment actions with `node .playbook/scripts/checklist-deploy.mjs add|none <checklist>`
+(profile-declared tools only). An item you cannot finish carries
 `[INFRA BLOCKER]` or `[EXTERNAL BLOCKER]` naming what is missing and who supplies it.
 
 ## Done

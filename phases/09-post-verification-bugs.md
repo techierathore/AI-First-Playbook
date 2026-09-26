@@ -23,10 +23,11 @@ don't just fix the bug — **fix the checklist that let it escape.**
 3. **Human review** of the updated checklist ("Verification Gap Analysis") — check the
    new Verify methods would actually catch the bug.
 4. **`/fix`** → **`/verify`** (now includes the new items) → loop until ALL PASS.
-5. Re-test manually, accept, and delete the transient Issues file only after its tracker key,
-   reporter, severity, customer impact, timestamps, reproduction, root cause and regression
-   reference are copied into the checklist **and every issue has a `MISS-*` ID linked in the
-   corresponding checklist item metadata**.
+5. Re-test manually and accept. Copy each issue's tracker key, reporter, severity, customer
+   impact, timestamps, reproduction, root cause and regression reference into the checklist;
+   delete the transient Issues file only when
+   `node .playbook/scripts/escaped-bug-workflow.mjs status <checklist> <issues> --require-retire`
+   passes (every issue verified and linked to its `MISS-*` ID).
 
 Every issue is recorded serially with `open --if-new`; `why_missed` is normally populated
 from the Verification Gap Analysis. `instruction-ignored` is legal only when the origin was

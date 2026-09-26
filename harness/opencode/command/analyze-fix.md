@@ -17,10 +17,11 @@ checklist. Only when no checklist exists for the feature, ask whether to create 
 
 ## Cases
 
-**A. Bug found before or during build.** For each issue add, after the Status Table,
-`### Issue: <title> (source: <file or key>)` with `Root cause:` and `Affected items:`. Reopen a
-broken item (status `planned`, a `Fix needed:` line) or add a new item in the template shape
-with the source in its metadata `trace`.
+Locate the checklist with `node .playbook/scripts/feature-context.mjs locate <feature folder>`.
+
+**A. Bug found before or during build.** `node .playbook/scripts/checklist-ingest.mjs bug
+<checklist> <Issues file>` adds one `### Issue:` block per issue; fill its `Root cause:` and
+`Affected items:`. Reopen a broken item or add a new one with `checklist-amend.mjs`.
 
 **B. Bug that escaped verification.** Everything in A, plus for each bug:
 
@@ -42,8 +43,8 @@ citing both sources; mark code-audit false positives
 `[FALSE POSITIVE — code-audit limitation, runtime is correct]` and drop them from the fix list;
 mark failures only the audit found `[GAP — not user-reported, found by audit]`.
 
-**D. User story.** Add `### Story: <name> (added <date>, source: <file or key>)` with a
-one-line summary and impact, then new items in the template shape.
+**D. User story.** `checklist-ingest.mjs story <checklist> <story file> --name="<story>"`; fill
+Summary, Impact and Items, adding the items with `checklist-amend.mjs add`.
 
 **E. Vague documentation gap.** Read the requirements, mockup, code, checklist and sibling
 documents; reply with a gap analysis (missing items, missing sibling content, suggested edits)
@@ -52,7 +53,6 @@ exact, known edit belongs to `/amend-checklist`.
 
 ## Finish
 
-Run `checklist-create.mjs sync`, `checklist-lint.mjs` and, when a requirements source is
-involved, `plan-coverage.mjs`; all must pass. Flag sibling documents that need review. Name the
-source files that become deletable after `/fix` and `/verify` reach ALL PASS; an Issues file is
-deletable only when every issue has a linked `MISS-*` ID. Never generate HTML for the checklist.
+`checklist-ingest.mjs validate <checklist> [<Issues file>]` and, when a requirements source is
+involved, `plan-coverage.mjs` must pass. Flag sibling documents that need review. An Issues file
+is deleted only when `escaped-bug-workflow.mjs status … --require-retire` passes.

@@ -9,14 +9,9 @@ live inline, in the one place both agents and humans already look:
 
 ## Where the verdicts land
 
-- Each checklist item gets a `**Verifier Result**:` line —
-  `PASS` / `FAIL` / `PASS (code-audit)` / `FAIL (code-audit)` / `DATA-GAP` / `BLOCKED` —
-  **with evidence** (what was executed, what was observed) and a one-line suggested fix
-  for FAILs.
-- The checklist's **Status Table** is updated to reflect reality.
-- The `## Verifier Run Log` gets an appended entry: environment-probe results,
-  deployment-step outcomes, chosen frontend environment (so verdicts have DB context),
-  and the overall verdict. History is preserved across runs — a clean audit trail.
+`verification-result-writer.mjs` gives each item a `**Verifier Result**` line with its
+outcome and evidence (a suggested fix on a FAIL), updates the metadata and the **Status
+Table**, and appends a `## Verifier Run Log` entry; history is preserved across runs.
 
 ## Miss telemetry at the gate
 
@@ -47,6 +42,9 @@ silently passes acceptance or release.
 | `FAIL (code-audit)` | required | blocked | blocked | fix |
 | `DATA-GAP` | no code fix | blocked until resolved/accepted | blocked by default | seed data and re-verify |
 | `BLOCKED` | blocked | blocked | blocked | resolve blocker or signed exception |
+
+`node .playbook/scripts/gate-check.mjs verification-results <checklist> [--handoff=<record>]`
+prints the route below from the latest verdicts and catches a results record that disagrees.
 
 | Result | Goes to |
 |---|---|

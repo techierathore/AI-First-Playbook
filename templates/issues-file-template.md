@@ -35,9 +35,8 @@ issue capture or changes a workflow verdict; leave the ID visibly pending and co
 ## Pulling from Jira
 
 `/create-issue-list PROJ-1234 PROJ-1235` (keys, URLs, or mixed with manual additions)
-reads credentials from a gitignored `jira-config.json`, calls the Jira REST API
-directly with `curl` (a deliberate design choice over an MCP server — leaner, no context
-pollution, full API access), parses the description into plain markdown, and structures
-each ticket into the Expected / Actual / Steps format above. The API token is never
-echoed or logged. It can also restructure an existing unstructured bug-list file into
-this format.
+runs `jira-issues.mjs`, which reads credentials from the environment references
+`JIRA_BASE_URL`, `JIRA_EMAIL` and `JIRA_API_TOKEN` or a protected untracked file named by
+`JIRA_CONFIG`, converts each description to Markdown and splits it into Expected / Actual
+/ Steps. `issues-file.mjs render` writes this format and `validate` checks it. The token
+is never printed. It can also restructure an existing unstructured bug-list file.

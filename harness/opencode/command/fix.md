@@ -29,17 +29,18 @@ legacy Gap Report is not a spec format: fold its failures into the checklist wit
 
 ## Self-test
 
-As in `/implement`: `profile-gates.mjs all`, `playbook-app-lifecycle.mjs start`, one focused
-probe per fixed item (confirm the data changed, not only the status code), `... stop`, then a
-`- **Self-test** (<date>): PASS|FAIL|SKIPPED — <evidence>` line. For each self-tested item, run
+As in `/implement`: `profile-gates.mjs all`, `playbook-app-lifecycle.mjs start`, one probe per
+fixed item in `smoke.json` run by `smoke-runner.mjs`, `... stop`, then
+`self-test-result-writer.mjs`. For each self-tested item, run
 `node .playbook/scripts/checklist-miss-coordinator.mjs close <checklist> <item-id>
 --verdict-after=deferred --fix-phase=fix`; only the independent Verifier closes a miss as `pass`.
 
 ## Checklist updates
 
-Set fixed items to `to-verify`, run `checklist-create.mjs sync <checklist>`, and add any new
-infrastructure or deployment rows per `.playbook/templates/deployment-steps-template.md`. Keep an
-Issues file until `/verify` confirms every item PASS.
+Add any new infrastructure or deployment rows with `checklist-infra.mjs` and
+`checklist-deploy.mjs`. Keep an Issues file until
+`node .playbook/scripts/escaped-bug-workflow.mjs status <checklist> <issues> --require-retire`
+passes.
 
 ## Done
 
