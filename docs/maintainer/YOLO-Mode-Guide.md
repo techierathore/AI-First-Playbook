@@ -146,7 +146,7 @@ Status Table and the Verifier Run Log, then commit yourself.
 
 | Component | OpenCode implementation |
 |---|---|
-| Policy | `harness/opencode/plugin/yolo-policy.mjs` |
+| Policy | `harness/opencode/playbook-plugin/yolo-policy.mjs` |
 | Permission bypass | `plugin/yolo.ts` → `permission.ask` sets `allow` / `deny`; `tool.execute.before` throws on git writes even when the agent's config already says `bash: allow` |
 | Limit detection | `event` → `session.error` → `verification/yolo/rate-limit.json` |
 | Launch flags used by the supervisor | `opencode run --auto --format json [--agent …] [--session …]` |
@@ -159,7 +159,7 @@ unchanged.
 
 - `opencode run --auto` approves everything not explicitly denied; the plugin additionally
   answers `permission.ask` so the TUI path works too, and denies git writes on both paths.
-- The plugin is discovered from `.opencode/plugin/` and must be listed **after**
+- The plugin is loaded from `.opencode/playbook-plugin/` (not auto-discovered) and must be listed **after**
   `spec-guardrails.ts` in `opencode.json` so a forbidden filename is blocked before YOLO
   could allow it. `scripts/playbook-validate.mjs` checks the order.
 

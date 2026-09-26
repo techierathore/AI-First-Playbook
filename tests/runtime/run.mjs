@@ -122,7 +122,7 @@ const cases = {
       assert(/Verdict: 1 FAILs/.test(s.out) && /INV-002: status 200/.test(s.out) && /Next: \/fix/.test(s.out), s.out);
     }],
     ["the installed guardrail lets the Verifier run its own scripts and nothing wider", async () => {
-      const { isApprovedVerifierScript } = await import(pathToFileURL(join(target, ".opencode/plugin/write-policy.mjs")).href);
+      const { isApprovedVerifierScript } = await import(pathToFileURL(join(target, ".opencode/playbook-plugin/write-policy.mjs")).href);
       for (const ok of ["node .playbook/scripts/verification-result-writer.mjs docs/a/C.md --results=verification/runs/r1/results.json --run-id=r1", "node .playbook/scripts/deployment-step-runner.mjs docs/a/C.md --run-id=r1 --approved", "node .playbook/scripts/playbook-probe.mjs"]) assert(isApprovedVerifierScript(ok), `blocked: ${ok}`);
       for (const bad of ["node .playbook/scripts/checklist-amend.mjs add docs/a/C.md", "node .playbook/scripts/verification-summary.mjs x; rm -rf src", "node .playbook/scripts/verification-summary.mjs ../../etc/passwd", "node src/app.js", "npm test", "node .playbook/scripts/playbook-probe.mjs > src/app.js"]) assert(!isApprovedVerifierScript(bad), `allowed: ${bad}`);
     }],

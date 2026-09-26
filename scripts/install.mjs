@@ -109,6 +109,10 @@ for (const [source, destination] of runtimeMappings) {
   supportedManagedPaths.add(source);
   supportedManagedPaths.add(destination);
 }
+// Before 0.1.x the plugins lived in OpenCode's auto-discovered .opencode/plugin/,
+// whose load order follows the file system; an old record may still name them,
+// and `install --force` removes them.
+for (const file of ["spec-guardrails.ts", "telemetry.ts", "write-policy.mjs", "yolo-policy.mjs", "yolo.ts"]) supportedManagedPaths.add(`.opencode/plugin/${file}`);
 supportedManagedPaths.add("AGENTS.md");
 supportedManagedPaths.add("opencode.json");
 supportedManagedPaths.add(".playbook/AGENTS.md");

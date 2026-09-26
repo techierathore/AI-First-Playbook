@@ -2,7 +2,7 @@
 // throwaway target outside the repository, and inspects what OpenCode resolves.
 //   node tests/package/run.mjs PB-01   packed install resolves 14 commands and 4 agents
 //   node tests/package/run.mjs PB-02   OpenCode is the only harness in the package and the install
-import { closeSync, openSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { closeSync, existsSync, openSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
@@ -75,7 +75,10 @@ if (id === "PB-01") {
       const problems = [];
       if (JSON.stringify(commands) !== JSON.stringify(expectedCommands)) problems.push(`resolved commands ${commands.join(",")}`);
       for (const agent of expectedAgents) if (!agents.includes(agent)) problems.push(`agent ${agent} did not resolve`);
-      if (!(plugins.indexOf("spec-guardrails.ts") !== -1 && plugins.indexOf("spec-guardrails.ts") < plugins.indexOf("yolo.ts"))) problems.push(`plugin order ${plugins.join(",")}`);
+      // Order must come from opencode.json: plugins in OpenCode's auto-discovered plugin/ folder
+      // load in file-system order (on CI: yolo before the guardrails).
+      if (plugins.join(",") !== "telemetry.ts,spec-guardrails.ts,yolo.ts") problems.push(`plugin order ${plugins.join(",")}`);
+      if (existsSync(join(target, ".opencode/plugin"))) problems.push("a Playbook plugin sits in the auto-discovered .opencode/plugin/ folder");
       if (!(config.instructions ?? []).some((p) => String(p).endsWith(".playbook/AGENTS.md"))) problems.push(`standing rules are not loaded (instructions ${(config.instructions ?? []).join(",")})`);
       assert(!problems.length, problems.join("; "));
     }],

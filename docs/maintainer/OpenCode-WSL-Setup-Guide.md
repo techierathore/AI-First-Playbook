@@ -1191,13 +1191,13 @@ opencode run "reply with the single word OK"
 
 # 6. The installed harness is intact
 test -f .opencode/command/verify.md
-test -f .opencode/plugin/spec-guardrails.ts
+test -f .opencode/playbook-plugin/spec-guardrails.ts
 test -f .playbook/environment-profile.yml
 ```
 
 Then one manual test: plant an obvious bug, run `/verify`, and confirm the Verifier marks it
 `FAIL` **inline in the checklist**. If it writes a separate report file instead, the plugin
-isn't loading — check `.opencode/plugin/` exists and rerun the Step 11 installer.
+isn't loading — check `.opencode/playbook-plugin/` exists (an old `.opencode/plugin/` is removed by the Step 11 installer with `--force`) and rerun the Step 11 installer.
 
 ---
 

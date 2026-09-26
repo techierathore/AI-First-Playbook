@@ -106,7 +106,7 @@ try {
   for (const path of [
     ".opencode/command/verify.md",
     ".opencode/agent/verifier.md",
-    ".opencode/plugin/spec-guardrails.ts",
+    ".opencode/playbook-plugin/spec-guardrails.ts",
     ".opencode/opencode.json",
     ".playbook/AGENTS.md",
     ".playbook/environment-profile.yml",
@@ -173,11 +173,11 @@ try {
 
   const migrationTarget = join(sandbox, "legacy-layout");
   mkdirSync(join(migrationTarget, ".playbook"), { recursive: true });
-  for (const [path, content] of [["AGENTS.md", "legacy\n"], ["opencode.json", "{}\n"], ["playbook/environment-profile.yml", "legacy\n"], ["scripts/playbook-miss.mjs", "legacy\n"], ["docs/Installation.md", "legacy\n"]]) {
+  for (const [path, content] of [["AGENTS.md", "legacy\n"], ["opencode.json", "{}\n"], ["playbook/environment-profile.yml", "legacy\n"], ["scripts/playbook-miss.mjs", "legacy\n"], ["docs/Installation.md", "legacy\n"], [".opencode/plugin/yolo.ts", "legacy\n"], [".opencode/plugin/spec-guardrails.ts", "legacy\n"]]) {
     mkdirSync(join(migrationTarget, path, ".."), { recursive: true });
     writeFileSync(join(migrationTarget, path), content);
   }
-  const legacyCreated = ["AGENTS.md", "opencode.json", "playbook/environment-profile.yml", "scripts/playbook-miss.mjs", "docs/Installation.md"];
+  const legacyCreated = ["AGENTS.md", "opencode.json", "playbook/environment-profile.yml", "scripts/playbook-miss.mjs", "docs/Installation.md", ".opencode/plugin/yolo.ts", ".opencode/plugin/spec-guardrails.ts"];
   writeFileSync(join(migrationTarget, ".playbook/installation.json"), `${JSON.stringify({ package: "@techierathore/ai-first-playbook", version: "0.0.1", created: legacyCreated })}\n`);
   run("scripts/install.mjs", ["install", `--target=${migrationTarget}`]);
   for (const path of legacyCreated) assert(existsSync(join(migrationTarget, path)), `non-forced upgrade deleted legacy asset ${path}`);
@@ -186,6 +186,8 @@ try {
   run("scripts/install.mjs", ["install", `--target=${migrationTarget}`, "--force"]);
   for (const path of legacyCreated) assert(!existsSync(join(migrationTarget, path)), `forced upgrade left legacy visible asset ${path}`);
   assert(existsSync(join(migrationTarget, ".opencode/opencode.json")), "forced upgrade did not install the hidden OpenCode config");
+  // Plugins left in OpenCode's auto-discovered plugin/ folder would load again, in file-system order.
+  assert(!existsSync(join(migrationTarget, ".opencode/plugin")), "forced upgrade left the auto-discovered .opencode/plugin folder");
   const migratedMarker = JSON.parse(readFileSync(join(migrationTarget, ".playbook/installation.json"), "utf8"));
   for (const path of legacyCreated) assert(!migratedMarker.created.includes(path), `forced upgrade retained stale ownership for ${path}`);
 

@@ -12,7 +12,7 @@
   "bin": {"ai-first-playbook": "scripts/install.mjs"},
   "files": [
     "harness/opencode/agent",
-    "harness/opencode/plugin",
+    "harness/opencode/playbook-plugin",
     "harness/opencode/templates",
     "harness/opencode/opencode.json",
     "harness/opencode/command/add-doc.md",

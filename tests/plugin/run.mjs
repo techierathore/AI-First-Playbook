@@ -1,6 +1,6 @@
 // Offline plugin probes. Builds a disposable Node project outside the
 // repository, installs the Playbook into it, loads the INSTALLED OpenCode
-// plugins from its .opencode/plugin/ and drives their hooks with inputs shaped
+// plugins from its .opencode/playbook-plugin/ and drives their hooks with inputs shaped
 // exactly as OpenCode 1.18 sends them (tool.execute.before has no `agent`).
 //   node tests/plugin/run.mjs PB-04   Verifier write boundary
 //   node tests/plugin/run.mjs PB-05   git history writes denied in normal and YOLO modes
@@ -37,7 +37,7 @@ const target = makeTarget();
 process.on("exit", () => rmSync(target, { recursive: true, force: true }));
 process.chdir(target);
 const client = { app: { log: async () => {} }, tui: {} };
-const load = async (name) => (await import(pathToFileURL(join(target, ".opencode/plugin", name)).href)).default({ client, directory: target, worktree: target });
+const load = async (name) => (await import(pathToFileURL(join(target, ".opencode/playbook-plugin", name)).href)).default({ client, directory: target, worktree: target });
 
 async function blocked(hooks, tool, sessionID, args) {
   try {

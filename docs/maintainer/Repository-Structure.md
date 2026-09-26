@@ -50,7 +50,7 @@ bmad-method`, for the same reason.
 | `.opencode/opencode.json` | Hidden project-level framework config | OpenCode merges it from the `.opencode` configuration directory. It loads the hidden standing rules and environment profile. |
 | `.opencode/command/*.md` | Slash commands | OpenCode discovers `/feature-plan`, `/implement`, `/verify`, `/fix`, and supporting commands. |
 | `.opencode/agent/*.md` | Specialized agents | OpenCode discovers the analyst, orchestrator, builder, and verifier. |
-| `.opencode/plugin/*` | Mechanical guardrails and optional telemetry/YOLO behavior | OpenCode loads plugins from its project extension directory. |
+| `.opencode/playbook-plugin/*` | Mechanical guardrails and optional telemetry/YOLO behavior | Registered in order in `opencode.json`; kept out of OpenCode's auto-discovered `plugin/` folder, whose load order follows the file system. |
 | `.opencode/templates/doc-shell.html` | HTML rendering shell | Documentation commands read it explicitly when rendering project documents. |
 | `.playbook/AGENTS.md` | Shared framework rules | `.opencode/opencode.json` includes it as standing instructions. |
 | `.playbook/environment-profile.yml` | Project topology and command contract | Every build/verify command reads it before running tools. This is the file the operator customizes. |

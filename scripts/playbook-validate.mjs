@@ -116,10 +116,10 @@ for (const name of readdirSync(join(root, "docs"))) {
   if (/^[A-Z0-9_-]+\.md$/.test(name)) errors.push(`docs/${name}: use Pascal/kebab-case, not all caps`);
 }
 const config = JSON.parse(read("opencode.json"));
-if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/plugin/spec-guardrails.ts")) errors.push("plugin is not explicitly registered");
-if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/plugin/yolo.ts")) errors.push("yolo plugin is not explicitly registered in opencode.json");
-if (config.plugin?.indexOf("./.opencode/plugin/spec-guardrails.ts") > config.plugin?.indexOf("./.opencode/plugin/yolo.ts")) errors.push("opencode.json: spec-guardrails.ts must be registered before yolo.ts (forbidden writes are blocked before YOLO can allow them)");
-for (const f of ["harness/opencode/plugin/yolo-policy.mjs", "harness/opencode/plugin/yolo.ts", "scripts/playbook-yolo.mjs", "docs/maintainer/YOLO-Mode-Guide.md"]) {
+if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/playbook-plugin/spec-guardrails.ts")) errors.push("plugin is not explicitly registered");
+if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/playbook-plugin/yolo.ts")) errors.push("yolo plugin is not explicitly registered in opencode.json");
+if (config.plugin?.indexOf("./.opencode/playbook-plugin/spec-guardrails.ts") > config.plugin?.indexOf("./.opencode/playbook-plugin/yolo.ts")) errors.push("opencode.json: spec-guardrails.ts must be registered before yolo.ts (forbidden writes are blocked before YOLO can allow them)");
+for (const f of ["harness/opencode/playbook-plugin/yolo-policy.mjs", "harness/opencode/playbook-plugin/yolo.ts", "scripts/playbook-yolo.mjs", "docs/maintainer/YOLO-Mode-Guide.md"]) {
   if (!existsSync(join(root, f))) errors.push(`missing ${f}`);
 }
 if (!read("AGENTS.md").includes("## YOLO mode")) errors.push("AGENTS.md: missing the '## YOLO mode' standing rules");

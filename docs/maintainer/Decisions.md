@@ -2,7 +2,7 @@
 
 ## 2026-08-20 — Adapter boundary and per-phase model routing
 
-**Status:** implemented and verified (same day). `playbook/model-tiers.yml` + `scripts/apply-model-tiers.mjs` stamp models in place and pass `--check`; `harness/opencode/plugin/telemetry.ts` + `scripts/playbook-telemetry.mjs` produce per-phase records; guardrail tests and repository validation are green; harness and project-local OpenCode plugin copies are in sync. Operator guides added: `docs/Model-Routing-Guide.md`, `docs/Telemetry-Guide.md`.
+**Status:** implemented and verified (same day). `playbook/model-tiers.yml` + `scripts/apply-model-tiers.mjs` stamp models in place and pass `--check`; `harness/opencode/playbook-plugin/telemetry.ts` + `scripts/playbook-telemetry.mjs` produce per-phase records; guardrail tests and repository validation are green; harness and project-local OpenCode plugin copies are in sync. Operator guides added: `docs/Model-Routing-Guide.md`, `docs/Telemetry-Guide.md`.
 **Inputs:** `Capability-Matrix.md`, `Coupling-Points.md`, `Adapter-Design.md`,
 `Telemetry-Hooks.md` (all this date)
 
@@ -78,9 +78,9 @@ Both OpenCode items were tested the same day:
 Implemented in this pass: `playbook/model-tiers.yml` + `scripts/apply-model-tiers.mjs`
 (all 14 commands + 5 agents stamped for OpenCode); `builder` subagent
 (`harness/opencode/agent/builder.md`, wired into `/implement` and `/fix` wave instructions);
-shared guardrail policy (`harness/opencode/plugin/write-policy.mjs`) consumed by the OpenCode
+shared guardrail policy (`harness/opencode/playbook-plugin/write-policy.mjs`) consumed by the OpenCode
 plugin; telemetry plugin
-(`harness/opencode/plugin/telemetry.ts`, opt-in via `PLAYBOOK_TELEMETRY=1`) +
+(`harness/opencode/playbook-plugin/telemetry.ts`, opt-in via `PLAYBOOK_TELEMETRY=1`) +
 `scripts/playbook-telemetry.mjs`; `scripts/provision-wsl.sh`; fixes for Coupling items 4b
 (instructions path), 9 (env syntax), 10 (duplicate plugin dir removed).
 
@@ -196,7 +196,7 @@ waves, never by handing work back.
 
 ### Consequences
 
-- New: `harness/opencode/plugin/{yolo.ts,yolo-policy.mjs}`,
+- New: `harness/opencode/playbook-plugin/{yolo.ts,yolo-policy.mjs}`,
   `scripts/playbook-yolo.mjs`, `docs/YOLO-Mode-Guide.md`; `opencode.json` registers `yolo.ts`
   after `spec-guardrails.ts` (order checked by the validator); `test-guardrails.mjs` covers git-write
   denial, allow-list, limit parsing and sentinels.
