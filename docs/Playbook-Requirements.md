@@ -4,8 +4,8 @@
 |---|---|
 | Purpose | The list of things the Playbook must do, each with the one check that proves it. `node scripts/playbook-grade.mjs docs/Playbook-Requirements.md` walks every line. |
 | Audience | Framework maintainers and agents. The owner approves the lines; nobody has to re-read them to know the state, because the grader prints it. Agent document; not rendered to HTML. |
-| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision. |
-| Headline | **6 of 20 proved by a script**, 2 more by a fixture: 8 of 20 graded. Every review or ungraded line names what is missing. |
+| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3, one per Verifier rule that became a script. |
+| Headline | **9 of 24 proved by a script**, 3 more by a fixture: 12 of 24 graded. Every review or ungraded line names what is missing. |
 | Sources | `docs/Playbook-Reset-Plan.md` §6 and §8; the miss stream `verification/telemetry/misses.ndjson`; owner decisions of 2026-09-26 (§4). |
 
 ---
@@ -29,6 +29,7 @@
 | Packed install | `npm pack` of this checkout, installed with `npm exec` into a throwaway folder outside the repository | PB-01, PB-02 |
 | Grader fixtures | `tests/grader/cases/`: one requirement file with a case per grader defect | PB-09 to PB-12 |
 | Disposable project | a small Node project generated in the temp folder with the Playbook installed; the installed plugins are loaded and their hooks driven offline | PB-04, PB-05 |
+| Verifier project | a disposable project with a tiny Node HTTP app and a real profile; `tests/verifier/fixtures/` holds the case-study checklist | PB-21 to PB-24 |
 | Scripted model | `tests/live/mock-model.mjs`, an OpenAI-compatible server on 127.0.0.1 that OpenCode uses as its model; it plants tool calls, so a real `opencode run` exercises the live hooks | PB-04, PB-19 |
 
 ## 3. The four questions for a miss
@@ -64,6 +65,10 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-18 | validates releases on the declared Node and npm versions and runs every graded check. | review: no workflow runs the grader yet; Session 9 adds it. | Reset Plan §6 M30, M31 |
 | PB-19 | enforces the Verifier product-write block and the git-history denial inside a live `opencode run`, in normal and YOLO modes. | fixture: `node tests/live/run.mjs PB-19` drives real OpenCode with the scripted model; transcripts in `tests/live/transcripts/`. | Session 2 (M06, M10, M11) |
 | PB-20 | keeps the PB-19 guardrails when a real model, not a scripted one, drives the planted probes. | ungraded: needs a live model; runbook `docs/runbooks/live-model-probes.md`. | Session 2 owner decision |
+| PB-21 | resolves every verification environment fact from the profile and reports a placeholder, missing tool or unreachable URL by field name, never a guessed value. | script: `node tests/verifier/run.mjs PB-21` | Reset Plan §4 Verifier blocks 2, 10, 24 |
+| PB-22 | starts, polls, records and stops only the application processes a run started, from the profile's commands. | script: `node tests/verifier/run.mjs PB-22` | Reset Plan §4 Verifier blocks 25, 37 |
+| PB-23 | runs the build and test gates from the profile and reports a failing gate as FAIL, a missing command as BLOCKED. | script: `node tests/verifier/run.mjs PB-23` | Reset Plan §4 Verifier block 31; old Step 5.3 |
+| PB-24 | loads a Verifier adapter only for the item kinds present in the checklist. | fixture: `node tests/verifier/run.mjs PB-24` over the case-study checklist (UI, API, DB, synthetic desktop). | Reset Plan §3, §4 Verifier blocks 8, 13, 29, 33 |
 
 ## 5. Owner decisions
 

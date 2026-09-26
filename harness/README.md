@@ -120,10 +120,10 @@ these before your first run:
 
 | Assumption | Where it shows up | Change it to |
 |---|---|---|
-| Agent runs in a Linux container; apps run on the developer's Windows host | Verifier Rule 1, `host.docker.internal` probes | Your topology — if agent and apps share a host, `localhost` replaces `host.docker.internal` throughout |
+| Agent runs in a Linux container; apps run on the developer's Windows host | Command prompts only; the Verifier reads topology from the profile (`playbook-probe.mjs`) | Your topology — if agent and apps share a host, `localhost` replaces `host.docker.internal` throughout |
 | .NET backend + React frontend | `dotnet build`, `npm run start:local`, `verification/<feature>Runner/` consoles | Your build, run, and test commands |
 | Raw SQL over `sqlcmd`; **no** Entity Framework | Deployment Steps rules in `/implement`, `/fix` | Your migration tool |
-| Playwright MCP on port 8931 | Verifier Rules 2 and probes | Your port, or drop the probe |
+| Playwright MCP on port 8931 | `opencode.json` MCP entry; the Verifier uses the profile's `browser.endpoint` | Your port, or drop the probe |
 | Config read from `appsettings.Development.json` | Verifier Steps 1 and 3 | Your config file |
 | Jira via REST v3 + a `jira-config.json` at the shared root | `/create-issue-list` | Your tracker, or use the command's plain-text input mode |
 

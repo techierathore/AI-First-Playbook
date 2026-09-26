@@ -38,7 +38,7 @@ If the user (or the previous `/verify` run) hands you a path containing
 `Gap-Report`, `gap-report`, `GapReport`, `gap_report`, or any similar
 "separate report" filename, that file should NOT exist under the current
 spec — the Verifier is required to annotate inline in the checklist
-(Rule 6 of the Verifier agent prompt).
+(the Verifier writes results only in the checklist).
 
 When you detect such a path:
 

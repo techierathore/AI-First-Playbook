@@ -26,7 +26,7 @@ export const FORBIDDEN_PATH_PATTERNS = [
     pattern: /Gap[-_ ]?Report.*\.md$/i,
     reason:
       "Gap-Report files are forbidden by the spec. The Verifier writes findings INLINE as `**Verifier Result**` annotations on each item in the implementation checklist itself, plus a new entry in the `## Verifier Run Log` section. There is no separate gap report. " +
-      "If you (the agent) think you need to produce a report, you have misread the spec — re-read Rule 6 in your prompt.",
+      "If you (the agent) think you need to produce a report, you have misread the spec — the checklist is the only report (Verifier prompt, Results).",
   },
   {
     pattern: /Verification[-_ ]?Report.*\.md$/i,
