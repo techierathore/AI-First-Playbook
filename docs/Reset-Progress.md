@@ -11,7 +11,7 @@ first session not marked Done. The headline is the grader's output after that se
 | 3 | Verifier core plus adapters | Done 2026-09-26 | 12 of 24 graded; pass 12, fail 0, ungraded 12 |
 | 4 | Checklist and handoff schemas | Done 2026-09-26 | 15 of 24 graded; pass 15, fail 0, ungraded 9 |
 | 5 | Plan, build, fix, analyze commands | Done 2026-09-26 | 21 of 28 graded; pass 21, fail 0, ungraded 7 |
-| 6 | Document tools | Not started | — |
+| 6 | Document tools | Done 2026-09-26 | 25 of 32 graded; pass 25, fail 0, ungraded 7 |
 | 7 | Reader navigation | Not started | — |
 | 8 | Historical proof and retention | Not started | — |
 | 9 | Grading campaign and CI | Not started | — |
@@ -39,6 +39,10 @@ first session not marked Done. The headline is the grader's output after that se
 | 5 | `AGENTS.md` | 442 | 409 | Completion paragraph shortened to the `phase-complete.mjs` rule (PB-26). |
 | 5 | `phases/03-build.md` | 535 | 423 | Completion contract and YOLO repetition shortened to pointers. |
 | 5 | `templates/deployment-steps-template.md` | 303 | 259 | The credential-bearing `sqlcmd` example deleted (plan §4); commands now come from the profile. |
+| 6 | `harness/opencode/command/add-doc.md` | 4,707 | 438 | Both document structures moved to `document-schemas.json` (scaffold + `doc-check.mjs`, readable in `docs/Playbook-Document-Schemas.md`); HTML conversion to `render-docs.mjs`; stack-specific "no excuses" text, progress chat and the large-write workaround deleted. |
+| 6 | `harness/opencode/command/refresh-doc.md` | 2,496 | 276 | Drift inventory and link checks became `doc-drift.mjs` and `reference-lint.mjs`; the repeated flow-guide procedure points to `/add-doc`. |
+| 6 | `harness/opencode/command/upgrade-docs.md` | 3,528 | 366 | Backup became `doc-upgrade.mjs backup`; per-type conversion now targets the schemas; progress chat, shell-copy workaround and legacy row shapes deleted. |
+| 6 | `harness/opencode/command/generate-html.md` | 1,002 | 88 | The whole mechanical conversion became `render-docs.mjs` (escaping, agent-doc exclusion, overwrite rule, read-back check). |
 | 3 | `harness/opencode/command/verify.md` | 458 | 115 | Report and telemetry mechanics removed (the Verifier owns them); example paths removed. |
 
 ## Decisions taken
@@ -69,4 +73,7 @@ Decisions the run took alone, each the smaller reversible choice.
 | 5 | Checklist items carry an optional metadata `trace` array of requirement IDs; `plan-coverage.mjs` reads it. | Coverage needs a machine link from requirement to item; the metadata key order stays as the schema lists, with `trace` after it. | Remove `trace`; coverage falls back to IDs in item text. |
 | 5 | The escaped bug is the greenfield training defect (duplicate import reports success, writes nothing), answered `spec=yes,playbook=yes,check=yes` → `weak-check`; the failed item set is INV-002 and INV-003 from the verification-results example. | Both come from the case study; the miss stream's five records are historical and all closed. | Swap the fixtures. |
 | 5 | `checklist-item-template.md` and `deployment-steps-template.md` now install to `.playbook/templates/`. | The shrunk commands point at them instead of repeating them. | Remove the two runtime mappings. |
+| 6 | Legacy backups go to `<folder>/_legacy/<run-id>/<name>.md` (written by `doc-upgrade.mjs`) instead of the old `<name>-OLD-<date>.md` beside the file. | One folder per upgrade run keeps the documents folder clean and lets the report pair backup and current file. | Change `doc-upgrade.mjs`. |
+| 6 | `render-docs.mjs` HTML-escapes the Markdown into the shell's hidden source block; the old command pasted raw text. | Raw text lets a document containing `</textarea>` break or inject into the page (fixture PB-29). | — |
+| 6 | Six human document kinds get schemas (flow guide, business reference, DB changes, architecture, verification guide, Power BI mapping), with budgets set by the author from the TechieFlow shape and the plan's size classes. | Plan §5 gave budgets only for templates and checklist items; these are labelled as the maintainer's first figures in the JSON. | Edit `playbook/document-schemas.json` and regenerate the page. |
 | 1 | Local checks ran on Node 22.22.2 with npm 10.9.7 (the container's npm); npm 11.20.0 is installed for the Session 9 campaign. | The container ships npm 10; every existing check passes on it. | — |
