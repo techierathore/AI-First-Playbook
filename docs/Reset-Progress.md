@@ -15,6 +15,7 @@ first session not marked Done. The headline is the grader's output after that se
 | 7 | Reader navigation | Done 2026-09-26 | 27 of 32 graded; pass 27, fail 0, ungraded 5 |
 | 8 | Historical proof and retention | Done 2026-09-26 | 29 of 32 graded; pass 29, fail 0, ungraded 3 |
 | 9 | Grading campaign and CI | Done 2026-09-26 | 31 of 34 graded; pass 31, fail 0, ungraded 3 |
+| 10 | Follow-up: remaining plan §4 scripts; five commands shrunk | Done 2026-09-26 | 41 of 44 graded; pass 41, fail 0, ungraded 3 |
 
 ## Session 9 campaign
 
@@ -36,6 +37,32 @@ first session not marked Done. The headline is the grader's output after that se
   push with Node 22.14.0, npm 11.5.1 and the supported OpenCode, and uploads `grader-output/` as an
   artefact; `release.yml` runs `test:install` and the grader before publishing. No Actions run
   could be observed from this session.
+
+## Session 10 follow-up
+
+Asked by the owner after Session 9 ("do items 2 and 3 as a follow-up session"): build the plan §4
+scripts that were still prose, and shrink the five commands left long.
+
+- 20 runtime scripts plus a shared `checklist-edit-lib.mjs`, all installed under
+  `.playbook/scripts/` and shipped in the package: `deployment-step-runner`,
+  `verification-result-writer`, `verification-summary`, `secret-safe-config-resolver`,
+  `smoke-runner`, `self-test-result-writer`, `checklist-infra`, `checklist-deploy`,
+  `checklist-amend`, `checklist-archive`, `issues-file`, `jira-issues`, `feature-context`,
+  `checklist-ingest`, `escaped-bug-workflow`, `incident-workflow`, `gate-check`,
+  `dotnet-restore-diagnostics`, `windows-app-bridge-client`; `scripts/context-sync.mjs` stays in
+  the repository (`/update-context` is not installed).
+- `tests/runtime/run.mjs` runs them from an installed copy (fake apps, a fake Jira and a fake
+  desktop bridge on 127.0.0.1): PB-35 to PB-44, 30 cases, also passing on Node 22.14.0.
+- Three defects found and fixed, recorded through the CLI and closed `pass` (all `weak-check`):
+  `MISS-20260926-04` the Verifier's own scripts were blocked by the live write policy (Session 3's
+  check tested only the block half), `-05` syncing the Status Table deleted items placed directly
+  under the table, `-06` `PASS (code-audit)` was read as a plain `PASS`. Two more were caught by
+  the new fixtures before shipping (incident actions split at the wrong `;`; the summary routed an
+  unverified checklist to `/fix`).
+- Checks after the session: `npm run validate`, `test:guardrails`, `test:misses`, `test:install`,
+  `instruction-budget.mjs` (verify 1,069/1,200, build 957/1,200, fix 900/1,200), `reader-path.mjs`,
+  `template-lint.mjs`, `context-sync.mjs diff` all pass; grader run `reset-s10`: **41 of 44
+  graded; pass 41, fail 0, ungraded 3; 16 of 44 proved by a script.**
 
 ## Word counts (prose removed or moved)
 
@@ -69,6 +96,18 @@ first session not marked Done. The headline is the grader's output after that se
 | 7 | `docs/` root | 31 files | 7 files | 3 reader documents plus 4 reset control files; 4 examples, 16 maintainer documents (3 cross-framework), 13 archived originals and the 2 review files moved; nothing deleted. |
 | 8 | `verification/` | 77 tracked campaign and supervisor files | 0 | V01-V03 and the YOLO supervisor state moved to `docs/archive/opencode-only-2026-09-02/` (marked HISTORICAL, SHA-256 manifest, tree `44168dbe…`); `verification/` now holds only the telemetry streams. |
 | 3 | `harness/opencode/command/verify.md` | 458 | 115 | Report and telemetry mechanics removed (the Verifier owns them); example paths removed. |
+| 10 | `harness/opencode/command/create-issue-list.md` | 1,310 | 155 | Jira fetch, ADF parsing, credentials and output shape became `jira-issues.mjs` and `issues-file.mjs` (PB-42); the `jira-config.json` + `curl` procedure, progress chat and the long output example deleted. |
+| 10 | `harness/opencode/command/archive-checklist.md` | 1,888 | 127 | Eligibility, the size threshold, verbatim move, history rows, restore and run-log entries became `checklist-archive.mjs` (PB-39); the lossy one-paragraph history format replaced by a verbatim history file. |
+| 10 | `harness/opencode/command/amend-checklist.md` | 951 | 195 | Stable IDs, PASS protection, field edits, removal and lint became `checklist-amend.mjs`; infrastructure and deployment rows `checklist-infra.mjs` and `checklist-deploy.mjs` (PB-38, PB-39). |
+| 10 | `harness/opencode/command/log-miss.md` | 369 | 135 | The closed vocabularies (the CLI refuses a wrong value and lists the right ones), the harness default and the item link (`checklist-miss-coordinator.mjs`) left the prose. |
+| 10 | `harness/opencode/command/update-context.md` | 815 | 102 | The command block and path checks became `context-sync.mjs` (PB-43); the `/app` path list and section-by-section procedure deleted. |
+| 10 | `harness/opencode/agent/verifier.md` | 484 | 463 | Result lines, Status Table, Run Log and final message now written by `verification-result-writer.mjs` and `verification-summary.mjs`; deployment rows run by `deployment-step-runner.mjs` (PB-35). |
+| 10 | `harness/opencode/command/implement.md` | 385 | 355 | Self-test probes and result lines moved to `smoke-runner.mjs` and `self-test-result-writer.mjs`; infrastructure and deployment shapes to `checklist-infra.mjs` and `checklist-deploy.mjs` (PB-37, PB-38). |
+| 10 | `harness/opencode/command/fix.md` | 314 | 297 | Same scripts; the Issues-file deletion rule became `escaped-bug-workflow.mjs --require-retire` (PB-40). |
+| 10 | `harness/opencode/command/analyze-fix.md` | 466 | 430 | Issue and story blocks, their validation and the deletion rule became `checklist-ingest.mjs` and `escaped-bug-workflow.mjs`; locating the checklist `feature-context.mjs` (PB-40). |
+| 10 | `phases/02`, `06`, `09`, `10` | 1,478 | 1,465 | Coverage, verifiability and routing checks point at `gate-check.mjs` (PB-41); incident closure at `incident-workflow.mjs`; Issues-file deletion at `escaped-bug-workflow.mjs`. |
+| 10 | `Context-Prompt.md` | 80 | 382 | Grew: the generated command block (one row per command) that `context-sync.mjs` keeps current. |
+| 10 | `docs/Operating-Guide.md` | 2,520 | 2,677 | Grew: the runtime-script table lists the new scripts. |
 
 ## Decisions taken
 
@@ -113,4 +152,9 @@ Decisions the run took alone, each the smaller reversible choice.
 | 9 | The "live OpenCode part" is PB-34, ungraded, with `docs/runbooks/live-campaign.md`; the packed-install campaign that needs no model is PB-33, graded. | Owner decision: the live part is an ungraded line with a runbook. | — |
 | 9 | Misses found or fixed during the reset were recorded in the repository's own miss stream with `--protocol` answers; two closed `pass` on the grader's independent checks, one left open for the owner. | "Updated miss records" is a Session 9 output; the grader is the independent check for framework code. | Append `miss-fix` records; never edit the stream. |
 | 1 | Local checks ran on Node 22.22.2 with npm 10.9.7 (the container's npm); npm 11.20.0 is installed for the Session 9 campaign. | The container ships npm 10; every existing check passes on it. | — |
-| all | Every `git push` to `claude/kind-goldberg-0rvdkw` was refused with HTTP 403 ("Claude doesn't have GitHub access to techierathore/AI-First-Playbook"); all commits are local on that branch. | The GitHub App lacks write access for this repository; not something the run can change. | Reconnect GitHub or install the app, then push the branch. |
+| all | Pushes to `claude/kind-goldberg-0rvdkw` were refused with HTTP 403 until GitHub access was restored after Session 9; the branch was then pushed. | The GitHub App lacked write access for a while; not something the run could change. | — |
+| 10 | The Verifier may run 13 named runtime scripts — the five from Session 3 it was already told to run and eight new ones (`isApprovedVerifierScript` in `write-policy.mjs`: plain `node .playbook/scripts/<name>` with safe arguments, no shell operators, no `..`). `npm test` stays blocked; PB-04 is still the owner's decision. | The Verifier's instructions named scripts the live policy blocked (`MISS-20260926-04`); a fixed allowlist of the Playbook's own scripts is narrower than a test-command allowance. | Remove the set and the check in `evaluateToolCall`. |
+| 10 | Jira credentials come from the environment references `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, or a file named by `JIRA_CONFIG` that must be mode 0600 and untracked; the old `jira-config.json` + `curl` flow is gone. | Two of the four allowed secret channels; `curl -u email:token` put the token in a command argument. | Edit `credentials()` in `jira-issues.mjs`. |
+| 10 | Archived items move verbatim to `<checklist>-Verified-History.md`; the checklist keeps one row per ID. The old command's summarised history entries are not produced. | A verbatim move loses nothing and makes restore exact; the old "lite" restore lost Verify and Logging fields. | Change `checklist-archive.mjs`. |
+| 10 | Incident actions are separated by a vertical bar in the incident record. | The template gave no separator; `;` already separates owner and due date inside one action. | Change the split in `incident-workflow.mjs`. |
+| 10 | The Windows desktop bridge is a client contract only (`WINAPP_BRIDGE` names its address); no bridge is shipped, and its absence is exit 3, never `BLOCKED`. | The plan names the client; a Windows service cannot be built or tested here. | Ship a bridge and point the variable at it. |
