@@ -2,7 +2,8 @@
  * telemetry.ts — per-phase usage, time and subagent capture for the AI-First Playbook.
  *
  * Opt-in: set PLAYBOOK_TELEMETRY=1 before starting OpenCode; without it this
- * plugin registers nothing. When enabled it appends NDJSON events to
+ * plugin registers only the guard signal (../guard-signal.mjs). When enabled it
+ * appends NDJSON events to
  * verification/telemetry/events.ndjson in the project directory:
  *
  *   {"schema":2,"kind":"phase-start","phaseExecutionID":"...","command":"verify","sessionID":"...","ts":"..."}
