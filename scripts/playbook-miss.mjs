@@ -5,7 +5,7 @@
  * A miss is the durable record of a defect the process let escape: what was
  * missed, which practice missed it, who found it, and (via the joiner) what
  * fixing it cost. Field and lifecycle contract:
- * docs/Telemetry-Guide.md §7.
+ * docs/maintainer/Telemetry-Guide.md §7.
  *
  * Records append to verification/telemetry/misses.ndjson — committed, never
  * rotated, unlike the transient events.ndjson beside it.
@@ -15,7 +15,7 @@
  * break a phase. Write commands are opt-in under the same
  * PLAYBOOK_TELEMETRY=1 flag as the plugin; read commands (list, next-id)
  * always work. An explicit /log-miss invocation may prefix the flag for its
- * own call — running the command IS the opt-in (docs/Decisions.md 2026-08-28).
+ * own call — running the command IS the opt-in (docs/maintainer/Decisions.md 2026-08-28).
  *
  * Usage:
  *   PLAYBOOK_TELEMETRY=1 node scripts/playbook-miss.mjs open \
@@ -24,6 +24,7 @@
  *       [--feature=CostReport] [--origin-phase=build] [--origin-agent=builder] \
  *       [--origin-run-id=<session id>] [--found-by=verifier] \
  *       [--found-phase=verify] [--found-phase-gate=FAIL] [--actor=a3f1] \
+ *       [--protocol=spec=yes,playbook=yes,check=yes]   # the four questions in order; the outcome is derived
  *       [--if-new]            # collapse check: same item_id + miss_class still live → write nothing
  *       [--fixed [--verdict-after=pass] [--fix-run-id=<session id>] [--fix-phase=fix]]
  *
@@ -83,7 +84,7 @@ try {
   if (!command || command === "help" || flags.help) {
     console.log(`playbook-miss.mjs — the miss-stream CLI (open / close / amend / next-id / list)
 stream: ${missesPath} (committed, append-only, never rotated)
-fields and lifecycle: docs/Telemetry-Guide.md §7
+fields and lifecycle: docs/maintainer/Telemetry-Guide.md §7
 writes are opt-in: PLAYBOOK_TELEMETRY=1`);
   } else if (command === "next-id") {
     console.log(nextMissId(readMisses(missesPath).records));

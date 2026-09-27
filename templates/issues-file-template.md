@@ -1,4 +1,5 @@
 # Issues File Template (transient input)
+<!-- template-schema: {"produces":"docs/<feature>/<Name>-Issues.md","required":["Title","lifecycle","repeated issues","ingestion"],"optional":["Jira metadata","attachments","labels"],"budget":{"small":[180,280],"medium":[450,700],"large":[900,1400]},"rows":"One defect; Expected, Actual, Steps, Severity; ordered reproduction."} -->
 
 Created by `/create-issue-list` (from Jira) or written by hand; consumed by
 `/analyze-fix`, which folds every issue into the existing implementation checklist —
@@ -34,9 +35,8 @@ issue capture or changes a workflow verdict; leave the ID visibly pending and co
 ## Pulling from Jira
 
 `/create-issue-list PROJ-1234 PROJ-1235` (keys, URLs, or mixed with manual additions)
-reads credentials from a gitignored `jira-config.json`, calls the Jira REST API
-directly with `curl` (a deliberate design choice over an MCP server — leaner, no context
-pollution, full API access), parses the description into plain markdown, and structures
-each ticket into the Expected / Actual / Steps format above. The API token is never
-echoed or logged. It can also restructure an existing unstructured bug-list file into
-this format.
+runs `jira-issues.mjs`, which reads credentials from the environment references
+`JIRA_BASE_URL`, `JIRA_EMAIL` and `JIRA_API_TOKEN` or a protected untracked file named by
+`JIRA_CONFIG`, converts each description to Markdown and splits it into Expected / Actual
+/ Steps. `issues-file.mjs render` writes this format and `validate` checks it. The token
+is never printed. It can also restructure an existing unstructured bug-list file.

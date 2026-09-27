@@ -1,4 +1,5 @@
 # /fix
+<!-- template-schema: {"produces":"/fix run","required":["Contract","usage","FAIL input","waves","self-test","update","handoff"],"optional":["Issues and YOLO branches"],"budget":{"small":[260,380],"medium":[350,500],"large":[450,650]},"rows":"One failed requirement per work row; never mark own work PASS."} -->
 
 **Persona:** Orchestrator · **Cost:** 🟡–🔴 · **Chat:** same or fresh
 

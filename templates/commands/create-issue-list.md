@@ -1,4 +1,5 @@
 # /create-issue-list
+<!-- template-schema: {"produces":"/create-issue-list issues file","required":["Contract","usage","sources","protected credentials","extraction","output","lifecycle"],"optional":["Manual items","attachments"],"budget":{"small":[150,220],"medium":[180,260],"large":[220,320]},"rows":"One ticket; preserve source ID; mark missing facts."} -->
 
 **Persona:** Analyst · **Cost:** 🟡
 
@@ -18,11 +19,11 @@ Accepts issue keys, full Jira URLs, or a mix with manual additions.
 
 ## Key behaviors
 
-- Reads credentials from a **gitignored** `jira-config.json` (baseUrl, email, API
-  token). Direct REST calls via `curl` — a deliberate choice over an MCP server:
-  leaner, no context pollution, full API access. The token is never echoed or logged.
-- Pulls summary, description, priority, status, assignee, reporter, type, labels,
-  components, attachments; parses the rich-text description into plain markdown;
-  structures each ticket into **Expected / Actual / Steps / Severity**.
+- `jira-issues.mjs` fetches the tickets; credentials come from the environment references
+  `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` or a protected untracked file named by
+  `JIRA_CONFIG` (mode 0600). The token is never printed or passed on a command line.
+- The rich-text description becomes Markdown and is split into **Expected / Actual / Steps**;
+  priority maps to **Severity**. `issues-file.mjs` renders and validates the file; a fact
+  nobody supplied stays `[MISSING]`.
 - The output file is transient: after `/analyze-fix` folds it into the checklist and the
   fix reaches ALL PASS, delete it.

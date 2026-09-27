@@ -1,4 +1,5 @@
 # The Verifier Agent — spec
+<!-- template-schema: {"produces":"Verifier agent definition","required":["Purpose","invocation","definition","write scope","outcomes","machinery","independence"],"optional":["Platform adapters","escalation examples"],"budget":{"small":[500,700],"medium":[650,900],"large":[800,1100]},"rows":"One invariant or mechanism per row; closed outcomes only."} -->
 
 The keystone of the process: an independent, fresh-context native agent — on OpenCode,
 invoked by `/verify` with `subtask: true`, or directly with `@verifier`. It never modifies

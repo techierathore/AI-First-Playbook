@@ -1,4 +1,5 @@
 # /refresh-doc
+<!-- template-schema: {"produces":"/refresh-doc reconciliation","required":["Contract","usage","target","code/runtime reconciliation","output","defect handling"],"optional":["Mode A","Mode B","HTML"],"budget":{"small":[260,380],"medium":[350,500],"large":[450,650]},"rows":"One discrepancy with old claim, evidence, change, and validation."} -->
 
 **Persona:** Analyst · **Cost:** Mode A 🟡 · Mode B 🟡–🔴 · **Owner:** process admin
 (periodic), not the team's daily loop

@@ -1,4 +1,5 @@
 # /verify
+<!-- template-schema: {"produces":"/verify run","required":["Contract","usage","checklist","deployment gate","probe","evidence","outcomes","handoff"],"optional":["UI","DB","desktop","runner branches"],"budget":{"small":[260,380],"medium":[350,500],"large":[450,650]},"rows":"Each probe names action, assertion, evidence, and outcome effect."} -->
 
 **Agent:** Verifier (native agent, `subtask: true` — fresh context) · **Cost:** 🔴 ·
 **Chat:** fresh, always

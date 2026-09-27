@@ -1,4 +1,5 @@
 ---
+description: Baseline an existing module's behaviour, ownership, risks and safe seams before any change
 agent: analyst
 ---
 

@@ -36,7 +36,7 @@ Days need not be consecutive. The order does matter.
 Goal: the tooling is real and their first contact succeeds.
 
 1. Install the harness with them watching, not beforehand — see
-   [`docs/Installation.md`](../docs/Installation.md). They should see where the command files
+   [`docs/Getting-Started.md`](../docs/Getting-Started.md). They should see where the command files
    live, because the commands *are* the process.
 2. Have them run **`/generate-html`** against an existing markdown doc in your repo.
    It is mechanical, activates no persona, costs almost nothing, and produces something
@@ -94,7 +94,7 @@ Goal: understand the plan gate before it costs them anything.
 2. They then review the generated document set as the human at the
    [plan-review gate](../phases/02-plan-review-gate.md) — and are expected to find
    something. Give them the frame: *cheap to fix a plan, expensive to fix built code.*
-3. Skim the [ten phases](../phases/) together, now that eight of them have a memory
+3. Skim the [ten phases](../phases) together, now that eight of them have a memory
    attached.
 
 ### Day 5 — Solo: one small feature, end to end

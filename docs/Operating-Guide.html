@@ -1,0 +1,778 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>AI-First Playbook — Operating Guide</title>
+<style>
+html{scroll-behavior:smooth}
+body{font:16px/1.6 system-ui;max-width:860px;margin:40px auto;padding:0 20px;color:#211C16}
+table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px 10px;vertical-align:top}
+h1,h2,h3,h4,h5,h6{scroll-margin-top:20px;position:relative}
+h1 .anchor,h2 .anchor,h3 .anchor,h4 .anchor,h5 .anchor,h6 .anchor{
+  position:absolute;left:-1.1em;opacity:0;color:#999;text-decoration:none;
+  font-weight:400;transition:opacity .15s ease}
+h1:hover .anchor,h2:hover .anchor,h3:hover .anchor,h4:hover .anchor,h5:hover .anchor,h6:hover .anchor{opacity:1}
+h1 .anchor:hover,h2 .anchor:hover,h3 .anchor:hover,h4 .anchor:hover,h5 .anchor:hover,h6 .anchor:hover{color:#0E6E6A}
+pre{position:relative;background:#1F2530;color:#E7E2D6;border-radius:8px;padding:14px 16px;overflow-x:auto}
+pre.mermaid{background:transparent;color:inherit;text-align:center;padding:0;overflow:hidden}
+code{background:#eee;padding:1px 5px;border-radius:4px;font-size:.92em}
+pre code{background:transparent;padding:0;color:inherit}
+.copy-btn{position:absolute;top:8px;right:8px;font:11px/1 ui-monospace,monospace;
+  letter-spacing:.06em;text-transform:uppercase;background:rgba(231,226,214,.08);
+  color:#8FB6B3;border:1px solid rgba(143,182,179,.3);border-radius:6px;
+  padding:4px 10px;cursor:pointer;transition:all .15s ease;z-index:2}
+.copy-btn:hover{background:rgba(231,226,214,.14);color:#E7E2D6;border-color:rgba(231,226,214,.45)}
+.copy-btn.copied{background:rgba(156,207,162,.2);color:#9CCFA2;border-color:rgba(156,207,162,.5)}
+.broken-link{background:#FFEAEA !important;color:#A00 !important;text-decoration:line-through;cursor:help}
+.broken-link::after{content:" ⚠";font-size:.85em}
+#to-top{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;
+  background:#0E6E6A;color:#fff;border:none;font-size:20px;line-height:1;cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);opacity:0;pointer-events:none;
+  transition:opacity .2s ease;z-index:10}
+#to-top.visible{opacity:.85;pointer-events:auto}
+#to-top:hover{opacity:1}
+:target{animation:flash 1.2s ease}
+@keyframes flash{0%{background:#FFF4B8}100%{background:transparent}}
+
+/* ---- Mermaid diagram container with toolbar + scroll/pan ---- */
+.mermaid-wrap{position:relative;border:1px solid #DDE2E8;border-radius:8px;
+  background:#FBF8F2;margin:18px 0;overflow:hidden}
+.mermaid-scroll{overflow:auto;max-height:75vh;cursor:grab}
+.mermaid-scroll.grabbing{cursor:grabbing}
+.mermaid-scroll > pre.mermaid{display:inline-block;min-width:100%;margin:0;padding:18px 12px}
+.mermaid-scroll > pre.mermaid > svg{display:inline-block;max-width:none;
+  transition:width .15s ease,height .15s ease}
+.mermaid-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:4px;
+  background:rgba(255,255,255,.92);border:1px solid #D8DEE5;border-radius:8px;
+  padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);z-index:5;
+  font:13px/1 ui-monospace,monospace}
+.mermaid-toolbar button{background:transparent;border:1px solid transparent;
+  color:#574E43;border-radius:5px;padding:5px 9px;cursor:pointer;
+  transition:all .12s ease;line-height:1;min-width:30px}
+.mermaid-toolbar button:hover{background:#EFE8DA;border-color:#D8CFBF;color:#211C16}
+.mermaid-toolbar button:active{background:#E3DACB}
+.mermaid-toolbar .zoom-pct{font-size:11px;color:#857A6B;padding:5px 6px;
+  align-self:center;min-width:42px;text-align:center}
+.mermaid-toolbar .sep{width:1px;background:#D8DEE5;margin:2px 2px}
+@media print{
+  .copy-btn,#to-top,.mermaid-toolbar{display:none !important}
+  .mermaid-scroll{overflow:visible !important;max-height:none !important}
+  .mermaid-wrap{border:none;background:transparent;page-break-inside:avoid}
+}
+</style>
+</head><body>
+<textarea id="src" hidden># AI-First Playbook — Operating Guide
+
+| | |
+|---|---|
+| Purpose | How a team runs the Playbook day to day: roles, gates, the environment profile, handoffs, security, telemetry, YOLO runs, releases, measures and troubleshooting. |
+| Audience | Process owners, leads, developers, QA, release and operations owners. |
+| Replaces | `Operating-Model`, `Handoffs`, `Environment-Profile`, `Release-And-Operations`, `Security`, `Adoption-Metrics`, `Troubleshooting`, `Usage`, `Installation` and the operating half of the old Getting Started (originals kept in `docs/archive/replaced/`). |
+| Detail | Maintainer references live in [maintainer/](maintainer): [Telemetry-Guide](maintainer/Telemetry-Guide.md), [YOLO-Mode-Guide](maintainer/YOLO-Mode-Guide.md), [Model-Routing-Guide](maintainer/Model-Routing-Guide.md), [OpenCode-Guide](maintainer/OpenCode-Guide.md), [OpenCode-WSL-Setup-Guide](maintainer/OpenCode-WSL-Setup-Guide.md). |
+
+Start with [Getting-Started.md](Getting-Started.md); the ten phases are explained in
+[Playbook-How-It-Works.md](Playbook-How-It-Works.md) and [phases/](../phases).
+
+## 1. Roles and feature states
+
+Roles: Product/BA, Analyst, Orchestrator/Developer, Verifier, QA, Security, Release/Operations and
+Process Owner. One person may hold several human roles, but each gate names its producer, consumer
+and accountable approver.
+
+Feature states run
+`proposed -&gt; planned -&gt; plan-approved -&gt; building -&gt; self-reviewed -&gt; verification-in-progress`
+`-&gt; verification-failed | data-gap | blocked -&gt; human-accepted -&gt; pr-ready -&gt; pr-approved`
+`-&gt; release-ready -&gt; deployed -&gt; post-deploy-validated -&gt; closed`, with `deferred` and `abandoned`
+as exits and `incident-open -&gt; incident-mitigated -&gt; incident-resolved` and `operations-owned` for
+operations. The closed lists live in `templates/checklist-metadata.yml`.
+
+| Agent | Entry points | Responsibility | Must not do |
+|---|---|---|---|
+| Analyst | `/feature-plan`, `/legacy-audit`, `/analyze-fix`, `/create-issue-list`, `/add-doc`, `/refresh-doc`, `/upgrade-docs` | Ask for missing context; produce or amend documents and checklists | Guess context or write product code |
+| Orchestrator | `/implement`, `/fix` | Plan waves, assign one owner per slice, self-test, persist the implementation summary | Leave items for &quot;another run&quot; or verify its own work |
+| Builder | spawned per slice | Implement only its slice; report blockers and miss candidates | Edit other slices, the checklist or the miss stream |
+| Verifier | `/verify` (fresh subagent) | Execute deployment steps and real behaviour; record inline verdicts | Edit product source, configuration or lockfiles |
+
+Phases 2, 4, 6 and 8 have no command of their own: plan review and acceptance are human gates;
+self-review runs inside `/implement` and `/fix`; the results gate is the output of `/verify`.
+
+## 2. The environment profile
+
+`.playbook/environment-profile.yml` is authoritative for topology, OS, shell, build, test, start,
+stop and cleanup commands, application URLs, database method and config path, migration command,
+browser endpoint, log paths, the allowed secret channels and retention. Replace every placeholder
+and try each command by hand before the first run; a value nobody knows is resolved with its
+owner, never guessed. `node .playbook/scripts/playbook-probe.mjs` shows each fact as `ok`,
+`blocked` (placeholder) or `down` (declared but unreachable). Use a short stable `project_type`:
+it appears in telemetry.
+
+## 3. Gates and handoffs
+
+Every gate persists a handoff record; chat can explain a decision but is not the record.
+`node .playbook/scripts/handoff-record.mjs create &lt;kind&gt; --out=&lt;path&gt; --set &quot;Label=value&quot; ...`
+refuses a record that is incomplete, and `validate` checks existing ones. All eight kinds carry
+the ten standing rows (producer, consumer, accountable approver, approver identity, status
+transition, evidence, open decisions, escalation owner, exception expiry, UTC time); their full
+shapes are in [Playbook-Document-Schemas.md](Playbook-Document-Schemas.md) §4.
+
+| Record | Producer → consumer | Accountable owner |
+|---|---|---|
+| `plan-approval` | Analyst → Orchestrator | named plan approver |
+| `implementation-summary` | Orchestrator → Verifier | engineering owner |
+| `verification-results` | Verifier → QA/approver | accountable Verifier |
+| `acceptance` | QA/BA → release owner | acceptance approver |
+| `pr-evidence` | developer → reviewer | PR approver |
+| `release-readiness` | release team → operations | release owner and rollback authority |
+| `operations-transfer` | release owner → operations owner | incoming owner |
+| `incident` | incident team → service and process owners | incident commander |
+
+Ownership transfer is complete only when the receiving owner acknowledges the runbook, open work,
+escalation route and next due date. Link evidence; never paste secrets or large unredacted output.
+
+## 4. Operating flow
+
+1. **Entry.** Greenfield: a BRD or project specification, the mockup when there is UI, standards,
+   DB architecture, output folder and prefix. Brownfield: `/legacy-audit` first, to preserve
+   behaviour, baselines, ownership, risks and safe seams. A known exact checklist edit:
+   `/amend-checklist`. A bug, story or vague gap: `/analyze-fix` against the existing checklist.
+2. **Plan.** `/feature-plan` in a fresh chat; the checklist must pass `checklist-lint.mjs` and
+   `plan-coverage.mjs`.
+3. **Approve.** A person reviews every requirement, mockup element and Verify method and records
+   `plan-approval`. Implementation never starts from an unapproved checkbox or a chat statement.
+4. **Build and self-review.** `/implement` in a fresh chat; it ends only when
+   `phase-complete.mjs build` passes.
+5. **Verify.** `/verify` in a fresh context; results are inline in the checklist.
+6. **Fix.** `/fix -&gt; fresh /verify` until ALL PASS. `DATA-GAP` needs approved seed data; `BLOCKED`
+   needs the missing access or an authorised, expiring exception. Neither is ever PASS.
+7. **Accept.** QA/BA/Product review the PASS checklist, evidence and human guides and record
+   `acceptance`. A bug found here goes through `/analyze-fix` in escaped-bug mode, then `/fix` and
+   `/verify`.
+8. **Release.** Agents prepare changes; people stage, commit, push, tag and release. Record
+   `pr-evidence` and `release-readiness`; after deployment run the recorded checks; a failed check
+   pauses rollout or invokes rollback. Record `operations-transfer`.
+9. **Incidents.** Preserve logs, traces, deployment metadata, impact and the reproduction before
+   changing anything; follow the team's severity, communication and rollback authority; then run
+   [Phase 10](../phases/10-production-bugs.md) and record `incident` with its regression item.
+
+## 5. Security and secrets
+
+The standing rule is in `AGENTS.md`: secrets come only from an approved secret manager, an
+environment reference, protected stdin or a protected temporary file, and never appear in command
+arguments, Markdown, logs, URLs or evidence. The profile names the channels, never values. Redact
+tokens, passwords, connection strings, cookies, authorization headers and PII before evidence is
+stored; `handoff-record.mjs` and the grader refuse secret-like values. Set `PLAYBOOK_CHECKLIST` to
+restrict the Verifier's checklist writes to one file. A secret found in evidence is rotated, the
+artifact removed, and the run repeated with redaction.
+
+## 6. Command catalogue
+
+| Command | Example | Use it for |
+|---|---|---|
+| `/feature-plan` | `/feature-plan @docs/BRDs/BRD-004.md @src/mockui/Dashboard.tsx` | The verifiable document set and checklist |
+| `/legacy-audit` | `/legacy-audit @src/legacy-inventory/` | Baseline an unknown module before change |
+| `/implement` | `/implement @docs/Cost/Cost-Implementation-Checklist.md` | Build the approved scope in waves, self-tested |
+| `/verify` | `/verify @docs/Cost/Cost-Implementation-Checklist.md` | Fresh, executed verification with inline verdicts |
+| `/fix` | `/fix @docs/Cost/Cost-Implementation-Checklist.md` | Repair failing items and return to `/verify` |
+| `/analyze-fix` | `/analyze-fix @docs/Cost/Cost-Issues.md @src/` | Root cause and checklist patch for a bug, story or gap |
+| `/create-issue-list` | `/create-issue-list PROJ-1234 PROJ-1235` | A transient Issues file from Jira or manual input |
+| `/log-miss` | `/log-miss &quot;export ignored the date filter&quot; REQ-014` | Classify a one-line miss between phases |
+| `/amend-checklist` | `/amend-checklist @&lt;checklist&gt;` then the exact edit | A known, surgical checklist change |
+| `/add-doc` | `/add-doc developer flow guide @docs/Cost/ @src/` | Human companion documents built from running code |
+| `/refresh-doc` | `/refresh-doc @docs/Cost/` | Reconcile documents with current code |
+| `/upgrade-docs` | `/upgrade-docs @docs/Legacy/` | One-time conversion of legacy documents |
+| `/generate-html` | `/generate-html @docs/Cost/` | Render human documents; never the checklist |
+| `/archive-checklist` | `/archive-checklist @&lt;checklist&gt;` | Compact mature PASS history, restorably |
+
+## 7. Runtime scripts
+
+All installed under `.playbook/scripts/`; each prints what it did and exits non-zero on a problem.
+
+| Script | Does |
+|---|---|
+| `playbook-probe.mjs` | Resolve every profile fact; report placeholders and unreachable services by name |
+| `playbook-app-lifecycle.mjs` | Start, poll, record and stop only the processes a run started |
+| `profile-gates.mjs` | Run the profile's build and test commands as gates |
+| `checklist-create.mjs` | Scaffold a checklist; sync its Status Table from metadata |
+| `checklist-lint.mjs` | Check a checklist against its schema |
+| `checklist-plan.mjs` | Waves for `/implement` and `/fix`; buckets and adapters for `/verify` |
+| `phase-complete.mjs` | Recompute whether a build or fix phase is finished |
+| `plan-coverage.mjs` | Map every requirement ID and screen to an item |
+| `checklist-miss-coordinator.mjs` | Record a miss and link it to its item, serially |
+| `handoff-record.mjs` | Create and validate gate records |
+| `doc-scaffold.mjs`, `doc-check.mjs` | Write and check human documents against their schemas |
+| `render-docs.mjs` | Render human documents to HTML safely |
+| `doc-drift.mjs`, `reference-lint.mjs` | Name stale code references and broken links |
+| `doc-upgrade.mjs` | Back up legacy documents before an upgrade |
+| `playbook-miss.mjs`, `playbook-telemetry.mjs` | Miss records and telemetry export |
+
+## 8. Telemetry
+
+Start OpenCode with `PLAYBOOK_TELEMETRY=1 opencode`; the plugin appends best-effort events to the
+transient `verification/telemetry/events.ndjson`, which is git-ignored and may be rotated after
+consumers checkpoint every `phase_execution_id`. `verification/telemetry/misses.ndjson` is durable
+and append-only; commit it and never rotate it. Never ignore `verification/telemetry/` as a whole. Raw run evidence (probe
+results, app logs, gate logs) goes to the git-ignored `verification/runs/&lt;run-id&gt;/` and is removed
+after the profile's `retention.raw_runs_days` (7) — automatically when a new run starts, or with
+`node .playbook/scripts/playbook-sweep.mjs --apply`; grader verdicts are kept 365 days.
+
+Export with `node .playbook/scripts/playbook-telemetry.mjs --checklist=&lt;checklist&gt;` (one
+`phase-metric` row per command execution) and `--misses` (miss lifecycle, joined with exact fix
+windows). The telemetry dimension is the **command** phase: `implement` covers phases 3 and 4,
+`verify` phases 5 and 6; never split tokens between conceptual phases by estimate. `attempt` and
+`gate_verdict` are snapshots at export time, not history.
+
+Quality filters: aggregate duration, tokens and cost only from `complete:true` windows with valid
+data quality; never turn a missing file, incomplete window or unknown cost into zero; child usage
+is already included in phase totals. A miss is recorded with the four questions of
+[Playbook-Requirements.md](Playbook-Requirements.md) §3 (`--protocol=...`), which store one
+`protocol_outcome`. The full field and CLI contract is in
+[maintainer/Telemetry-Guide.md](maintainer/Telemetry-Guide.md).
+
+## 9. Measures
+
+Review weekly and publish numerator, denominator, cohort, exclusions and quality status beside
+every rate: verified features, gate compliance, handoffs acknowledged, adoption by role,
+verification lead time, blocked and data-gap duration, redaction failures and runtime cost.
+
+| Measure | Definition | Denominator |
+|---|---|---|
+| Miss rate | Distinct `miss` records for eligible checklist items | Item executions with a terminal verify result in the period; misses without an item are shown apart |
+| Escape rate | Misses found by `human` or `production` | All misses of the same origin cohort; human and production also shown apart |
+| Rework incidence | Item executions with at least one `miss-fix` | The miss-rate denominator; an item counts once |
+| Rework intensity | `miss-fix` records to date | Misses with at least one fix; deferred, abandoned and open stay visible |
+| Time to close | UTC from `miss.ts` to the first later `miss-fix` with `verdict_after: pass` | Misses that reached pass; median and p90 with `closed n / eligible N` |
+
+Deduplicate by `miss_id`, fold valid `miss-amend` records first, and use the backlog predicate
+(latest verdict neither `pass` nor `abandoned`) for outstanding work. Optional fields
+(`why_missed`, `protocol_outcome`) show `n of N assessed` after their introduction date. Model
+attribution uses only `origin_confidence: linked`; headline fix cost uses `sole` attribution.
+`actor` is aggregate-only: no measure is broken down by person or used to rank people. Fewer than
+three records is insufficient data. Certify one champion and one backup per team.
+
+## 10. YOLO runs
+
+YOLO (`YOLO` in the command, or `PLAYBOOK_YOLO=1` at launch) pre-approves every gate except git
+history: the plugins deny commits, pushes, tags and history rewrites in both modes. Run it only on
+a VM or container holding the working copy and development-scoped credentials, and commit your own
+work first so the tree can be restored. Provider usage limits are waited out by the optional
+supervisor (`scripts/playbook-yolo.mjs` in a source checkout), which resumes the same session
+after the reset. A run ends with `PLAYBOOK_RUN_COMPLETE:` or `PLAYBOOK_RUN_BLOCKED:`. Supervisor
+detail: [maintainer/YOLO-Mode-Guide.md](maintainer/YOLO-Mode-Guide.md).
+
+## 11. Model routing
+
+Routing ships OFF: every command runs on the model chosen in OpenCode. With routing on, each
+command runs at its tier from `.playbook/model-tiers.yml` (Economy, Standard, Frontier), and a
+command's `model:` front matter overrides the TUI choice by design. In a source checkout,
+`node scripts/playbook-routing.mjs status | set-tier | off` manages it. Detail:
+[maintainer/Model-Routing-Guide.md](maintainer/Model-Routing-Guide.md).
+
+## 12. Releases of the Playbook itself
+
+The owner releases the npm package; agents never publish or tag. CI
+(`.github/workflows/validate.yml`) runs the four npm test scripts and the grader on every push, on
+Node 22.14.0, npm 11.5.1 and the supported OpenCode, and keeps the grader output as the
+`grader-output` artefact for 90 days; the release workflow runs the same checks before publishing.
+The procedure is in
+[maintainer/Npm-Release-Guide.md](maintainer/Npm-Release-Guide.md).
+
+## 13. Troubleshooting
+
+| Symptom | Action |
+|---|---|
+| Plugin not loaded | Restart OpenCode; `opencode debug config` must list `spec-guardrails.ts` before `yolo.ts`. |
+| Probe reports `blocked` | Replace that profile placeholder; never substitute a guess. |
+| `DATA-GAP` | Seed approved synthetic data and verify again; do not release. |
+| `BLOCKED` | Resolve the profile blocker or record an expiring exception. |
+| Secret in evidence | Rotate it, remove the artifact and rerun with redaction. |
+| Verifier write denied | Write only the selected checklist or `verification/&lt;feature&gt;/&lt;run-id&gt;/`. |
+| Git command denied | Expected: people commit. Start OpenCode with `PLAYBOOK_GIT_APPROVED=1` only when a person wants the agent to commit outside YOLO. |
+| `phase-complete.mjs` fails | Plan another wave; the remainder is never handed back. |
+| A phase runs on an unexpected model | Command front matter overrides the TUI; check `playbook-routing.mjs status`. |
+| Telemetry file empty | Start with `PLAYBOOK_TELEMETRY=1`; the Windows binary launched from WSL needs `WSLENV=PLAYBOOK_TELEMETRY`. |
+| Playwright MCP never connects | Use `{env:PLAYWRIGHT_MCP_URL}` in `opencode.json`, set the variable, enable the server, restart. |
+| Still prompted in YOLO | `PLAYBOOK_YOLO=1` did not reach OpenCode (WSL → Windows needs `WSLENV=$WSLENV:PLAYBOOK_YOLO`). |
+| Supervisor slept past the reset | Set `PLAYBOOK_TZ=&lt;IANA zone&gt;` to the zone the provider prints. |
+| TLS errors on a corporate network | Install the corporate CA into the OS trust store; never disable verification. See the WSL guide. |
+| Windows `EACCES` under `/mnt/c` | [maintainer/OpenCode-WSL-Setup-Guide.md](maintainer/OpenCode-WSL-Setup-Guide.md) §10f. |
+
+## 14. Adoption checklist and common mistakes
+
+- [ ] A process owner and backup are named; product, engineering, QA, security, release,
+  operations and escalation owners know their gates.
+- [ ] Every profile placeholder is replaced and each command tested; `playbook-probe.mjs` is clean.
+- [ ] Secret channels and redaction rules are approved.
+- [ ] Only `events.ndjson` is ignored; misses are committed.
+- [ ] The planted-defect smoke test in Getting Started gives an inline FAIL and no separate report.
+- [ ] One pilot feature runs plan to post-deploy validation, then a second developer repeats it
+  without the first driving.
+- [ ] Weekly measures carry denominators, exclusions and quality labels.
+
+Common mistakes: treating phase 4 or 6 as a measured command; reading `attempt` snapshots as
+history; leaving profile placeholders; secrets in arguments or evidence; verifying in the build
+context; accepting a green build or an HTTP 200 as proof of a side effect; creating a gap report or
+a second checklist; treating DATA-GAP, BLOCKED or unknown cost as zero or PASS; ignoring the whole
+telemetry folder; skipping plan approval, acceptance, rollback or post-deploy checks because
+verification passed; deleting an Issues file before its facts and miss links are in the checklist.
+</textarea>
+<div id="out"></div>
+<button id="to-top" aria-label="Back to top" title="Back to top">↑</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+<script>
+  /* ---- Slugifier (deterministic, GitHub-flavored-markdown compatible) ---- */
+  function slugify(text){
+    return (text || '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+      .replace(/[`~!@#$%^&*()+={}\[\]|\\:;"'<>,.?\/]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/ /g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  /* ---- Configure marked with custom heading renderer ---- */
+  const usedSlugs = new Map();
+  function uniqueSlug(base){
+    if (!base) base = 'section';
+    const count = usedSlugs.get(base) || 0;
+    usedSlugs.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count}`;
+  }
+
+  const renderer = new marked.Renderer();
+  renderer.heading = function(text, level, raw){
+    const rawText = (raw || text || '').toString();
+    const stripped = rawText.replace(/<[^>]+>/g, '');
+    const id = uniqueSlug(slugify(stripped));
+    return `<h${level} id="${id}">${text}` +
+           `<a href="#${id}" class="anchor" aria-label="Permalink to this heading">¶</a>` +
+           `</h${level}>\n`;
+  };
+
+  marked.setOptions({ renderer, gfm: true, breaks: false });
+
+  /* ---- Render markdown ---- */
+  document.getElementById('out').innerHTML =
+    marked.parse(document.getElementById('src').value);
+
+  /* ---- Replace mermaid code blocks AND remember the source text ---- */
+  document.querySelectorAll('code.language-mermaid').forEach(c => {
+    const p = document.createElement('pre'); p.className = 'mermaid';
+    /* Stash the original source on a data attribute so the new-tab view can reuse it */
+    p.setAttribute('data-mermaid-src', c.textContent);
+    p.textContent = c.textContent;
+    c.closest('pre').replaceWith(p);
+  });
+  try { mermaid.initialize({ startOnLoad:false, securityLevel:'loose' }); mermaid.run(); } catch(e) {}
+
+  /* ---- After Mermaid renders, wrap each diagram with scroll container + toolbar ---- */
+  /* mermaid.run() is async; poll briefly for the <svg> to appear in each .mermaid */
+  function whenSvgReady(pre, cb, tries){
+    tries = tries || 0;
+    const svg = pre.querySelector('svg');
+    if (svg) return cb(svg);
+    if (tries > 40) return; /* give up after ~4s */
+    setTimeout(() => whenSvgReady(pre, cb, tries + 1), 100);
+  }
+
+  document.querySelectorAll('pre.mermaid').forEach((pre, idx) => {
+    whenSvgReady(pre, (svg) => attachDiagramControls(pre, svg, idx));
+  });
+
+  function attachDiagramControls(pre, svg, idx){
+    /* Skip if already wrapped (e.g., on rerun) */
+    if (pre.closest('.mermaid-wrap')) return;
+
+    /* Note the natural dimensions BEFORE we modify anything */
+    const vb = svg.getAttribute('viewBox');
+    let naturalW = 0, naturalH = 0;
+    if (vb){
+      const parts = vb.split(/\s+/).map(Number);
+      if (parts.length === 4){ naturalW = parts[2]; naturalH = parts[3]; }
+    }
+    if (!naturalW){ naturalW = parseFloat(svg.getAttribute('width')) || 800; }
+    if (!naturalH){ naturalH = parseFloat(svg.getAttribute('height')) || 400; }
+
+    /* Build wrapper structure */
+    const wrap = document.createElement('div'); wrap.className = 'mermaid-wrap';
+    const scroller = document.createElement('div'); scroller.className = 'mermaid-scroll';
+    const toolbar = document.createElement('div'); toolbar.className = 'mermaid-toolbar';
+    toolbar.setAttribute('role','toolbar');
+    toolbar.setAttribute('aria-label','Diagram zoom controls');
+
+    pre.parentNode.insertBefore(wrap, pre);
+    scroller.appendChild(pre);
+    wrap.appendChild(scroller);
+    wrap.appendChild(toolbar);
+
+    /* Remove SVG's max-width:100% inline style if Mermaid set it */
+    svg.style.maxWidth = 'none';
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    /* Use viewBox + naturalW/H baseline */
+    svg.style.width = naturalW + 'px';
+    svg.style.height = naturalH + 'px';
+    svg.dataset.naturalW = naturalW;
+    svg.dataset.naturalH = naturalH;
+
+    /* Internal scale state — SVGs with viewBox scale naturally when width/height attrs change */
+    let scale = 1;
+    function applyScale(s){
+      scale = Math.max(0.25, Math.min(5, s));
+      svg.style.width = (naturalW * scale) + 'px';
+      svg.style.height = (naturalH * scale) + 'px';
+      pctLabel.textContent = Math.round(scale * 100) + '%';
+    }
+
+    /* Toolbar buttons */
+    function mkBtn(label, title, onClick){
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.title = title;
+      b.setAttribute('aria-label', title);
+      b.addEventListener('click', (e) => { e.preventDefault(); onClick(); });
+      toolbar.appendChild(b);
+      return b;
+    }
+
+    mkBtn('−', 'Zoom out (Alt+−)', () => applyScale(scale - 0.2));
+    const pctLabel = document.createElement('span');
+    pctLabel.className = 'zoom-pct';
+    pctLabel.textContent = '100%';
+    toolbar.appendChild(pctLabel);
+    mkBtn('+', 'Zoom in (Alt+=)', () => applyScale(scale + 0.2));
+
+    const sep1 = document.createElement('span'); sep1.className = 'sep'; toolbar.appendChild(sep1);
+
+    mkBtn('Fit', 'Fit to width', () => {
+      const scrollerW = scroller.clientWidth - 24; /* minus padding */
+      const fitScale = scrollerW > 0 ? scrollerW / naturalW : 1;
+      applyScale(fitScale);
+    });
+    mkBtn('1:1', 'Actual size (100%)', () => applyScale(1));
+    mkBtn('⛶', 'Toggle full-screen view', () => toggleFullscreen(wrap, scroller));
+
+    const sep2 = document.createElement('span'); sep2.className = 'sep'; toolbar.appendChild(sep2);
+
+    mkBtn('↗', 'Open in new tab (with zoom, pan, print, PNG export)', () => openInNewTab(pre));
+
+    /* Drag-to-pan when content overflows */
+    let dragging = false, dragStartX = 0, dragStartY = 0, scrollStartX = 0, scrollStartY = 0;
+    scroller.addEventListener('mousedown', (e) => {
+      /* Only left-click drag on background (not on SVG text that might be selectable) */
+      if (e.button !== 0) return;
+      dragging = true;
+      scroller.classList.add('grabbing');
+      dragStartX = e.clientX; dragStartY = e.clientY;
+      scrollStartX = scroller.scrollLeft; scrollStartY = scroller.scrollTop;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      scroller.scrollLeft = scrollStartX - (e.clientX - dragStartX);
+      scroller.scrollTop  = scrollStartY - (e.clientY - dragStartY);
+    });
+    window.addEventListener('mouseup', () => {
+      if (dragging){ dragging = false; scroller.classList.remove('grabbing'); }
+    });
+
+    /* Ctrl/⌘ + wheel = zoom; plain wheel = scroll (browser default) */
+    scroller.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey){
+        e.preventDefault();
+        const dir = e.deltaY < 0 ? 1 : -1;
+        applyScale(scale + dir * 0.15);
+      }
+    }, { passive:false });
+
+    /* Initial scale: fit-to-width if the diagram is wider than the container */
+    setTimeout(() => {
+      const containerW = scroller.clientWidth - 24;
+      if (naturalW > containerW){
+        applyScale(containerW / naturalW);
+      } else {
+        applyScale(1);
+      }
+    }, 30);
+  }
+
+  /* ---- Full-screen toggle ---- */
+  function toggleFullscreen(wrap, scroller){
+    if (document.fullscreenElement){
+      document.exitFullscreen();
+    } else if (wrap.requestFullscreen){
+      wrap.requestFullscreen().catch(() => {
+        /* Fallback: simulate full-screen with fixed positioning */
+        wrap.classList.toggle('fake-fullscreen');
+      });
+    }
+  }
+  /* Fake-fullscreen CSS for browsers that block Fullscreen API */
+  const fsStyle = document.createElement('style');
+  fsStyle.textContent = `.mermaid-wrap.fake-fullscreen{position:fixed;inset:0;z-index:9999;
+    background:#FBF8F2;border:0;border-radius:0;margin:0}
+    .mermaid-wrap.fake-fullscreen .mermaid-scroll{max-height:100vh;height:100vh}
+    .mermaid-wrap:fullscreen{background:#FBF8F2;padding:0}
+    .mermaid-wrap:fullscreen .mermaid-scroll{max-height:100vh;height:100vh}`;
+  document.head.appendChild(fsStyle);
+
+  /* ---- Open diagram in new tab with full standalone controls ---- */
+  function openInNewTab(pre){
+    const src = pre.getAttribute('data-mermaid-src') || '';
+    const title = (document.title || 'Diagram') + ' — diagram';
+    const escapedSrc = src
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const html = `<!doctype html><html><head><meta charset="utf-8">
+<title>${title.replace(/</g,'&lt;')}</title>
+<style>
+html,body{margin:0;padding:0;height:100%;font:14px/1.4 system-ui;background:#FBF8F2;color:#211C16}
+#bar{position:fixed;top:0;left:0;right:0;height:46px;background:#fff;border-bottom:1px solid #D8DEE5;
+  display:flex;align-items:center;padding:0 12px;gap:6px;z-index:10;
+  box-shadow:0 1px 4px rgba(0,0,0,.06)}
+#bar button{background:transparent;border:1px solid #D8DEE5;color:#211C16;border-radius:6px;
+  padding:6px 12px;font:13px/1 ui-monospace,monospace;cursor:pointer;transition:all .12s ease}
+#bar button:hover{background:#EFE8DA}
+#bar .pct{font:12px/1 ui-monospace,monospace;color:#574E43;min-width:50px;text-align:center}
+#bar .title{margin-left:auto;color:#857A6B;font-size:12px;max-width:50%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stage{position:absolute;top:46px;left:0;right:0;bottom:0;overflow:auto;
+  background:repeating-linear-gradient(45deg,#FBF8F2 0,#FBF8F2 10px,#F4EFE5 10px,#F4EFE5 20px)}
+#stage.grabbing{cursor:grabbing}
+#stage:not(.grabbing){cursor:grab}
+#render{padding:30px}
+#render > svg{display:block;transform-origin:top left;max-width:none}
+@media print{
+  #bar{display:none}
+  #stage{position:static;overflow:visible;background:#fff}
+  #render{padding:0}
+  #render > svg{width:100% !important;height:auto !important}
+}
+</style></head><body>
+<div id="bar">
+  <button id="zout" title="Zoom out">−</button>
+  <span class="pct" id="pct">100%</span>
+  <button id="zin"  title="Zoom in">+</button>
+  <button id="fit"  title="Fit width">Fit</button>
+  <button id="one"  title="Actual size">1:1</button>
+  <button id="prn"  title="Print this diagram">Print</button>
+  <button id="png"  title="Download as PNG">PNG</button>
+  <button id="svg"  title="Download raw SVG">SVG</button>
+  <span class="title">${title.replace(/</g,'&lt;')}</span>
+</div>
+<div id="stage"><div id="render"><pre class="mermaid">${escapedSrc}</pre></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"><\/script>
+<script>
+(function(){
+  mermaid.initialize({ startOnLoad:false, securityLevel:'loose' });
+  mermaid.run().then(setup).catch(setup);
+
+  function setup(){
+    const svg = document.querySelector('#render svg');
+    if (!svg) return;
+    const vb = svg.getAttribute('viewBox');
+    let nW=0, nH=0;
+    if (vb){ const p = vb.split(/\\s+/).map(Number); if (p.length===4){ nW=p[2]; nH=p[3]; } }
+    if (!nW) nW = parseFloat(svg.getAttribute('width')) || 800;
+    if (!nH) nH = parseFloat(svg.getAttribute('height')) || 400;
+    svg.removeAttribute('width'); svg.removeAttribute('height');
+    svg.style.maxWidth='none';
+
+    let scale = 1;
+    const pct = document.getElementById('pct');
+    function apply(s){
+      scale = Math.max(0.1, Math.min(8, s));
+      svg.style.width  = (nW * scale) + 'px';
+      svg.style.height = (nH * scale) + 'px';
+      pct.textContent = Math.round(scale * 100) + '%';
+    }
+    document.getElementById('zin').onclick = () => apply(scale + 0.2);
+    document.getElementById('zout').onclick = () => apply(scale - 0.2);
+    document.getElementById('fit').onclick = () => {
+      const stageW = document.getElementById('stage').clientWidth - 60;
+      apply(stageW > 0 ? stageW / nW : 1);
+    };
+    document.getElementById('one').onclick = () => apply(1);
+    document.getElementById('prn').onclick = () => window.print();
+
+    /* PNG export: render the SVG to a canvas and download */
+    document.getElementById('png').onclick = () => {
+      const xml = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([xml], { type:'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = function(){
+        const c = document.createElement('canvas');
+        c.width = nW * 2; c.height = nH * 2; /* 2x for better print quality */
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#FBF8F2'; ctx.fillRect(0,0,c.width,c.height);
+        ctx.scale(2,2);
+        ctx.drawImage(img, 0, 0, nW, nH);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(blob){
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'diagram.png';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        });
+      };
+      img.onerror = () => { alert('Could not generate PNG. Try downloading SVG instead.'); URL.revokeObjectURL(url); };
+      img.src = url;
+    };
+
+    /* SVG download */
+    document.getElementById('svg').onclick = () => {
+      const xml = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([xml], { type:'image/svg+xml;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'diagram.svg';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+
+    /* Drag-to-pan in stage */
+    const stage = document.getElementById('stage');
+    let dragging=false, sx=0, sy=0, ssx=0, ssy=0;
+    stage.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      dragging = true; stage.classList.add('grabbing');
+      sx = e.clientX; sy = e.clientY; ssx = stage.scrollLeft; ssy = stage.scrollTop;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      stage.scrollLeft = ssx - (e.clientX - sx);
+      stage.scrollTop  = ssy - (e.clientY - sy);
+    });
+    window.addEventListener('mouseup', () => { dragging=false; stage.classList.remove('grabbing'); });
+    stage.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey){
+        e.preventDefault();
+        apply(scale + (e.deltaY < 0 ? 0.15 : -0.15));
+      }
+    }, { passive:false });
+
+    /* Keyboard shortcuts */
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')){ e.preventDefault(); apply(scale + 0.2); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '-'){ e.preventDefault(); apply(scale - 0.2); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '0'){ e.preventDefault(); apply(1); }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p'){ /* let browser print dialog through */ }
+    });
+
+    /* Initial fit-to-width */
+    setTimeout(() => {
+      const stageW = stage.clientWidth - 60;
+      if (nW > stageW) apply(stageW / nW); else apply(1);
+    }, 30);
+  }
+})();
+<\/script></body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w){
+      alert('Pop-up blocked. Please allow pop-ups for this page to open diagrams in a new tab.');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  /* ---- Repair broken internal links ---- */
+  function findTarget(rawHash){
+    if (!rawHash || rawHash[0] !== '#') return null;
+    const hash = decodeURIComponent(rawHash.slice(1));
+    if (!hash) return null;
+    let target = document.getElementById(hash);
+    if (target) return hash;
+    const canonical = slugify(hash.replace(/-/g, ' '));
+    if (canonical && document.getElementById(canonical)) return canonical;
+    const lower = slugify(hash);
+    if (lower && document.getElementById(lower)) return lower;
+    const headings = document.querySelectorAll('h1,h2,h3,h4,h5,h6');
+    const normHash = hash.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    for (const h of headings){
+      const headText = h.textContent.replace(/¶$/,'').trim();
+      const normHead = headText.toLowerCase().replace(/[^a-z0-9]+/g, '');
+      if (normHash && normHash === normHead) return h.id;
+      if (normHash && normHead && (normHead.indexOf(normHash) === 0 || normHash.indexOf(normHead) === 0)){
+        if (Math.abs(normHash.length - normHead.length) < 5) return h.id;
+      }
+    }
+    return null;
+  }
+
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (href === '#' || href.startsWith('#:')) return;
+    const resolved = findTarget(href);
+    if (resolved){
+      if (resolved !== href.slice(1)) {
+        a.setAttribute('href', '#' + resolved);
+        a.setAttribute('data-rescued-from', href);
+        a.title = 'Link rescued from "' + href + '" — original anchor not found';
+      }
+    } else {
+      a.classList.add('broken-link');
+      a.title = 'Broken link: no heading matches "' + href + '"';
+    }
+  });
+
+  /* ---- Back-to-top button ---- */
+  const toTop = document.getElementById('to-top');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) toTop.classList.add('visible');
+    else toTop.classList.remove('visible');
+  });
+  toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  /* ---- Copy buttons on every <pre> that contains code (skip mermaid) ---- */
+  document.querySelectorAll('pre').forEach(function(pre){
+    if (pre.classList.contains('mermaid')) return;
+    if (pre.querySelector('.copy-btn')) return;
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'copy-btn'; btn.textContent = 'Copy';
+    btn.setAttribute('aria-label','Copy code to clipboard');
+    btn.addEventListener('click', function(){
+      var clone = pre.cloneNode(true);
+      clone.querySelectorAll('.copy-btn').forEach(function(n){ n.remove(); });
+      var text = clone.textContent.replace(/^\n/,'').replace(/\s+$/,'');
+      function done(){ btn.textContent='Copied'; btn.classList.add('copied');
+        setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('copied'); }, 1600); }
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){
+          var ta=document.createElement('textarea'); ta.value=text;
+          ta.style.position='fixed'; ta.style.left='-9999px';
+          document.body.appendChild(ta); ta.select();
+          try{document.execCommand('copy');}catch(e){}
+          document.body.removeChild(ta); done();
+        });
+      } else {
+        var ta=document.createElement('textarea'); ta.value=text;
+        ta.style.position='fixed'; ta.style.left='-9999px';
+        document.body.appendChild(ta); ta.select();
+        try{document.execCommand('copy');}catch(e){}
+        document.body.removeChild(ta); done();
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  /* ---- If page loaded with a hash, jump to it AFTER all rescue logic ran ---- */
+  if (window.location.hash){
+    const resolved = findTarget(window.location.hash);
+    if (resolved){
+      const el = document.getElementById(resolved);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+</script>
+</body></html>

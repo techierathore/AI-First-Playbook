@@ -1,65 +1,63 @@
-# Checklist Item Template — the seven-field verifiable format
+# Checklist Item Template — the verifiable item format
+<!-- template-schema: {"produces":"docs/<feature>/<Name>-Implementation-Checklist.md items","required":["Contract","item shape","example","parallel rules","required checklist sections","metadata/status","outcomes"],"optional":["Migration and compatibility notes"],"budget":{"small":[350,500],"medium":[400,550],"large":[450,600]},"rows":"Stable ID; one behavior; exact path; executable Verify; acceptance When/then sentence (checklist-lint.mjs)."} -->
 
-> The implementation checklist is not a to-do list — **it is the build and verify
-> contract.** Every item must be independently verifiable by a fresh-context agent.
+> The implementation checklist is the build and verify contract. Every item must be
+> independently verifiable by a fresh-context agent. `node .playbook/scripts/checklist-lint.mjs
+> <checklist>` enforces this shape (`.playbook/checklist-schema.json`); a failing checklist does
+> not leave planning.
 
 ## The format
 
 ```markdown
-<!-- metadata: {"schema":1,"id":"REQ-001","owner":"identity","priority":"P1","risk":"medium","status":"planned","created_at":"2026-08-14T00:00:00Z","updated_at":"2026-08-14T00:00:00Z","evidence":[],"misses":[]} -->
-- [ ] <Item title>
-  - Type: ui | backend-api | backend-service | db | logging | infrastructure | cross-cutting
-  - Behavior: <what the user/system observes when this works>
-  - Location: <exact file/project path where this lives>
-  - UI ref: <mockup screen + position; existing style/pattern to reuse>   (UI items)
-  - Logging: <required INFO/ERROR lines>
-  - Acceptance: <the observable condition that means "done">
-  - Verify: <the concrete method a fresh-context Verifier executes to prove it>
-  - Coding Standards: <the specific standards-section this must follow>
-  - Depends on: #<N>   (only when a real dependency exists)
+<!-- metadata: {"schema":1,"id":"REQ-001","owner":"<team>","priority":"P1","risk":"medium","status":"planned","created_at":"<UTC>","updated_at":"<UTC>","evidence":[],"misses":[]} -->
+- [ ] <Verb-led title naming one behaviour>
+  - Type: ui | backend-api | backend-service | db | logging | infrastructure | cross-cutting | desktop
+  - Behavior: <one sentence naming an observable result>
+  - Location: `<exact repository path>`
+  - UI ref: <screen, position, reused pattern>   (ui and desktop items)
+  - Logging: <start, completion, count and error signals, or None with a reason>
+  - Acceptance: When <actor> <does what> on <screen>, then <a result a machine can observe>
+  - Verify: <tool, action, assertion, retained evidence>
+  - Coding Standards: `<document>`, section <n>
+  - Depends on: <stable IDs>   (only for a real dependency)
 ```
+
+Acceptance targets 20 words (maximum 30) and holds one behaviour; do not join outcomes with
+"and" or use subjective words such as "correctly".
 
 ## Worked example
 
 ```markdown
-- [ ] Export to Excel button
+<!-- metadata: {"schema":1,"id":"REQ-014","owner":"frontend-reports","priority":"P1","risk":"medium","status":"planned","created_at":"2026-09-07T00:00:00Z","updated_at":"2026-09-07T00:00:00Z","evidence":[],"misses":[]} -->
+- [ ] Export the filtered Cost Report grid
   - Type: ui
-  - Behavior: toolbar button labelled "Export"; downloads .xlsx of the
-    current grid, respecting active filters
-  - Location: src/frontend/src/Components/Reports/Cost/ExportButton.tsx
-  - UI ref: mockup screen 3, top-right; uses existing .btn-toolbar style
-  - Logging: INFO on start/finish with row count; ERROR + stack on failure
-  - Acceptance: clicking Export downloads a file whose row count
-    equals the visible grid row count
-  - Verify: Playwright clicks Export, asserts a download; grep logs
-    for "Export complete"
-  - Coding Standards: follows the project button component pattern per coding-standards.md §4.2
+  - Behavior: Selecting Export downloads a workbook containing the visible filtered rows.
+  - Location: `src/frontend/src/Components/Reports/Cost/ExportButton.tsx`
+  - UI ref: Cost Report screen, top-right toolbar; reuse the report toolbar button pattern.
+  - Logging: INFO at start and completion with row count; ERROR with report ID on failure.
+  - Acceptance: When a report user selects Export on the Cost Report screen, then the downloaded workbook row count equals the visible filtered grid row count
+  - Verify: Playwright records the grid count, selects Export, parses the workbook, asserts equal row counts, and retains the trace and workbook hash.
+  - Coding Standards: `docs/coding-standards.md`, section 4.2, Report toolbar actions.
 ```
 
-## Rules that make parallelism work
+## Parallel work
 
-- Every item carries a `Type` field — build and verify group waves by it.
-- Cross-cutting edits (DI registration, `Program.cs`, `appsettings.json`) are
-  **consolidated into one item per file** so parallel agents never collide.
-- Explicit dependencies are stated as `Depends on: #N`.
+Consolidate edits to a shared file (service registration, application start-up, configuration)
+into one item per file so parallel builders never collide.
 
-## Mandated checklist sections
+## Required checklist sections
 
 ```markdown
-## Status Table                 <- reality at a glance; every command updates it
+## Status Table                 <- every item ID; every command updates it
 ## Infrastructure Requirements  <- external resources (containers, secrets, queues)
 ## Deployment Steps             <- see deployment-steps-template.md
 ## Verifier Run Log             <- appended per /verify run; history preserved
-## Verified History             <- created by /archive-checklist past ~2,000 lines
+## Verified History             <- optional; created by /archive-checklist
 ```
 
-The metadata comment is authoritative for item status; checkbox state is presentation only.
-Use `templates/checklist-metadata.yml`. Exceptions require an approver, owner, reason and
-expiry. Restored items reset to `planned` and require a new verification run.
+The metadata comment is authoritative for item status (`templates/checklist-metadata.yml`);
+checkbox state is presentation only. Exceptions require an approver, owner, reason and expiry.
+Restored items reset to `planned` and need a new verification run. `misses` is append-only.
 
-`misses` is required and contains only `MISS-*` IDs. It is append-only: append each opened
-or collapsed ID once; never remove, replace, or rewrite an ID when a miss is deferred,
-abandoned, fixed, or independently verified as pass.
-
-Allowed verification outcomes are `PASS`, `FAIL`, `PASS (code-audit)`, `FAIL (code-audit)`,
-`DATA-GAP`, and `BLOCKED`.
+Verification outcomes: `PASS`, `FAIL`, `PASS (code-audit)`, `FAIL (code-audit)`, `DATA-GAP`,
+and `BLOCKED`.

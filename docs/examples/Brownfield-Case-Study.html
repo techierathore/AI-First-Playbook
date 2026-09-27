@@ -1,0 +1,1062 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Brownfield Onboarding and Change Runbook</title>
+<style>
+html{scroll-behavior:smooth}
+body{font:16px/1.6 system-ui;max-width:860px;margin:40px auto;padding:0 20px;color:#211C16}
+table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px 10px;vertical-align:top}
+h1,h2,h3,h4,h5,h6{scroll-margin-top:20px;position:relative}
+h1 .anchor,h2 .anchor,h3 .anchor,h4 .anchor,h5 .anchor,h6 .anchor{
+  position:absolute;left:-1.1em;opacity:0;color:#999;text-decoration:none;
+  font-weight:400;transition:opacity .15s ease}
+h1:hover .anchor,h2:hover .anchor,h3:hover .anchor,h4:hover .anchor,h5:hover .anchor,h6:hover .anchor{opacity:1}
+h1 .anchor:hover,h2 .anchor:hover,h3 .anchor:hover,h4 .anchor:hover,h5 .anchor:hover,h6 .anchor:hover{color:#0E6E6A}
+pre{position:relative;background:#1F2530;color:#E7E2D6;border-radius:8px;padding:14px 16px;overflow-x:auto}
+pre.mermaid{background:transparent;color:inherit;text-align:center;padding:0;overflow:hidden}
+code{background:#eee;padding:1px 5px;border-radius:4px;font-size:.92em}
+pre code{background:transparent;padding:0;color:inherit}
+.copy-btn{position:absolute;top:8px;right:8px;font:11px/1 ui-monospace,monospace;
+  letter-spacing:.06em;text-transform:uppercase;background:rgba(231,226,214,.08);
+  color:#8FB6B3;border:1px solid rgba(143,182,179,.3);border-radius:6px;
+  padding:4px 10px;cursor:pointer;transition:all .15s ease;z-index:2}
+.copy-btn:hover{background:rgba(231,226,214,.14);color:#E7E2D6;border-color:rgba(231,226,214,.45)}
+.copy-btn.copied{background:rgba(156,207,162,.2);color:#9CCFA2;border-color:rgba(156,207,162,.5)}
+.broken-link{background:#FFEAEA !important;color:#A00 !important;text-decoration:line-through;cursor:help}
+.broken-link::after{content:" ⚠";font-size:.85em}
+#to-top{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;
+  background:#0E6E6A;color:#fff;border:none;font-size:20px;line-height:1;cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);opacity:0;pointer-events:none;
+  transition:opacity .2s ease;z-index:10}
+#to-top.visible{opacity:.85;pointer-events:auto}
+#to-top:hover{opacity:1}
+:target{animation:flash 1.2s ease}
+@keyframes flash{0%{background:#FFF4B8}100%{background:transparent}}
+
+/* ---- Mermaid diagram container with toolbar + scroll/pan ---- */
+.mermaid-wrap{position:relative;border:1px solid #DDE2E8;border-radius:8px;
+  background:#FBF8F2;margin:18px 0;overflow:hidden}
+.mermaid-scroll{overflow:auto;max-height:75vh;cursor:grab}
+.mermaid-scroll.grabbing{cursor:grabbing}
+.mermaid-scroll > pre.mermaid{display:inline-block;min-width:100%;margin:0;padding:18px 12px}
+.mermaid-scroll > pre.mermaid > svg{display:inline-block;max-width:none;
+  transition:width .15s ease,height .15s ease}
+.mermaid-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:4px;
+  background:rgba(255,255,255,.92);border:1px solid #D8DEE5;border-radius:8px;
+  padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);z-index:5;
+  font:13px/1 ui-monospace,monospace}
+.mermaid-toolbar button{background:transparent;border:1px solid transparent;
+  color:#574E43;border-radius:5px;padding:5px 9px;cursor:pointer;
+  transition:all .12s ease;line-height:1;min-width:30px}
+.mermaid-toolbar button:hover{background:#EFE8DA;border-color:#D8CFBF;color:#211C16}
+.mermaid-toolbar button:active{background:#E3DACB}
+.mermaid-toolbar .zoom-pct{font-size:11px;color:#857A6B;padding:5px 6px;
+  align-self:center;min-width:42px;text-align:center}
+.mermaid-toolbar .sep{width:1px;background:#D8DEE5;margin:2px 2px}
+@media print{
+  .copy-btn,#to-top,.mermaid-toolbar{display:none !important}
+  .mermaid-scroll{overflow:visible !important;max-height:none !important}
+  .mermaid-wrap{border:none;background:transparent;page-break-inside:avoid}
+}
+</style>
+</head><body>
+<textarea id="src" hidden># Brownfield Onboarding and Change Runbook
+
+This reusable runbook brings an incompletely documented legacy module into the AI-First Playbook
+(AIFP), establishes an evidence-backed baseline, and then delivers a compatible change. **Legacy
+Inventory Owner Filter** is an illustrative example only; it is not a shipped feature, fixture,
+migration, architecture prescription, or reference implementation.
+
+## SDLC-to-AIFP Phase Mapping
+
+Every conventional SDLC stage maps to an explicit AIFP phase, command, agent, inputs, outputs,
+gate, and telemetry metric. The table below is the authoritative crosswalk.
+
+| SDLC Stage | AIFP Phase | Command | Agent | Inputs | Outputs | Gate | Metrics |
+|---|---|---|---|---|---|---|---|
+| Discovery/Audit | Pre-entry | `/legacy-audit` | Analyst | Module, profile, checklist | Evidence under `verification/` | Audit complete | `legacy-audit` |
+| Requirements | [Phase 1 — Plan](../../phases/01-plan.md) | `/feature-plan` | Analyst | Audit evidence, requirements, standards | Checklist, architecture | [Phase 2 — Plan Review](../../phases/02-plan-review-gate.md) human gate | `feature-plan` |
+| Design | [Phase 1 — Plan](../../phases/01-plan.md) (continued) | `/feature-plan` | Analyst | Audit + requirements | Compatible design, safe seams | Plan approval | `feature-plan` |
+| Development | [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) | `/implement` | Orchestrator → Builders | Approved checklist | Compatible code, old path preserved | `implementation-summary` | `implement` |
+| Testing/Verification | [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Results Gate](../../phases/06-verification-results-gate.md) | `/verify` | Fresh Verifier | Checklist, baseline, matrix | Before/after evidence, verdicts | `verification-results` | `verify` |
+| Bug Fixing | [Phase 7 — Fix](../../phases/07-fix.md) | `/fix` | Orchestrator → Builders | FAIL items | Fixed code | Fresh `/verify` | `fix` |
+| Acceptance | [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md) | Human gate | QA/Product | PASS checklist, before/after | `acceptance.md` | Human approval | None |
+| Release | Human gate | Release team | Acceptance, rollback drill | `release-readiness.md` | Release approval | None | None |
+| Maintenance | [Phase 9](../../phases/09-post-verification-bugs.md) / [Phase 10](../../phases/10-production-bugs.md) | `/analyze-fix` | Analyst | Issues, incidents | Updated checklist | `analyze-fix` | `miss`/`miss-fix` |
+
+## 1. Objective, Audience, Roles, and Safety
+
+**Objective:** characterize the current system, turn evidence into a verifiable contract, change it
+through a reversible seam, independently compare old and new behavior, and transfer enough
+knowledge for another owner to release, roll back, operate and support it.
+
+**Audience:** Product/BA, legacy maintainers, Engineering, QA, Security/privacy/data stewards,
+Release, Operations, and facilitators onboarding teams to repeat this process.
+
+| Role | Accountability |
+|---|---|
+| Human sponsor / Product | Defines desired outcome, accepted legacy quirks and accepted differences. |
+| Legacy owner / SME | Supplies history and ownership context; recollection never replaces evidence. |
+| Analyst agent | Audits the module and creates the evidence-based implementation contract. |
+| Orchestrator / builders | Implement approved items and perform embedded self-review. |
+| Fresh-context Verifier | Executes old and new paths and records independent inline verdicts. |
+| QA / business approver | Performs human acceptance and persists the decision. |
+| Security / data steward | Approves classification, access, fixtures, redaction and retention. |
+| Release / Operations | Owns rollout, rollback, monitoring, support and incident routing. |
+
+**Safety principle: observe and characterize before product edits.** Discovery may read source, run
+profile-declared checks, and add verification-side characterization assets. It must not silently
+clean up product code. Preserve baseline evidence even when it proves an awkward behavior or known
+defect; an unknown is a risk to investigate, not permission to redesign.
+
+## 2. Prerequisites
+
+1. Install AIFP in the target repository and read `.playbook/AGENTS.md`.
+2. Replace relevant placeholders in `.playbook/environment-profile.yml` with reviewed project facts.
+3. Confirm the profile declares the real topology, build/test/start/stop commands, application
+   endpoints, database method/config path, browser endpoint, log paths and cleanup command.
+4. Never infer a command, port, config file, migration tool, database or secret source from this
+   runbook. An incomplete profile is fixed by its owner before runtime probing.
+5. Name Product, technical, data, security, release, operations and escalation owners.
+6. Obtain least-privilege observation access and establish deployment and rollback authority.
+7. Prepare synthetic fixtures or explicitly approved non-sensitive fixtures; record provenance,
+   approval, retention and disposal. Do not copy production data merely because the module is old.
+8. Confirm evidence can be written below repository-root `verification/` without secrets,
+   unredacted PII, raw credentials or restricted business data.
+9. Locate the actual coding standards and any existing architecture, data, API, UI, deployment,
+   support and incident documents. Missing documents remain named unknowns.
+10. Choose a stable `&lt;feature&gt;` token and unique UTC `&lt;run-id&gt;`.
+
+## 3. Discovery Input Pack
+
+| Input | Minimum content |
+|---|---|
+| Target boundary | Repository/module, entry points, user journey and explicit exclusions. |
+| Environment | Reviewed profile with no relevant placeholders. |
+| Requirements | Existing BRD, ticket, specification, support request or short outcome statement. |
+| Current knowledge | Manuals, screenshots, contracts, schemas, logs, tests and workarounds that exist. |
+| Ownership | Product, code, data, security, release, operations and escalation owners. |
+| Data controls | Classification, approved environment/fixture, redaction, retention and disposal. |
+| Engineering controls | Coding standards, review policy, protected paths and change windows. |
+| Release controls | Compatibility window, flag policy, rollback authority and incident route. |
+| Known defects | Reproduction and a preserve/fix/defer decision for each known issue. |
+| Acceptance intent | Desired outcome, must-not-change behavior and acceptable differences. |
+
+For the illustrative Legacy Inventory Owner Filter, the pack may name an existing inventory screen
+and a desired owner filter. It must not assume React, SQL, an API shape, a flag name, ports,
+commands or seeded defects; those facts must come from the target repository and profile.
+
+## 4. Put the Discovery Contract Before the Audit
+
+`/legacy-audit` links evidence and must-not-change behavior into an existing checklist. Before it
+runs, the Analyst and sponsor create or select a **minimal discovery checklist contract** at a
+repository-approved path. This is not the feature implementation plan. It records:
+
+- target, exclusions, owners, profile and coding-standards paths;
+- the no-product-edits boundary and approved baseline/fixture controls;
+- expected inventory, dependency, ownership, behavior, characterization, classification, risk and
+  safe-seam evidence;
+- items for every already-known preserved behavior; and
+- exact evidence destination `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/`.
+
+Invoke the installed OpenCode command from the target repository root:
+
+```text
+/legacy-audit @.playbook/environment-profile.yml @&lt;discovery-checklist-path&gt; &lt;target, feature token, run ID, scope and approved constraints&gt;
+```
+
+Do not claim that the command generates named files such as `legacy-audit.md`, `baseline.md` or
+`risk-register.md`; no such filename contract exists. Its guaranteed handoff is produced evidence
+under `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/` plus links/preservation items in the supplied
+checklist. If an installed variant does not require a checklist, pass its evidence directory
+directly into `/feature-plan`; never invent an audit summary file as an intermediary.
+
+## 5. Enable Telemetry Before Command Execution
+
+Start OpenCode with capture enabled **before any instrumented slash command**:
+
+```bash
+PLAYBOOK_TELEMETRY=1 opencode
+```
+
+Events append best-effort to `verification/telemetry/events.ndjson`. Setting the variable after
+OpenCode starts does not retroactively register the plugin; restart it. Telemetry failure never
+blocks delivery, and events contain no prompts, source, raw arguments, secrets or PII.
+
+OpenCode exports normalized schema-2, message-granularity command metrics including model mix,
+tokens, time and recursively linked subagents.
+
+## 6. Product Baseline Before Code Changes
+
+The Legacy owner and Analyst capture these facts with synthetic or approved fixtures:
+
+1. **Source identity:** a human records the revision and, if policy permits, an existing release
+   tag. Agents do not create tags, stage, commit or rewrite history.
+2. **Clean build/tests:** run only profile-declared commands; record command, UTC time, environment,
+   result and evidence link. Explain pre-existing failure rather than hiding it.
+3. **UI:** route, roles, visible states, loading/empty/error behavior, accessibility observations
+   and approved redacted screenshots, where a UI exists.
+4. **API:** observed request/response/status compatibility, authorization and error behavior.
+5. **Database/data:** reads, writes, constraints, ordering, null/empty handling and side effects
+   through the profile-declared method; credentials never enter evidence.
+6. **Logs:** event names, levels, correlation, start/finish/failure signals and redaction; retain
+   only approved sanitized excerpts.
+7. **Characterization tests:** narrow tests or runners that encode observed behavior without
+   correcting it; label quirks and defects explicitly.
+8. **Dependencies/ownership:** upstreams, downstreams, consumers, packages, jobs, stores,
+   deployment units, owners and escalation paths.
+9. **Data classification:** field classes, access, fixture approval, evidence restrictions,
+   retention and deletion owner.
+10. **Risks/unknowns:** impact, likelihood, detection, decision owner and expiry.
+11. **Safe seams:** real extension points, optional parameters, adapters, flags or additive choices
+    that keep a reversible old path.
+12. **Known defects:** reproduction evidence and preserve/fix/defer decision; never silently turn a
+    defect into a requirement or silently repair it during discovery.
+
+### Keep Two Baselines Separate
+
+- **Product baseline:** current build/test and UI/API/database/log behavior, existing performance
+  measures, operational signals and defect reproductions. Compare it to old/new and post-deploy.
+- **AIFP process baseline:** command records for `legacy-audit`, `feature-plan`, `implement`,
+  `verify` and actual `fix` runs: elapsed, active operation time, models, tokens, measured cost,
+  attempts, subagents and miss lifecycle.
+- Agent elapsed time is not product latency or human effort; product measures are not planning
+  quality. The first feature establishes a process baseline, not proof of improvement.
+
+## 7. Brownfield Lifecycle Flow
+
+The diagram below shows the baseline → audit → plan → implement → verify loop, including the
+fix/reverify cycle and human gates.
+
+```mermaid
+flowchart TD
+    A[Pre-entry: Legacy Audit] --&gt;|Audit evidence| B[Phase 1: Feature Plan]
+    B --&gt; C{Phase 2: Plan Review Gate}
+    C --&gt;|Approve| D[Phase 3 + 4: Implement &amp;amp; Self-Review]
+    C --&gt;|Revise| B
+    D --&gt; E{Phase 5 + 6: Verify Old &amp;amp; New Paths}
+    E --&gt;|All PASS| F[Phase 8: Human Acceptance]
+    E --&gt;|FAIL / DATA-GAP| G[Phase 7: Fix]
+    G --&gt;|Fixed code| E
+    F --&gt;|Approved| H[Release Readiness &amp;amp; Rollback Drill]
+    H --&gt; I[Deploy &amp;amp; Post-Deploy]
+    I --&gt; J{Phase 9 / 10: Production Issues?}
+    J --&gt;|Yes| K[Phase 9/10: Analyze &amp;amp; Fix]
+    K --&gt; E
+    J --&gt;|No| L[Operations Transfer]
+```
+
+## 8. End-to-End SDLC Runbook
+
+Each step supplies role/agent, inputs, command, artifact/evidence, exit/gate and expected
+telemetry. Miss events are exceptions, not quotas; none is normal when the contract and execution
+are sound.
+
+### Step 0 — Validate Inputs and Capture (SDLC: Environment Setup)
+
+- **Phase:** Pre-entry (telemetry setup)
+- **Role / agent:** Human operator; Security/data owner where required.
+- **Inputs:** Installed harness, reviewed profile, discovery pack and fixture approval.
+- **Command:** `PLAYBOOK_TELEMETRY=1 opencode`; do not run an application command yet.
+- **Artifact / evidence:** Input links, profile review, owners and fixture approval.
+- **Exit / gate:** Relevant profile facts are real and contain no forbidden secret values.
+- **Metric / misses:** No slash-command metric for launcher setup; no miss expected.
+
+### Step 1 — Record Revision and Clean Baseline (SDLC: Environment Setup)
+
+- **Phase:** Pre-entry baseline capture
+- **Role / agent:** Human records revision; Analyst observes; Legacy owner explains anomalies.
+- **Inputs:** Source identity, profile commands, fixture, known defects and evidence location.
+- **Command:** Profile build/test and only approved runtime/browser/data/log/cleanup commands.
+- **Artifact / evidence:** Results, characterized UI/API/data/log behavior, tests, maps, risks and seams.
+- **Exit / gate:** Baseline is reproducible, or each gap has an owner and blocks affected planning.
+- **Metric / misses:** Profile commands do not automatically create slash-command metrics; emit a
+  specification miss only for a genuine omitted requirement/control, not routine inquiry.
+
+### Step 2 — Legacy Audit (SDLC: Discovery/Audit)
+
+- **Phase:** Pre-entry — `/legacy-audit` ([Pre-entry](../../phases/01-plan.md))
+- **Role / agent:** Analyst; Legacy, Security and data owners answer factual questions.
+- **Inputs:** Profile, discovery checklist, target, baseline and fixture controls.
+- **Command:**
+  ```text
+  /legacy-audit @.playbook/environment-profile.yml @&lt;discovery-checklist-path&gt; &lt;scope&gt;
+  ```
+- **Artifact / evidence:** `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/` evidence and linked
+  must-not-change items in the supplied checklist.
+- **Exit / gate:** No product edit; inventory/maps/behavior/tests/classification/risks/seams are
+  evidenced; unresolved data gaps have owners.
+- **Metric / misses:** One `legacy-audit` command window when instrumented; genuine plan/checklist
+  omissions may create classified misses, never routine discovery churn.
+
+### Step 3 — Evidence-Based Feature Plan (SDLC: Requirements + Design)
+
+- **Phase:** [Phase 1 — Plan](../../phases/01-plan.md) — `/feature-plan`
+- **Role / agent:** Analyst with Product, Engineering, QA, Security and Operations.
+- **Inputs:** Requirements, standards, architecture/data references, audit evidence, preserved
+  behavior, known defects, risks and desired change.
+- **Command:**
+  ```text
+  /feature-plan @&lt;requirements&gt; @&lt;standards&gt; @&lt;reference-docs&gt; \
+    @verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/ \
+    &lt;output folder and compatibility constraints&gt;
+  ```
+- **Artifact / evidence:** Project-convention docs and full checklist; every desired/preserved
+  behavior has Behavior/Location/UI ref/Logging/Acceptance/Verify/Coding Standards plus `Type`,
+  dependencies, old path, selection mechanism, rollback and evidence links.
+- **Exit / gate:** No unknown masquerades as fact; defects say preserve/fix/defer; both paths are
+  executable; Infrastructure Requirements and Deployment Steps sections exist.
+- **Metric / misses:** One `feature-plan` command window per invocation; review-discovered omissions
+  become plan/checklist misses when they meet the schema criteria.
+
+### Step 4 — Plan Review Gate (SDLC: Design Review)
+
+- **Phase:** [Phase 2 — Plan Review Gate](../../phases/02-plan-review-gate.md) — human gate
+- **Role / agent:** Human Product, Engineering, QA, Security and Operations approvers.
+- **Inputs:** Planned docs, audit links, matrix, risks, verification and rollback plan.
+- **Command:** No gate command; revise with `/feature-plan` as needed and use
+  `templates/handoffs/plan-approval.md` or an equivalent durable record.
+- **Artifact / evidence:** Producer, consumer, accountable approver, identity, UTC timestamp, status
+  transition, evidence, open decisions, escalation owner and exception expiry.
+- **Exit / gate:** Coverage, verification, compatibility, rollback and ownership are approved; no
+  blocking data gap remains.
+- **Metric / misses:** Human gate has no metric; each revision command has a new `feature-plan`
+  window. Genuine escaped planning gaps create miss lifecycle records.
+
+### Step 5 — Compatible Implementation (SDLC: Development)
+
+- **Phase:** [Phase 3 — Build](../../phases/03-build.md) + [Phase 4 — Self-Review](../../phases/04-self-review.md) — `/implement`
+- **Role / agent:** Orchestrator and builders under Engineering ownership.
+- **Inputs:** Approved checklist, standards, sibling docs and profile.
+- **Command:**
+  ```text
+  /implement @&lt;implementation-checklist&gt; @&lt;coding-standards&gt;
+  ```
+- **Artifact / evidence:** Checklist-scoped code; preserved old path; approved flag/selection/default;
+  target-specific deploy/rollback scripts only if needed; updated checklist deployment/infra.
+- **Exit / gate:** Every item is built, self-tested and `to-verify`, or names its external blocker
+  and supplier. Old path, rollback and logging match the plan.
+- **Metric / misses:** One `implement` window per invocation, covering build **and embedded
+  self-review**; do not conceptually split tokens/time. The Orchestrator centralizes builder miss
+  candidates; parallel builders do not allocate miss IDs.
+
+### Step 6 — Embedded Self-Review (SDLC: Development, continued)
+
+- **Phase:** [Phase 4 — Self-Review](../../phases/04-self-review.md) (part of `/implement`)
+- **Role / agent:** Same Orchestrator; this is part of `/implement`, not another command.
+- **Inputs:** Built code, Verify fields, profile and Developer Flow Guide if present.
+- **Command:** Profile build/test/start/stop plus focused smoke, data-side-effect and log probes.
+- **Artifact / evidence:** Per-item self-test notes, runtime/data/log proof, updated deployment/infra
+  and cleanup confirmation.
+- **Exit / gate:** Build and smoke pass; success status without required side effect is failure.
+  Self-review never grants independent PASS.
+- **Metric / misses:** No second phase record; evidence stays in `implement`. A genuine self-review
+  miss may be deferred after repair, but only independent verification closes it as pass.
+
+### Step 7 — Fresh Verification of Old and New Paths (SDLC: Testing/Verification)
+
+- **Phase:** [Phase 5 — Verify](../../phases/05-verify.md) + [Phase 6 — Verification Results Gate](../../phases/06-verification-results-gate.md) — `/verify`
+- **Role / agent:** Fresh-context Verifier that did not implement the change.
+- **Inputs:** Checklist, verification guide, baseline, matrix, profile, deploy steps and fixture.
+- **Command:**
+  ```text
+  /verify @&lt;implementation-checklist&gt; @&lt;verification-guide&gt;
+  ```
+- **Artifact / evidence:** `verification/&lt;feature&gt;/&lt;verify-run-id&gt;/` runtime evidence; inline
+  `**Verifier Result**`, Status Table and Verifier Run Log in the checklist. No separate Gap Report.
+- **Exit / gate:** Every item is PASS (or explicitly limited `PASS (code-audit)`); FAIL, DATA-GAP or
+  BLOCKED prevents acceptance/release.
+- **Metric / misses:** One `verify` window covering verification **and results gate**; do not split
+  it. Parent Verifier serially opens/links failures; parallel workers never write the miss stream.
+
+### Step 8 — Fix and Reverify (SDLC: Bug Fixing)
+
+- **Phase:** [Phase 7 — Fix](../../phases/07-fix.md) — `/fix` then `/verify`
+- **Role / agent:** Orchestrator/builders fix; fresh Verifier proves.
+- **Inputs:** Inline findings, linked miss IDs, baseline and approved plan.
+- **Command:**
+  ```text
+  /fix @&lt;implementation-checklist&gt;
+  /verify @&lt;implementation-checklist&gt;
+  ```
+- **Artifact / evidence:** Inline root-cause/fix/self-test notes, revised rollback if needed, new
+  verification evidence and lifecycle outcomes after independent PASS.
+- **Exit / gate:** Every failure is addressed or externally blocked; reverify is all PASS.
+- **Metric / misses:** One `fix` window per invocation and one `verify` per rerun. Keep attempts
+  distinct; fix may defer linked misses, while only the Verifier closes pass. Never infer a run ID.
+
+### Step 9 — Human Acceptance (SDLC: Acceptance)
+
+- **Phase:** [Phase 8 — Human Acceptance](../../phases/08-human-acceptance.md) — human gate
+- **Role / agent:** QA and Product/BA; policy owners join when relevant.
+- **Inputs:** All-PASS checklist, before/after evidence, guide and accepted differences.
+- **Command:** Human scenarios; persist with `templates/handoffs/acceptance.md`.
+- **Artifact / evidence:** Identity, UTC timestamp, scope, evidence, exceptions and expiry.
+- **Exit / gate:** Business behavior is accepted and no data gap remains.
+- **Metric / misses:** No command metric; acceptance defects are escaped misses and return through
+  analysis/fix/verify, not edits to historical baseline.
+
+### Step 10 — Release Readiness and Rollback Drill (SDLC: Release)
+
+- **Phase:** Release gate — human gate
+- **Role / agent:** Release/Operations with Engineering and Security.
+- **Inputs:** Acceptance, deployment/infra, matrix, rollback, monitoring, window and contacts.
+- **Command:** Only target-approved commands; record with
+  `templates/handoffs/release-readiness.md`.
+- **Artifact / evidence:** Signed packet and timed non-production rollback drill with source/data,
+  old-path and monitoring proof.
+- **Exit / gate:** Forward/reverse order works, old path survives the compatibility window,
+  thresholds/owners exist, and failed drill blocks release.
+- **Metric / misses:** No slash metric; failed readiness routes to plan/fix/verify and may create a
+  classified miss. A chat waiver is not approval.
+
+### Step 11 — Deploy and Post-Deploy (SDLC: Release, continued)
+
+- **Phase:** Release — authorized operator
+- **Role / agent:** Authorized Release/Operations operator; Engineering observes.
+- **Inputs:** Approved packet, exact target steps, protected secrets and rollback authority.
+- **Command:** Only commands recorded from the real profile/checklist; this runbook supplies no app
+  command, port, migration tool or secret value.
+- **Artifact / evidence:** Version/state, sanitized health/business/data/log checks and decision.
+- **Exit / gate:** Old/default and enabled paths meet the matrix; failure pauses rollout or invokes
+  rollback.
+- **Metric / misses:** Deployment has no AIFP metric unless an instrumented command owns it;
+  production defects route to incident and production-bug analysis.
+
+### Step 12 — Operations Transfer and Incident Route (SDLC: Maintenance)
+
+- **Phase:** [Phase 9](../../phases/09-post-verification-bugs.md) / [Phase 10](../../phases/10-production-bugs.md) — `/analyze-fix`
+- **Role / agent:** Engineering producer to Operations consumer; service owner approves.
+- **Inputs:** Final checklist, baseline, release, monitoring, rollback and contacts.
+- **Command:** Use `templates/handoffs/operations-transfer.md`; for an event use
+  `templates/handoffs/incident.md` and the approved production-bug flow.
+- **Artifact / evidence:** Transfer/incident packet linking owner, severity, evidence, mitigation,
+  rollback state and next action.
+- **Exit / gate:** A replacement operator can detect, triage, disable/roll back and escalate without
+  the original developer; incident learning feeds characterization and the next checklist.
+- **Metric / misses:** No transfer metric; production escapes and later analysis/fix/verify retain
+  separate command windows and miss lifecycle rather than rewriting history.
+
+## 9. Compatibility Verification Matrix
+
+Populate expected outcomes from observed baseline and approved requirements, using the same
+approved fixture where possible; this table does not prescribe product behavior.
+
+| Scenario | Old/default proof | New/enabled proof | Gate |
+|---|---|---|---|
+| Selection absent/default or off | Baseline contract remains executable. | New path is not accidentally selected. | No unexplained UI/API/data/log difference. |
+| Selection on | Old path remains recoverable. | Approved behavior works end to end. | Every mapped item passes. |
+| Authorized/unauthorized roles | Existing allow/deny remains. | New path applies approved authorization. | No privilege expansion or disclosure. |
+| Empty/null/invalid input | Baseline response is recorded. | Approved safe state/error and logs occur. | No crash, ambiguity or silent partial success. |
+| Ordering/paging/search | Existing semantics are recorded. | Compatible semantics use deterministic fixtures. | Accepted differences only. |
+| Dependency failure | Existing failure behavior is known. | New path fails safely. | Response, side effect and sanitized logs agree. |
+| Known legacy defect | Preserve/fix/defer decision is reproduced. | Defect is not masked or spread accidentally. | Explicit decision is honored. |
+| API/schema consumers | Existing consumer continues. | Additive/approved contract works. | No unapproved break. |
+| Rollback | Old path and data recover. | New path disables/reverses. | Timed drill and post-rollback baseline pass. |
+
+## 10. Rollback Drill
+
+1. Record revision, deployed state, selection/flag state and approved fixture state.
+2. Apply the candidate through exact readiness steps in a permitted environment.
+3. Prove both paths and the monitoring/log signals that detect failure.
+4. Invoke the named rollback authority and documented reverse order.
+5. Compare version, old-path UI/API, data and logs with baseline.
+6. Confirm repeated rollback is idempotent only where the target design promises it.
+7. Record elapsed recovery without inventing a target; compare to the approved recovery objective.
+8. Block release for incomplete data reversal, unavailable old path, exposed secrets or unowned work.
+
+## 11. Failure Routes
+
+| Finding | Route |
+|---|---|
+| Profile lacks a runtime fact | Profile owner supplies it; do not guess. |
+| Baseline build/test fails | Record known defect; Product/Engineering choose preserve, repair-first or block. |
+| Data classification is unknown | Data steward owns DATA-GAP; affected work stops. |
+| Unknown consumer/owner appears | Update audit/plan inputs and gate the risk before implementation. |
+| Plan omits baseline or rollback | Return to `/feature-plan`; record qualifying plan/checklist miss. |
+| Implement smoke fails | Keep item not-to-verify, repair and rerun smoke. |
+| Verify FAIL | `/fix` inline finding, then fresh `/verify`. |
+| Verify DATA-GAP/BLOCKED | Named human/infra owner supplies dependency; no acceptance. |
+| Acceptance defect | Record escape, analyze, amend contract if needed, fix and reverify. |
+| Readiness/rollback drill fails | Block release and return to plan/fix/verify. |
+| Post-deploy check fails | Pause/rollback, open incident and production-bug route. |
+| Telemetry is absent/incomplete | Report missing/unsupported/incomplete, never zero. |
+
+## 12. Metrics Export, Quality, and TfLens Handoff
+
+Export from the target repository root after windows close:
+
+```bash
+node .playbook/scripts/playbook-telemetry.mjs \
+  --checklist=&lt;path-to-implementation-checklist&gt;
+
+node .playbook/scripts/playbook-telemetry.mjs --misses
+```
+
+Both emit NDJSON to stdout. Controlled checkpoint examples are:
+
+```bash
+node .playbook/scripts/playbook-telemetry.mjs --checklist=&lt;path-to-implementation-checklist&gt; \
+  &gt; &lt;approved-checkpoint&gt;/phase-metrics.ndjson
+node .playbook/scripts/playbook-telemetry.mjs --misses \
+  &gt; &lt;approved-checkpoint&gt;/miss-lifecycle.ndjson
+```
+
+Follow [`Phase-Efficiency-TfLens-Contract.md`](../maintainer/cross-framework/Phase-Efficiency-TfLens-Contract.md): ingest stdout;
+upsert phase rows by repository identity plus `phase_execution_id`; upsert miss lines by immutable
+identity while preserving order; retain schema, harness, importer, repository and import time; and
+checkpoint completed windows before rotating events. Re-imports must be idempotent.
+
+Quality filters:
+
+- Duration needs `complete:true`; EOF/incomplete duration is null, not zero.
+- Active comparisons need `complete:true` and `coverage:&quot;complete&quot;`; partial is a lower bound, unavailable is not zero,
+  and active operation time is not human effort.
+- Token totals need a complete window, valid data and complete token status; measured cost also needs complete cost.
+- Keep measured and estimated dollars separate; use `models[]` for mixed-model attribution.
+- Parent totals already include linked child usage; never add subagent usage twice.
+- Compare **command phases**: `implement` combines build/self-review and `verify` combines
+  verify/results-gate. Never manufacture conceptual token/time splits.
+- Model/tier miss rates require linked origin; sole repair windows are the headline set, shared
+  values stay apportioned, and absent attribution remains excluded.
+- Fold valid amendments, surface diagnostics, show `n of N assessed`, never report by actor, and
+  label comparative cohorts below three records `insufficient data`.
+
+## 13. Before/After Strategy Without Fake Numbers
+
+Leave values blank until observed and always retain scope, harness/model and quality exclusions.
+
+| Dimension | Before | After / Comparison Rule |
+|---|---|---|
+| Build/test | Clean baseline and existing suite. | Same commands plus approved tests; explain scope/count changes. |
+| Product behavior | Old UI/API/data/log evidence. | Compare old/default and new/enabled with like fixtures/environments. |
+| Product metrics | Existing approved latency/throughput/reliability measures, if any. | Same method; invent no target or result. |
+| Known defects | Reproduction and preserve/fix/defer. | Reproduce both paths and report decision compliance. |
+| Legacy audit | First `legacy-audit` model/token/time/subagent/miss record. | Compare only later audits of defensibly similar scope. |
+| Planning | `feature-plan` executions and plan/checklist misses. | Compare attempts and escaped omissions across similar cohorts. |
+| Implementation | Whole `implement` execution. | Combined build/self-review only; model/token/time/subagents/misses. |
+| Verification | Initial/rerun `verify` executions. | Attempts, verdict snapshots, misses and quality-complete usage. |
+| Fix/rework | No record if no fix occurred. | Each actual `fix`; null cost/provenance is not zero. |
+
+## 14. Artifact Tree and Retention
+
+Feature docs use project conventions. Evidence remains at repository-root `verification/`, not
+nested under the feature-doc folder.
+
+```text
+features/&lt;feature&gt;/
+  &lt;project-convention&gt;-FullStack-Implementation-Checklist.md
+  &lt;other actual feature-plan documents&gt;.md
+  handoffs/
+    {plan-approval,implementation-summary,verification-results}.md
+    {acceptance,release-readiness,operations-transfer}.md
+    incident.md                         # only if an incident exists
+verification/&lt;feature&gt;/
+  legacy-audit-&lt;run-id&gt;/               # actual audit evidence
+  &lt;verify-run-id&gt;/                     # runtime verification evidence
+verification/telemetry/
+  events.ndjson                        # transient; rotate after checkpoint
+  misses.ndjson                        # durable append-only history
+deploy/&lt;feature&gt;/
+  &lt;actual target-specific scripts only when required&gt;
+```
+
+Do not create empty illustrative scripts or claim named audit files. Retain docs, handoffs and
+evidence per repository/data policy. Ignore only transient
+`/verification/telemetry/events.ndjson` when configured; preserve and commit durable
+`verification/telemetry/misses.ndjson` under closed-vocabulary privacy rules. Rotate events only
+after checkpointing every `phase_execution_id`; apply the stricter rule when policies differ.
+
+## 15. Repeat Onboarding Safely
+
+For every later legacy feature, use a new token, run ID, discovery contract and evidence directory.
+Reuse the process, not previous architecture assumptions, fixtures, commands, risks or acceptance.
+Recheck the profile, owners, classification and source baseline; review prior miss patterns for
+process improvements; run a new audit and plan gate; compare only defensible cohorts; and add new
+support knowledge to durable operations documentation.
+
+## 16. Final Acceptance Criteria
+
+- [ ] A human recorded source revision; no agent created a tag/commit; profile-driven build/test and
+      relevant UI/API/database/log baselines use approved fixtures and have evidence.
+- [ ] Audit evidence exists at `verification/&lt;feature&gt;/legacy-audit-&lt;run-id&gt;/`; dependencies,
+      ownership, classification, risks, safe seams and known defects are recorded.
+- [ ] Every preserved behavior maps to the checklist; old/default and new/enabled paths pass the
+      matrix; accepted differences, selection control and rollback are documented.
+- [ ] Embedded self-review and fresh verification passed; every item is PASS, fixes were reverified,
+      miss outcomes are durable, and no FAIL, DATA-GAP or BLOCKED remains.
+- [ ] Acceptance, readiness, rollback drill, post-deploy monitoring, operations transfer and
+      incident route are approved and usable by a successor.
+- [ ] Metrics are quality-filtered/checkpointed or marked missing/unsupported, never zero; retention
+      and evidence disposal follow data and repository policy.
+
+## 17. Debrief
+
+Ask what observation contradicted documentation; which characterization reduced risk; what proves
+the old path survived; where accepted differences and rollback authority are durable; whether a new
+operator can identify the next action; which misses should improve the next discovery contract;
+which metric comparisons were excluded for quality, harness, cohort size, provenance or combined
+commands; and what must be retained, checkpointed or disposed of.
+</textarea>
+<div id="out"></div>
+<button id="to-top" aria-label="Back to top" title="Back to top">↑</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+<script>
+  /* ---- Slugifier (deterministic, GitHub-flavored-markdown compatible) ---- */
+  function slugify(text){
+    return (text || '')
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+      .replace(/[`~!@#$%^&*()+={}\[\]|\\:;"'<>,.?\/]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/ /g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  /* ---- Configure marked with custom heading renderer ---- */
+  const usedSlugs = new Map();
+  function uniqueSlug(base){
+    if (!base) base = 'section';
+    const count = usedSlugs.get(base) || 0;
+    usedSlugs.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count}`;
+  }
+
+  const renderer = new marked.Renderer();
+  renderer.heading = function(text, level, raw){
+    const rawText = (raw || text || '').toString();
+    const stripped = rawText.replace(/<[^>]+>/g, '');
+    const id = uniqueSlug(slugify(stripped));
+    return `<h${level} id="${id}">${text}` +
+           `<a href="#${id}" class="anchor" aria-label="Permalink to this heading">¶</a>` +
+           `</h${level}>\n`;
+  };
+
+  marked.setOptions({ renderer, gfm: true, breaks: false });
+
+  /* ---- Render markdown ---- */
+  document.getElementById('out').innerHTML =
+    marked.parse(document.getElementById('src').value);
+
+  /* ---- Replace mermaid code blocks AND remember the source text ---- */
+  document.querySelectorAll('code.language-mermaid').forEach(c => {
+    const p = document.createElement('pre'); p.className = 'mermaid';
+    /* Stash the original source on a data attribute so the new-tab view can reuse it */
+    p.setAttribute('data-mermaid-src', c.textContent);
+    p.textContent = c.textContent;
+    c.closest('pre').replaceWith(p);
+  });
+  try { mermaid.initialize({ startOnLoad:false, securityLevel:'loose' }); mermaid.run(); } catch(e) {}
+
+  /* ---- After Mermaid renders, wrap each diagram with scroll container + toolbar ---- */
+  /* mermaid.run() is async; poll briefly for the <svg> to appear in each .mermaid */
+  function whenSvgReady(pre, cb, tries){
+    tries = tries || 0;
+    const svg = pre.querySelector('svg');
+    if (svg) return cb(svg);
+    if (tries > 40) return; /* give up after ~4s */
+    setTimeout(() => whenSvgReady(pre, cb, tries + 1), 100);
+  }
+
+  document.querySelectorAll('pre.mermaid').forEach((pre, idx) => {
+    whenSvgReady(pre, (svg) => attachDiagramControls(pre, svg, idx));
+  });
+
+  function attachDiagramControls(pre, svg, idx){
+    /* Skip if already wrapped (e.g., on rerun) */
+    if (pre.closest('.mermaid-wrap')) return;
+
+    /* Note the natural dimensions BEFORE we modify anything */
+    const vb = svg.getAttribute('viewBox');
+    let naturalW = 0, naturalH = 0;
+    if (vb){
+      const parts = vb.split(/\s+/).map(Number);
+      if (parts.length === 4){ naturalW = parts[2]; naturalH = parts[3]; }
+    }
+    if (!naturalW){ naturalW = parseFloat(svg.getAttribute('width')) || 800; }
+    if (!naturalH){ naturalH = parseFloat(svg.getAttribute('height')) || 400; }
+
+    /* Build wrapper structure */
+    const wrap = document.createElement('div'); wrap.className = 'mermaid-wrap';
+    const scroller = document.createElement('div'); scroller.className = 'mermaid-scroll';
+    const toolbar = document.createElement('div'); toolbar.className = 'mermaid-toolbar';
+    toolbar.setAttribute('role','toolbar');
+    toolbar.setAttribute('aria-label','Diagram zoom controls');
+
+    pre.parentNode.insertBefore(wrap, pre);
+    scroller.appendChild(pre);
+    wrap.appendChild(scroller);
+    wrap.appendChild(toolbar);
+
+    /* Remove SVG's max-width:100% inline style if Mermaid set it */
+    svg.style.maxWidth = 'none';
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    /* Use viewBox + naturalW/H baseline */
+    svg.style.width = naturalW + 'px';
+    svg.style.height = naturalH + 'px';
+    svg.dataset.naturalW = naturalW;
+    svg.dataset.naturalH = naturalH;
+
+    /* Internal scale state — SVGs with viewBox scale naturally when width/height attrs change */
+    let scale = 1;
+    function applyScale(s){
+      scale = Math.max(0.25, Math.min(5, s));
+      svg.style.width = (naturalW * scale) + 'px';
+      svg.style.height = (naturalH * scale) + 'px';
+      pctLabel.textContent = Math.round(scale * 100) + '%';
+    }
+
+    /* Toolbar buttons */
+    function mkBtn(label, title, onClick){
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.title = title;
+      b.setAttribute('aria-label', title);
+      b.addEventListener('click', (e) => { e.preventDefault(); onClick(); });
+      toolbar.appendChild(b);
+      return b;
+    }
+
+    mkBtn('−', 'Zoom out (Alt+−)', () => applyScale(scale - 0.2));
+    const pctLabel = document.createElement('span');
+    pctLabel.className = 'zoom-pct';
+    pctLabel.textContent = '100%';
+    toolbar.appendChild(pctLabel);
+    mkBtn('+', 'Zoom in (Alt+=)', () => applyScale(scale + 0.2));
+
+    const sep1 = document.createElement('span'); sep1.className = 'sep'; toolbar.appendChild(sep1);
+
+    mkBtn('Fit', 'Fit to width', () => {
+      const scrollerW = scroller.clientWidth - 24; /* minus padding */
+      const fitScale = scrollerW > 0 ? scrollerW / naturalW : 1;
+      applyScale(fitScale);
+    });
+    mkBtn('1:1', 'Actual size (100%)', () => applyScale(1));
+    mkBtn('⛶', 'Toggle full-screen view', () => toggleFullscreen(wrap, scroller));
+
+    const sep2 = document.createElement('span'); sep2.className = 'sep'; toolbar.appendChild(sep2);
+
+    mkBtn('↗', 'Open in new tab (with zoom, pan, print, PNG export)', () => openInNewTab(pre));
+
+    /* Drag-to-pan when content overflows */
+    let dragging = false, dragStartX = 0, dragStartY = 0, scrollStartX = 0, scrollStartY = 0;
+    scroller.addEventListener('mousedown', (e) => {
+      /* Only left-click drag on background (not on SVG text that might be selectable) */
+      if (e.button !== 0) return;
+      dragging = true;
+      scroller.classList.add('grabbing');
+      dragStartX = e.clientX; dragStartY = e.clientY;
+      scrollStartX = scroller.scrollLeft; scrollStartY = scroller.scrollTop;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      scroller.scrollLeft = scrollStartX - (e.clientX - dragStartX);
+      scroller.scrollTop  = scrollStartY - (e.clientY - dragStartY);
+    });
+    window.addEventListener('mouseup', () => {
+      if (dragging){ dragging = false; scroller.classList.remove('grabbing'); }
+    });
+
+    /* Ctrl/⌘ + wheel = zoom; plain wheel = scroll (browser default) */
+    scroller.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey){
+        e.preventDefault();
+        const dir = e.deltaY < 0 ? 1 : -1;
+        applyScale(scale + dir * 0.15);
+      }
+    }, { passive:false });
+
+    /* Initial scale: fit-to-width if the diagram is wider than the container */
+    setTimeout(() => {
+      const containerW = scroller.clientWidth - 24;
+      if (naturalW > containerW){
+        applyScale(containerW / naturalW);
+      } else {
+        applyScale(1);
+      }
+    }, 30);
+  }
+
+  /* ---- Full-screen toggle ---- */
+  function toggleFullscreen(wrap, scroller){
+    if (document.fullscreenElement){
+      document.exitFullscreen();
+    } else if (wrap.requestFullscreen){
+      wrap.requestFullscreen().catch(() => {
+        /* Fallback: simulate full-screen with fixed positioning */
+        wrap.classList.toggle('fake-fullscreen');
+      });
+    }
+  }
+  /* Fake-fullscreen CSS for browsers that block Fullscreen API */
+  const fsStyle = document.createElement('style');
+  fsStyle.textContent = `.mermaid-wrap.fake-fullscreen{position:fixed;inset:0;z-index:9999;
+    background:#FBF8F2;border:0;border-radius:0;margin:0}
+    .mermaid-wrap.fake-fullscreen .mermaid-scroll{max-height:100vh;height:100vh}
+    .mermaid-wrap:fullscreen{background:#FBF8F2;padding:0}
+    .mermaid-wrap:fullscreen .mermaid-scroll{max-height:100vh;height:100vh}`;
+  document.head.appendChild(fsStyle);
+
+  /* ---- Open diagram in new tab with full standalone controls ---- */
+  function openInNewTab(pre){
+    const src = pre.getAttribute('data-mermaid-src') || '';
+    const title = (document.title || 'Diagram') + ' — diagram';
+    const escapedSrc = src
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const html = `<!doctype html><html><head><meta charset="utf-8">
+<title>${title.replace(/</g,'&lt;')}</title>
+<style>
+html,body{margin:0;padding:0;height:100%;font:14px/1.4 system-ui;background:#FBF8F2;color:#211C16}
+#bar{position:fixed;top:0;left:0;right:0;height:46px;background:#fff;border-bottom:1px solid #D8DEE5;
+  display:flex;align-items:center;padding:0 12px;gap:6px;z-index:10;
+  box-shadow:0 1px 4px rgba(0,0,0,.06)}
+#bar button{background:transparent;border:1px solid #D8DEE5;color:#211C16;border-radius:6px;
+  padding:6px 12px;font:13px/1 ui-monospace,monospace;cursor:pointer;transition:all .12s ease}
+#bar button:hover{background:#EFE8DA}
+#bar .pct{font:12px/1 ui-monospace,monospace;color:#574E43;min-width:50px;text-align:center}
+#bar .title{margin-left:auto;color:#857A6B;font-size:12px;max-width:50%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stage{position:absolute;top:46px;left:0;right:0;bottom:0;overflow:auto;
+  background:repeating-linear-gradient(45deg,#FBF8F2 0,#FBF8F2 10px,#F4EFE5 10px,#F4EFE5 20px)}
+#stage.grabbing{cursor:grabbing}
+#stage:not(.grabbing){cursor:grab}
+#render{padding:30px}
+#render > svg{display:block;transform-origin:top left;max-width:none}
+@media print{
+  #bar{display:none}
+  #stage{position:static;overflow:visible;background:#fff}
+  #render{padding:0}
+  #render > svg{width:100% !important;height:auto !important}
+}
+</style></head><body>
+<div id="bar">
+  <button id="zout" title="Zoom out">−</button>
+  <span class="pct" id="pct">100%</span>
+  <button id="zin"  title="Zoom in">+</button>
+  <button id="fit"  title="Fit width">Fit</button>
+  <button id="one"  title="Actual size">1:1</button>
+  <button id="prn"  title="Print this diagram">Print</button>
+  <button id="png"  title="Download as PNG">PNG</button>
+  <button id="svg"  title="Download raw SVG">SVG</button>
+  <span class="title">${title.replace(/</g,'&lt;')}</span>
+</div>
+<div id="stage"><div id="render"><pre class="mermaid">${escapedSrc}</pre></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"><\/script>
+<script>
+(function(){
+  mermaid.initialize({ startOnLoad:false, securityLevel:'loose' });
+  mermaid.run().then(setup).catch(setup);
+
+  function setup(){
+    const svg = document.querySelector('#render svg');
+    if (!svg) return;
+    const vb = svg.getAttribute('viewBox');
+    let nW=0, nH=0;
+    if (vb){ const p = vb.split(/\\s+/).map(Number); if (p.length===4){ nW=p[2]; nH=p[3]; } }
+    if (!nW) nW = parseFloat(svg.getAttribute('width')) || 800;
+    if (!nH) nH = parseFloat(svg.getAttribute('height')) || 400;
+    svg.removeAttribute('width'); svg.removeAttribute('height');
+    svg.style.maxWidth='none';
+
+    let scale = 1;
+    const pct = document.getElementById('pct');
+    function apply(s){
+      scale = Math.max(0.1, Math.min(8, s));
+      svg.style.width  = (nW * scale) + 'px';
+      svg.style.height = (nH * scale) + 'px';
+      pct.textContent = Math.round(scale * 100) + '%';
+    }
+    document.getElementById('zin').onclick = () => apply(scale + 0.2);
+    document.getElementById('zout').onclick = () => apply(scale - 0.2);
+    document.getElementById('fit').onclick = () => {
+      const stageW = document.getElementById('stage').clientWidth - 60;
+      apply(stageW > 0 ? stageW / nW : 1);
+    };
+    document.getElementById('one').onclick = () => apply(1);
+    document.getElementById('prn').onclick = () => window.print();
+
+    /* PNG export: render the SVG to a canvas and download */
+    document.getElementById('png').onclick = () => {
+      const xml = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([xml], { type:'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = function(){
+        const c = document.createElement('canvas');
+        c.width = nW * 2; c.height = nH * 2; /* 2x for better print quality */
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#FBF8F2'; ctx.fillRect(0,0,c.width,c.height);
+        ctx.scale(2,2);
+        ctx.drawImage(img, 0, 0, nW, nH);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(blob){
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'diagram.png';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        });
+      };
+      img.onerror = () => { alert('Could not generate PNG. Try downloading SVG instead.'); URL.revokeObjectURL(url); };
+      img.src = url;
+    };
+
+    /* SVG download */
+    document.getElementById('svg').onclick = () => {
+      const xml = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([xml], { type:'image/svg+xml;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'diagram.svg';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+
+    /* Drag-to-pan in stage */
+    const stage = document.getElementById('stage');
+    let dragging=false, sx=0, sy=0, ssx=0, ssy=0;
+    stage.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      dragging = true; stage.classList.add('grabbing');
+      sx = e.clientX; sy = e.clientY; ssx = stage.scrollLeft; ssy = stage.scrollTop;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      stage.scrollLeft = ssx - (e.clientX - sx);
+      stage.scrollTop  = ssy - (e.clientY - sy);
+    });
+    window.addEventListener('mouseup', () => { dragging=false; stage.classList.remove('grabbing'); });
+    stage.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey){
+        e.preventDefault();
+        apply(scale + (e.deltaY < 0 ? 0.15 : -0.15));
+      }
+    }, { passive:false });
+
+    /* Keyboard shortcuts */
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')){ e.preventDefault(); apply(scale + 0.2); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '-'){ e.preventDefault(); apply(scale - 0.2); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '0'){ e.preventDefault(); apply(1); }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p'){ /* let browser print dialog through */ }
+    });
+
+    /* Initial fit-to-width */
+    setTimeout(() => {
+      const stageW = stage.clientWidth - 60;
+      if (nW > stageW) apply(stageW / nW); else apply(1);
+    }, 30);
+  }
+})();
+<\/script></body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w){
+      alert('Pop-up blocked. Please allow pop-ups for this page to open diagrams in a new tab.');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  /* ---- Repair broken internal links ---- */
+  function findTarget(rawHash){
+    if (!rawHash || rawHash[0] !== '#') return null;
+    const hash = decodeURIComponent(rawHash.slice(1));
+    if (!hash) return null;
+    let target = document.getElementById(hash);
+    if (target) return hash;
+    const canonical = slugify(hash.replace(/-/g, ' '));
+    if (canonical && document.getElementById(canonical)) return canonical;
+    const lower = slugify(hash);
+    if (lower && document.getElementById(lower)) return lower;
+    const headings = document.querySelectorAll('h1,h2,h3,h4,h5,h6');
+    const normHash = hash.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    for (const h of headings){
+      const headText = h.textContent.replace(/¶$/,'').trim();
+      const normHead = headText.toLowerCase().replace(/[^a-z0-9]+/g, '');
+      if (normHash && normHash === normHead) return h.id;
+      if (normHash && normHead && (normHead.indexOf(normHash) === 0 || normHash.indexOf(normHead) === 0)){
+        if (Math.abs(normHash.length - normHead.length) < 5) return h.id;
+      }
+    }
+    return null;
+  }
+
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (href === '#' || href.startsWith('#:')) return;
+    const resolved = findTarget(href);
+    if (resolved){
+      if (resolved !== href.slice(1)) {
+        a.setAttribute('href', '#' + resolved);
+        a.setAttribute('data-rescued-from', href);
+        a.title = 'Link rescued from "' + href + '" — original anchor not found';
+      }
+    } else {
+      a.classList.add('broken-link');
+      a.title = 'Broken link: no heading matches "' + href + '"';
+    }
+  });
+
+  /* ---- Back-to-top button ---- */
+  const toTop = document.getElementById('to-top');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) toTop.classList.add('visible');
+    else toTop.classList.remove('visible');
+  });
+  toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  /* ---- Copy buttons on every <pre> that contains code (skip mermaid) ---- */
+  document.querySelectorAll('pre').forEach(function(pre){
+    if (pre.classList.contains('mermaid')) return;
+    if (pre.querySelector('.copy-btn')) return;
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'copy-btn'; btn.textContent = 'Copy';
+    btn.setAttribute('aria-label','Copy code to clipboard');
+    btn.addEventListener('click', function(){
+      var clone = pre.cloneNode(true);
+      clone.querySelectorAll('.copy-btn').forEach(function(n){ n.remove(); });
+      var text = clone.textContent.replace(/^\n/,'').replace(/\s+$/,'');
+      function done(){ btn.textContent='Copied'; btn.classList.add('copied');
+        setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('copied'); }, 1600); }
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(function(){
+          var ta=document.createElement('textarea'); ta.value=text;
+          ta.style.position='fixed'; ta.style.left='-9999px';
+          document.body.appendChild(ta); ta.select();
+          try{document.execCommand('copy');}catch(e){}
+          document.body.removeChild(ta); done();
+        });
+      } else {
+        var ta=document.createElement('textarea'); ta.value=text;
+        ta.style.position='fixed'; ta.style.left='-9999px';
+        document.body.appendChild(ta); ta.select();
+        try{document.execCommand('copy');}catch(e){}
+        document.body.removeChild(ta); done();
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  /* ---- If page loaded with a hash, jump to it AFTER all rescue logic ran ---- */
+  if (window.location.hash){
+    const resolved = findTarget(window.location.hash);
+    if (resolved){
+      const el = document.getElementById(resolved);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+</script>
+</body></html>

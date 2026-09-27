@@ -8,7 +8,7 @@
  * record kinds: `miss` (opened), `miss-fix` (closed), `miss-amend`
  * (completes a null closed-vocabulary field; never overwrites a value).
  *
- * Contract: docs/Telemetry-Guide.md. Provenance rules that
+ * Contract: docs/maintainer/Telemetry-Guide.md. Provenance rules that
  * this library enforces mechanically, not by prose:
  *   - an agent may classify, but may never report a number (or a provenance
  *     verdict): origin_model / origin_confidence / every token & cost field
@@ -25,7 +25,7 @@ import { dirname, join } from "node:path";
 
 export const MISS_SCHEMA = 1;
 
-// ── closed vocabularies (docs/Telemetry-Guide.md §7) ───────────────────────
+// ── closed vocabularies (docs/maintainer/Telemetry-Guide.md §7) ───────────────────────
 export const MISS_CLASS = [
   "missed-requirement", "partial-implementation", "wrong-behaviour", "regression",
   "unspecified-gap", "spec-contradiction", "scope-creep", "hallucinated-api",
@@ -40,7 +40,7 @@ export const SEVERITIES = ["blocker", "major", "minor"];
 // (TechieFlow SCHEMA §5.5.6) with an explicitly AGENT-ONLY definition: a
 // written rule existed, in a file an AGENT had loaded, and was not honoured.
 // It must never be applied to a human actor — the person-facing failure is
-// not this field (see docs/Decisions.md, 2026-08-28).
+// not this field (see docs/maintainer/Decisions.md, 2026-08-28).
 export const WHY_MISSED = [
   "missing-checklist-item", "insufficient-verify-method", "code-audit-limitation",
   "ambiguous-acceptance", "dependency-not-declared", "instruction-ignored", "other",
@@ -59,10 +59,41 @@ export const HARNESS = ["opencode"];
 // Only closed-vocabulary JUDGEMENTS are amendable: a judgement may be
 // completed, an observation may not. Everything the emitter/joiner derives
 // (model, confidence, tokens, cost, attribution) is excluded outright.
-export const AMENDABLE = ["why_missed"];
+export const AMENDABLE = ["why_missed", "protocol_outcome"];
 // A record written before a field existed is not "unassessed" — it is
 // dropped from that field's denominator (§0.55). Date = first shipped.
-export const FIELD_SINCE = { why_missed: "2026-08-28" };
+export const FIELD_SINCE = { why_missed: "2026-08-28", protocol_outcome: "2026-09-26" };
+
+// ── the four-question miss protocol (docs/Playbook-Requirements.md §3) ──────
+// Asked in order; the first fixed response is the outcome. The agent answers
+// the questions (a judgement); this library derives the one stored outcome, so
+// an outcome can never skip an earlier question. Optional and additive: records
+// written before 2026-09-26 carry no protocol_outcome.
+export const PROTOCOL_OUTCOMES = ["spec-gap", "playbook-gap", "weak-check", "ignored-rule"];
+export const PROTOCOL_QUESTIONS = [
+  { key: "spec", question: "Did the project's spec say it clearly?", stopOn: "no", outcome: "spec-gap" },
+  { key: "playbook", question: "Did the Playbook say it anywhere?", stopOn: "no", outcome: "playbook-gap" },
+  { key: "check", question: "Was there a check, and did it fail to catch it?", stopOn: "yes", outcome: "weak-check" },
+  { key: "ignored", question: "Was it written and ignored anyway?", stopOn: "yes", outcome: "ignored-rule" },
+];
+
+/** "spec=yes,playbook=no" → { outcome } or { error }. Answers must follow the
+ *  question order and stop at the first fixed response. */
+export function protocolOutcome(answers) {
+  if (typeof answers !== "string" || !answers.trim()) return { error: "protocol answers are empty" };
+  const given = answers.split(",").map((pair) => pair.trim().split("="));
+  for (const [index, [key, value]] of given.entries()) {
+    const q = PROTOCOL_QUESTIONS[index];
+    if (!q) return { error: "more answers than the four questions" };
+    if (key !== q.key) return { error: `answer ${index + 1} must be ${q.key}= ("${q.question}"); the questions are asked in order` };
+    if (value !== "yes" && value !== "no") return { error: `${key} must be yes or no` };
+    if (value === q.stopOn) {
+      if (index !== given.length - 1) return { error: `${key}=${value} is a fixed response; stop there` };
+      return { outcome: q.outcome };
+    }
+  }
+  return { error: "the answers reached no fixed response; answer the next question" };
+}
 
 // Framework phases and harness slash commands are different namespaces. A
 // run-window lookup always crosses this table rather than assuming the phase
@@ -99,6 +130,8 @@ const FIX_FIELDS = [
   "verdict_after", "reopened", "cost_attribution", "actor",
 ];
 const AMEND_FIELDS = ["kind", "ts", "schema", "miss_id", "field", "value"];
+// Additive miss fields: allowed, never required (older records predate them).
+const OPTIONAL_MISS_FIELDS = ["protocol_outcome"];
 
 // ── the two "open" predicates (§0.4) — they DELIBERATELY disagree ───────────
 // Do not "fix" these to agree; each answers a different question:
@@ -190,6 +223,7 @@ export function foldAmends(records) {
     // Folding is also a trust boundary: malformed, hand-written stream rows
     // are still reported by validateMisses, but can never enter joined output.
     if (r.field === "why_missed" && !WHY_MISSED.includes(r.value)) { ignored++; invalid++; continue; }
+    if (r.field === "protocol_outcome" && !PROTOCOL_OUTCOMES.includes(r.value)) { ignored++; invalid++; continue; }
     if (parent[r.field] != null) { ignored++; overwrites++; continue; }
     parent[r.field] = r.value;
     applied++;
@@ -743,6 +777,13 @@ export function buildMissRecord(args, { records = [], windows, now = new Date(),
     errors.push("origin_agent is required when why_missed is instruction-ignored (agent-only)");
   }
   if (project_type != null) checkToken(errors, "project_type", project_type);
+  let protocol = null;
+  if (args.protocol_outcome != null) errors.push("protocol_outcome is derived from --protocol answers, never typed");
+  if (args.protocol != null) {
+    const derived = protocolOutcome(args.protocol);
+    if (derived.error) errors.push(`protocol: ${derived.error}`);
+    else protocol = derived.outcome;
+  }
   if (errors.length) return { errors };
   const ts = now.toISOString();
   const { origin_model, origin_confidence } = resolveOrigin(
@@ -764,6 +805,7 @@ export function buildMissRecord(args, { records = [], windows, now = new Date(),
       found_by: args.found_by, found_phase: args.found_phase ?? null,
       found_phase_gate: args.found_phase_gate ?? null,
       project_type, harness: args.harness ?? "opencode",
+      ...(protocol ? { protocol_outcome: protocol } : {}),
     },
   };
 }
@@ -815,6 +857,11 @@ export function buildAmendRecord(missId, field, value, { records = [], now = new
   if (typeof missId !== "string" || !MISS_ID_RE.test(missId)) errors.push(`bad miss_id '${missId}'`);
   if (!AMENDABLE.includes(field)) errors.push(`field '${field}' is not amendable (only closed-vocabulary judgements: ${AMENDABLE.join(", ")})`);
   if (field === "why_missed") checkVocab(errors, "value", value, WHY_MISSED);
+  if (field === "protocol_outcome") {
+    const derived = protocolOutcome(value);
+    if (derived.error) errors.push(`protocol: ${derived.error}`);
+    else value = derived.outcome;
+  }
   if (parent && AMENDABLE.includes(field) && parent[field] != null) {
     errors.push(`${missId}.${field} is already '${parent[field]}' — an amend may complete a null field, never overwrite a value`);
   }
@@ -853,7 +900,8 @@ export function validateMisses(records) {
     if (!isIsoTimestamp(r.ts)) errors.push(`${r.kind} ${r.miss_id ?? ""}: ts is not ISO-8601`);
     if (r.kind === "miss") {
       requireFields(r, MISS_FIELDS);
-      rejectUnknownFields(r, MISS_FIELDS);
+      rejectUnknownFields(r, [...MISS_FIELDS, ...OPTIONAL_MISS_FIELDS]);
+      if (r.protocol_outcome != null && !PROTOCOL_OUTCOMES.includes(r.protocol_outcome)) errors.push(`miss ${r.miss_id}: protocol_outcome='${r.protocol_outcome}' is outside the closed vocabulary`);
       if (!MISS_ID_RE.test(r.miss_id ?? "")) errors.push(`miss: bad miss_id '${r.miss_id}'`);
       const vocab = [
         ["miss_class", MISS_CLASS], ["artifact", ARTIFACTS], ["severity", SEVERITIES],
@@ -906,6 +954,7 @@ export function validateMisses(records) {
       if (!MISS_ID_RE.test(r.miss_id ?? "")) errors.push(`miss-amend: bad miss_id '${r.miss_id}'`);
       else if (!AMENDABLE.includes(r.field)) errors.push(`miss-amend ${r.miss_id}: field '${r.field}' is not amendable`);
       else if (r.field === "why_missed" && !WHY_MISSED.includes(r.value)) errors.push(`miss-amend ${r.miss_id}: value '${r.value}' is outside the why_missed vocabulary`);
+      else if (r.field === "protocol_outcome" && !PROTOCOL_OUTCOMES.includes(r.value)) errors.push(`miss-amend ${r.miss_id}: value '${r.value}' is outside the protocol_outcome vocabulary`);
     } else {
       errors.push(`unknown kind '${r.kind}' — the stream declares miss, miss-fix and miss-amend only`);
     }
@@ -920,6 +969,8 @@ export function validateMisses(records) {
   const assessed = eligible.filter((r) => r.why_missed != null).length;
   notes.push(`why_missed: ${assessed} of ${eligible.length} assessed`);
   if (predates > 0) notes.push(`why_missed: ${predates} record(s) predate the field (since ${sinceCutoff}) — dropped from the denominator`);
+  const protocolEligible = misses.filter((r) => Date.parse(r.ts ?? "") >= Date.parse(`${FIELD_SINCE.protocol_outcome}T00:00:00Z`));
+  notes.push(`protocol_outcome: ${protocolEligible.filter((r) => r.protocol_outcome != null).length} of ${protocolEligible.length} answered (records before ${FIELD_SINCE.protocol_outcome} predate the field)`);
   const escapes = eligible.filter((r) => r.found_by === "human" || r.found_by === "production");
   const escapesMissingWhy = escapes.filter((r) => r.why_missed == null);
   notes.push(`escapes_missing_why: ${escapesMissingWhy.length} of ${escapes.length} eligible escape(s) arrived with no why_missed`);
@@ -971,4 +1022,95 @@ export function enrichFixes(folded, windows) {
       data_quality: w ? w.data_quality ?? null : null,
     };
   });
+}
+
+// ── grader-verdict stream (verification/telemetry/grades.ndjson) ────────────
+// One record per requirement ID per grader run, written only by
+// scripts/playbook-grade.mjs. Same discipline as the miss stream: closed
+// vocabularies, UTC timestamps, append-only, the team-edition `actor` field
+// (aggregate-only, docs/maintainer/Decisions.md 2026-08-29 Decision 6), and no free text
+// that has not passed through redact().
+export const GRADE_SCHEMA = 1;
+export const GRADE_RESULTS = ["pass", "fail", "ungraded"];
+export const GRADE_CHECK_KINDS = ["script", "fixture", "review", "ungraded"];
+const GRADE_FIELDS = [
+  "kind", "ts", "schema", "run_id", "req_id", "check_kind", "check", "result", "reason",
+  "exit_code", "duration_ms", "grader_version", "node_version", "actor", "harness", "project_type",
+];
+const REQ_ID_RE = /^PB-\d{2,}$/;
+const SECRET_PATTERNS = [
+  /\b(?:ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{16,}\b/g,
+  /\bnpm_[A-Za-z0-9]{20,}\b/g,
+  /\bsk-[A-Za-z0-9_-]{16,}\b/g,
+  /\bxox[abpr]-[A-Za-z0-9-]{10,}\b/g,
+  /\bAKIA[0-9A-Z]{16}\b/g,
+  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
+  /\b[A-Fa-f0-9]{40,}\b/g,
+  /\b[A-Za-z0-9+/]{40,}={0,2}(?![A-Za-z0-9+/=])/g,
+  /(\/\/)[^\s/:@]+:[^\s/@]+@/g,
+  /\b((?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key)\s*[=:]\s*)("[^"]*"|'[^']*'|\S+)/gi,
+];
+
+/** Replace anything that looks like a credential. Used on every free-text
+ *  field the grader stores; the stream must never carry a secret value. */
+export function redact(text, maxLength = 240) {
+  if (text == null) return null;
+  let out = String(text);
+  for (const re of SECRET_PATTERNS) {
+    out = out.replace(re, (match, ...groups) => {
+      if (re.source.startsWith("(\\/\\/)")) return `${groups[0]}[REDACTED]@`;
+      if (re.flags.includes("i") && typeof groups[0] === "string" && /[=:]\s*$/.test(groups[0])) return `${groups[0]}[REDACTED]`;
+      return "[REDACTED]";
+    });
+  }
+  out = out.replace(/\s+/g, " ").trim();
+  return out.length > maxLength ? `${out.slice(0, maxLength - 1)}…` : out;
+}
+
+export function defaultGradesPath(root = process.cwd()) {
+  return join(root, "verification", "telemetry", "grades.ndjson");
+}
+
+export function buildGraderRecord(fields, { now = new Date() } = {}) {
+  const record = {
+    kind: "grader-verdict",
+    ts: now.toISOString(),
+    schema: GRADE_SCHEMA,
+    run_id: fields.run_id,
+    req_id: fields.req_id,
+    check_kind: fields.check_kind,
+    check: redact(fields.check ?? null, 200),
+    result: fields.result,
+    reason: redact(fields.reason ?? null),
+    exit_code: Number.isInteger(fields.exit_code) ? fields.exit_code : null,
+    duration_ms: Number.isFinite(fields.duration_ms) ? Math.round(fields.duration_ms) : null,
+    grader_version: fields.grader_version ?? null,
+    node_version: process.versions.node,
+    actor: fields.actor ?? null,
+    harness: "opencode",
+    project_type: "framework",
+  };
+  const errors = validateGraderRecords([record]).errors;
+  if (errors.length) throw new Error(`grader-verdict record invalid: ${errors.join("; ")}`);
+  return record;
+}
+
+export function validateGraderRecords(records) {
+  const errors = [];
+  records.forEach((r, i) => {
+    const at = `grades line ${i + 1}`;
+    if (r.kind !== "grader-verdict") { errors.push(`${at}: kind must be grader-verdict`); return; }
+    for (const key of Object.keys(r)) if (!GRADE_FIELDS.includes(key)) errors.push(`${at}: unknown field ${key}`);
+    if (r.schema !== GRADE_SCHEMA) errors.push(`${at}: schema must be ${GRADE_SCHEMA}`);
+    if (!ISO_TS_RE.test(r.ts ?? "") || !String(r.ts).endsWith("Z")) errors.push(`${at}: ts must be ISO-8601 UTC`);
+    if (!REQ_ID_RE.test(r.req_id ?? "")) errors.push(`${at}: req_id must look like PB-01`);
+    if (!GRADE_RESULTS.includes(r.result)) errors.push(`${at}: result must be one of ${GRADE_RESULTS.join("|")}`);
+    if (!GRADE_CHECK_KINDS.includes(r.check_kind)) errors.push(`${at}: check_kind must be one of ${GRADE_CHECK_KINDS.join("|")}`);
+    if (typeof r.run_id !== "string" || !TOKEN_RE.test(r.run_id)) errors.push(`${at}: run_id must be a token`);
+    if (r.result === "ungraded" && !r.reason) errors.push(`${at}: an ungraded result needs its written reason`);
+    for (const key of ["check", "reason"]) {
+      if (r[key] != null && redact(r[key], 100000) !== r[key]) errors.push(`${at}: ${key} carries an unredacted secret-like value`);
+    }
+  });
+  return { errors };
 }

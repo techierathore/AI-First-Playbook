@@ -1,0 +1,10 @@
+# recorded 2026-09-26T15:58:21.988Z with OpenCode 1.18.32 and the scripted model
+timestamp=2026-09-26T15:58:20.501Z level=INFO run=07532234 message="YOLO mode active: permissions auto-approved, git writes denied, rate-limit resets recorded" limitFile=<target>/verification/yolo/rate-limit.json
+timestamp=2026-09-26T15:58:20.523Z level=INFO run=07532234 message=created id=ses_f218fa494ffesy57XXow5VYDBG slug=silent-wolf version=1.18.32 projectID=[REDACTED] directory=<target> path="" workspaceID=undefined parentID=undefined title="New session - 2026-09-26T15:58:20.523Z" agent=undefined model=undefined metadata=undefined permission="[{\"permission\":\"question\",\"pattern\":\"*\",\"action\"…
+timestamp=2026-09-26T15:58:21.194Z level=INFO run=07532234 message=stream providerID=mock modelID=scripted session.id=ses_f218fa494ffesy57XXow5VYDBG small=true agent=title mode=primary
+timestamp=2026-09-26T15:58:21.308Z level=INFO run=07532234 message="shell tool using shell" shell=/bin/bash
+timestamp=2026-09-26T15:58:21.638Z level=INFO run=07532234 message=stream providerID=mock modelID=scripted session.id=ses_f218fa494ffesy57XXow5VYDBG small=false agent=orchestrator mode=primary
+timestamp=2026-09-26T15:58:21.768Z level=WARN run=07532234 message="BLOCKED git write in YOLO mode" command="git commit -am wip" reason="`git commit` writes to the repository history/index/refs — agents never commit, stage, push or rewrite (AGENTS.md)" callId=call_1
+Error: BLOCKED by yolo-policy: `git commit` writes to the repository history/index/refs — agents never commit, stage, push or rewrite (AGENTS.md). YOLO unlocks everything except git history: leave the working tree for the human to commit, report `git status` and what changed, and carry on with the run.
+timestamp=2026-09-26T15:58:21.864Z level=INFO run=07532234 message=stream providerID=mock modelID=scripted session.id=ses_f218fa494ffesy57XXow5VYDBG small=false agent=orchestrator mode=primary
+probe finished

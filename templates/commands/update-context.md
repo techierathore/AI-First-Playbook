@@ -1,4 +1,5 @@
 # /update-context
+<!-- template-schema: {"produces":"/update-context primer","required":["Contract","usage","context file","qualifying changes","reconcile","output"],"optional":["Gotcha and command index"],"budget":{"small":[150,220],"medium":[180,260],"large":[220,320]},"rows":"One durable fact; no transient feature state."} -->
 
 **Persona:** none — mechanical · **Cost:** 🟢 · **Owner:** process admin
 

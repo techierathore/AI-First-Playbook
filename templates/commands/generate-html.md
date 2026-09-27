@@ -1,4 +1,5 @@
 # /generate-html
+<!-- template-schema: {"produces":"/generate-html output","required":["Contract","usage","input","render","exclusions","overwrite","output"],"optional":["Folder and Mermaid branches"],"budget":{"small":[150,220],"medium":[180,260],"large":[220,320]},"rows":"One transform; name skips and overwrite choice."} -->
 
 **Persona:** none — pure mechanical utility · **Cost:** 🟢 (cheapest model tier)
 

@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "description": "Human document schemas. scripts/doc-scaffold.mjs writes the skeleton, scripts/doc-check.mjs enforces it; the readable version is docs/Playbook-Document-Schemas.md. Budgets are [TARGET, MAXIMUM] words; size follows the feature checklist (small 1-10, medium 11-30, large 31-75 active items).",
+  "kinds": {
+    "developer-flow-guide": {
+      "title": "Developer Flow Guide",
+      "file": "-Developer-Flow-Guide.md",
+      "metadata": ["Purpose", "Scope", "Subject type", "Audience", "Companion docs", "Updated by", "Last synced to code"],
+      "required": ["Map", "Cross-cutting flows", "Where do I look"],
+      "conditional": { "Screen / Tab flows": "Subject type is UI or Mixed", "Service / package / job flows": "Subject type is Service/Job, Package or Mixed" },
+      "order": ["Map", "Screen / Tab flows", "Service / package / job flows", "Cross-cutting flows", "Where do I look"],
+      "budget": { "small": [900, 1500], "medium": [1800, 3000], "large": [3000, 5000] },
+      "rows": "Every flow row or step names a real identifier in backticks, or is marked [VERIFY], [PLANNED] or [KNOWN ISSUE]; diagrams are Mermaid flowcharts; no code listings.",
+      "rules": ["mermaid-only", "flow-rows-named", "no-code-listing"]
+    },
+    "business-verification-reference": {
+      "title": "Business Verification Reference",
+      "file": "-Business-Verification-Reference.md",
+      "metadata": ["Purpose", "Audience", "Plain English", "Last reviewed"],
+      "required": ["What this report shows", "Data sources", "Calculation logic", "Mapping tables", "How to verify a value", "Verification scenarios", "Glossary"],
+      "conditional": {},
+      "order": ["What this report shows", "Data sources", "Calculation logic", "Mapping tables", "How to verify a value", "Verification scenarios", "Glossary"],
+      "budget": { "small": [700, 1200], "medium": [1400, 2400], "large": [2400, 4000] },
+      "rows": "Plain English only: no SQL, code, file paths or internal names; every data source names its portal path; a mapping table whenever sources are normalised.",
+      "rules": ["mermaid-only", "plain-english", "portal-paths"]
+    },
+    "db-changes": {
+      "title": "DB Changes",
+      "file": "-DB-Changes.md",
+      "metadata": [],
+      "required": ["Tables", "Stored procedures and views", "ER diagram", "Field-to-mockup mapping"],
+      "conditional": {},
+      "order": ["Tables", "Stored procedures and views", "ER diagram", "Field-to-mockup mapping"],
+      "budget": { "small": [600, 1200], "medium": [1200, 2400], "large": [2400, 4000] },
+      "rows": "Full DDL per object; one mapping row per UI field; the ER diagram is a Mermaid erDiagram.",
+      "rules": ["mermaid-only", "er-diagram"]
+    },
+    "architecture": {
+      "title": "Architecture",
+      "file": "-Architecture.md",
+      "metadata": [],
+      "required": ["System diagram", "Service design", "Data flow", "Error handling and logging", "Integration points"],
+      "conditional": {},
+      "order": ["System diagram", "Service design", "Data flow", "Error handling and logging", "Integration points"],
+      "budget": { "small": [500, 1000], "medium": [1000, 2000], "large": [2000, 3500] },
+      "rows": "One service or integration per row with its registration site; the system diagram is a Mermaid flowchart.",
+      "rules": ["mermaid-only"]
+    },
+    "verification-guide": {
+      "title": "Verification Guide",
+      "file": "-Verification-Guide.md",
+      "metadata": [],
+      "required": ["Prerequisites", "Base URL", "Test data profile", "Testing steps", "Data verification", "Local setup"],
+      "conditional": {},
+      "order": ["Prerequisites", "Base URL", "Test data profile", "Testing steps", "Data verification", "Local setup"],
+      "budget": { "small": [500, 1000], "medium": [1000, 2000], "large": [2000, 3500] },
+      "rows": "One numbered step per action; connection profiles by name, never a connection string or secret.",
+      "rules": ["mermaid-only", "no-secrets"]
+    },
+    "powerbi-mapping": {
+      "title": "Power BI Mapping",
+      "file": "-PowerBI-Mapping.md",
+      "metadata": [],
+      "required": ["View to dataset mapping", "Business logic", "Filters and parameters"],
+      "conditional": {},
+      "order": ["View to dataset mapping", "Business logic", "Filters and parameters"],
+      "budget": { "small": [300, 700], "medium": [700, 1400], "large": [1400, 2500] },
+      "rows": "One view or measure per row; business logic in plain English, no DAX.",
+      "rules": ["mermaid-only"]
+    }
+  },
+  "agent_documents": ["-Implementation-Checklist.md", "-Checklist.md", "-Issues.md", "Issues.md", "AGENTS.md", "-Requirements.md"]
+}

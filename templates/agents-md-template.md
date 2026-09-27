@@ -1,4 +1,5 @@
 # AGENTS.md Template — standing rules, always in context
+<!-- template-schema: {"produces":"AGENTS.md (project standing rules)","required":["Purpose","logging","UI","errors/data","standards","done","Verifier","docs","version control","completion","YOLO","checklist","enforcement"],"optional":["Project security","platform","ownership"],"budget":{"small":[550,750],"medium":[700,950],"large":[850,1150]},"rows":"One rule per bullet; reserve shouted words for invariants; no phase procedure."} -->
 
 Cross-cutting rules fail when they live inside long per-feature docs the model
 deprioritises. Promote them to a repo-root `AGENTS.md` that is always in context.
@@ -97,5 +98,5 @@ The rule set, verbatim:
 Rules stated in prompts get forgotten under output pressure. Which is why this framework
 **enforces the report-file ban mechanically** — an OpenCode plugin intercepting write/edit
 calls and rejecting forbidden filenames (`Gap-Report*.md`, `Verification-Report*.md`, …)
-with an instructive error ([`spec-guardrails.ts`](../harness/opencode/plugin/spec-guardrails.ts)).
+with an instructive error ([`spec-guardrails.ts`](../harness/opencode/playbook-plugin/spec-guardrails.ts)).
 Enforce the hardest rules in OpenCode's plugin callbacks, not in prose.

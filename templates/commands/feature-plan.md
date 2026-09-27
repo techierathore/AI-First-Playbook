@@ -1,4 +1,5 @@
 # /feature-plan
+<!-- template-schema: {"produces":"/feature-plan output set","required":["Contract","usage","inputs","document set","coverage","approval handoff"],"optional":["Report","BI","HTML branches"],"budget":{"small":[350,500],"medium":[500,700],"large":[650,900]},"rows":"One output per row; state each condition."} -->
 
 **Persona:** Analyst · **Cost:** 🔴 · **Chat:** fresh
 

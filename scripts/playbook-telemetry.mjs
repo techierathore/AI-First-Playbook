@@ -8,7 +8,7 @@
  * (OpenCode) — enable with PLAYBOOK_TELEMETRY=1. Framework-sourced fields
  * (attempt, gate verdict, project_type) are parsed deterministically from the
  * checklist and playbook/environment-profile.yml — identical in any harness.
- * See docs/Telemetry-Guide.md.
+ * See docs/maintainer/Telemetry-Guide.md.
  *
  * Usage:
  *   node scripts/playbook-telemetry.mjs --checklist=path/to/Checklist.md \
@@ -124,7 +124,7 @@ if (args.misses) {
 // ── harness-sourced fields ──────────────────────────────────────────────────
 
 if (!existsSync(eventsPath)) {
-  console.error(`no telemetry events at ${eventsPath} — run with PLAYBOOK_TELEMETRY=1 (see docs/Telemetry-Guide.md)`);
+  console.error(`no telemetry events at ${eventsPath} — run with PLAYBOOK_TELEMETRY=1 (see docs/maintainer/Telemetry-Guide.md)`);
   process.exit(1);
 }
 

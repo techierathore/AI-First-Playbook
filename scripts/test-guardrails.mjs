@@ -1,16 +1,16 @@
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-const policyUrl = new URL("../harness/opencode/plugin/write-policy.mjs", import.meta.url);
+const policyUrl = new URL("../harness/opencode/playbook-plugin/write-policy.mjs", import.meta.url);
 const source = readFileSync(policyUrl, "utf8");
 const required = ["normalizePath", "traverses the repository", "isSymbolicLink", "shellWriteTargets", "apply_patch", "verification/", "playbook-miss.mjs"];
 const missing = required.filter((term) => !source.includes(term));
 if (missing.length) { console.error(`guardrail coverage missing: ${missing.join(", ")}`); process.exit(1); }
-for (const copy of ["../.opencode/plugin/write-policy.mjs"]) {
+for (const copy of ["../.opencode/playbook-plugin/write-policy.mjs"]) {
   const url = new URL(copy, import.meta.url);
   if (!existsSync(url)) { console.error(`guardrail policy copy missing: ${copy}`); process.exit(1); }
   if (readFileSync(url, "utf8") !== source) { console.error(`guardrail policy copy drift: ${copy}`); process.exit(1); }
 }
-for (const carrier of ["../harness/opencode/plugin/spec-guardrails.ts"]) {
+for (const carrier of ["../harness/opencode/playbook-plugin/spec-guardrails.ts"]) {
   const url = new URL(carrier, import.meta.url);
   if (!existsSync(url)) { console.error(`guardrail carrier missing: ${carrier}`); process.exit(1); }
   if (!readFileSync(url, "utf8").includes("write-policy.mjs")) { console.error(`guardrail carrier does not use shared policy: ${carrier}`); process.exit(1); }
@@ -21,8 +21,8 @@ for (const agent of ["analyst.md", "builder.md", "orchestrator.md", "verifier.md
   if (local !== canonical) { console.error(`OpenCode agent copy drift: ${agent}`); process.exit(1); }
 }
 {
-  const canonical = readFileSync(new URL("../harness/opencode/plugin/telemetry.ts", import.meta.url), "utf8");
-  const local = readFileSync(new URL("../.opencode/plugin/telemetry.ts", import.meta.url), "utf8");
+  const canonical = readFileSync(new URL("../harness/opencode/playbook-plugin/telemetry.ts", import.meta.url), "utf8");
+  const local = readFileSync(new URL("../.opencode/playbook-plugin/telemetry.ts", import.meta.url), "utf8");
   if (local !== canonical) { console.error("OpenCode telemetry plugin copy drift"); process.exit(1); }
   for (const requiredTerm of ["randomUUID()", 'kind: "subagent-start"', 'kind: "subagent-end"', 'kind: "tool-start"', 'kind: "tool-end"', "activeMs"]) {
     if (!canonical.includes(requiredTerm)) { console.error(`OpenCode telemetry plugin missing schema-2 capture: ${requiredTerm}`); process.exit(1); }
@@ -66,10 +66,10 @@ for (const relative of harnessPromptFiles) {
     if (result.status !== 0) fail("ordinary OpenCode model ID was rejected", result);
 
     reset();
-    mkdirSync(join(fixture, "docs"), { recursive: true });
-    writeFileSync(join(fixture, "docs", "OpenCode-Only-Framework-Implementation-Checklist.md"), `Deliberate historical ${["Claude", "Code"].join(" ")} wording.\n`);
+    mkdirSync(join(fixture, "docs", "archive", "checklists"), { recursive: true });
+    writeFileSync(join(fixture, "docs", "archive", "checklists", "OpenCode-Only-Framework-Implementation-Checklist.md"), `Deliberate historical ${["Claude", "Code"].join(" ")} wording.\n`);
     result = runScan();
-    if (result.status !== 0) fail("active checklist's deliberate historical wording was rejected", result);
+    if (result.status !== 0) fail("archived checklist's deliberate historical wording was rejected", result);
 
     const markers = [
       ["Claude", "Code"].join(" "),
@@ -201,8 +201,8 @@ console.log("guardrail policy coverage passed");
 
 // ── YOLO policy: git writes denied, everything else allowed, limit parsing ──
 {
-  const yoloUrl = new URL("../harness/opencode/plugin/yolo-policy.mjs", import.meta.url);
-  for (const carrier of ["../harness/opencode/plugin/yolo.ts", "./playbook-yolo.mjs"]) {
+  const yoloUrl = new URL("../harness/opencode/playbook-plugin/yolo-policy.mjs", import.meta.url);
+  for (const carrier of ["../harness/opencode/playbook-plugin/yolo.ts", "./playbook-yolo.mjs"]) {
     const url = new URL(carrier, import.meta.url);
     if (!existsSync(url)) { console.error(`yolo carrier missing: ${carrier}`); process.exit(1); }
     if (!readFileSync(url, "utf8").includes("yolo-policy.mjs")) { console.error(`yolo carrier does not use shared policy: ${carrier}`); process.exit(1); }

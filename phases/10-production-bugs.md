@@ -15,6 +15,8 @@ Preserve logs, traces, deployment metadata and the original reproduction before 
 anything. Record customer impact, detection time, owner, communications owner and rollback
 authority. SEV1/SEV2 incidents require a postmortem within five business days; amend the
 checklist when the root cause was not already covered by a passing requirement.
+`node .playbook/scripts/incident-workflow.mjs validate <incident record> <checklist>` refuses a
+resolved incident whose regression item has no PASS.
 
 User-reported bugs after deployment follow **exactly the same loop as
 [Phase 9](09-post-verification-bugs.md)** — production is just a later discovery point
@@ -27,10 +29,10 @@ for the same class of escape:
    corresponding checklist item metadata.
 2. `/analyze-fix` — root cause, why verification missed it, checklist patch.
 3. Human review → `/fix` → `/verify` until ALL PASS.
-4. Pass the release readiness and post-deploy validation gates, then redeploy. Delete the
-   transient file only after copying the tracker key/link, severity, impact, timestamps,
-   root cause and regression-test reference into the checklist and confirming every issue
-   has a linked miss ID. `instruction-ignored` is agent-origin-only. Telemetry is
+4. Pass the release readiness and post-deploy validation gates, then redeploy. Copy the
+   tracker key/link, severity, impact, timestamps, root cause and regression-test reference
+   into the checklist; delete the transient file only when `escaped-bug-workflow.mjs status
+   <checklist> <issues> --require-retire` passes. `instruction-ignored` is agent-origin-only. Telemetry is
    fire-and-forget and never changes incident, verification, release, or redeploy verdicts.
 
 ## The long game

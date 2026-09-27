@@ -27,7 +27,7 @@ identity, timestamp, scope, evidence links, exceptions and expiry.
 
 ## Outcomes
 
-- **Accepted** → [Release readiness](../docs/Release-And-Operations.md). (Definition of Done: every item PASS with evidence; every
+- **Accepted** → [Release readiness](../docs/Operating-Guide.md). (Definition of Done: every item PASS with evidence; every
   mockup element present; every sync/job headlessly invocable with its target view
   populated; every data path returns data or logs why not; required logging fires; build
   and touched tests green; Status Table current; HTML docs current if requested.)

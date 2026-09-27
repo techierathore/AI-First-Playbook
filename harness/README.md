@@ -1,10 +1,10 @@
 # Harness — the runnable artifacts
 
-Everything under [`templates/`](../templates/) describes *what* each part of the process
+Everything under [`templates/`](../templates) describes *what* each part of the process
 does. Everything here is the **actual working implementation** — the prompt files a
 harness loads and executes.
 
-| | [`templates/`](../templates/) | `harness/` (here) |
+| | [`templates/`](../templates) | `harness/` (here) |
 |---|---|---|
 | Form | one spec per command, prose | the real `.md` / `.ts` / `.html` files |
 | Audience | someone deciding whether to adopt, or porting to another harness | someone installing it today |
@@ -41,7 +41,7 @@ highest precedence in OpenCode — it overrides even the TUI selection) and `off
 again. Change
 models or tiers with `set-model` / `set-tier` (the script re-applies automatically); CI can
 enforce consistency with `node scripts/apply-model-tiers.mjs --check`. Operator guide:
-`docs/Model-Routing-Guide.md`; rationale per phase: `docs/Adapter-Design.md`.
+`docs/maintainer/Model-Routing-Guide.md`; rationale per phase: `docs/maintainer/Adapter-Design.md`.
 
 ## YOLO mode (unattended runs)
 
@@ -58,7 +58,7 @@ node scripts/playbook-yolo.mjs --harness=opencode --cwd=/path/to/your-repo \
      --goal "Feature X: implement the checklist, verify, fix until every item PASSes"
 ```
 
-Operator guide: `docs/YOLO-Mode-Guide.md`.
+Operator guide: `docs/maintainer/YOLO-Mode-Guide.md`.
 
 ## Install (OpenCode)
 
@@ -120,10 +120,10 @@ these before your first run:
 
 | Assumption | Where it shows up | Change it to |
 |---|---|---|
-| Agent runs in a Linux container; apps run on the developer's Windows host | Verifier Rule 1, `host.docker.internal` probes | Your topology — if agent and apps share a host, `localhost` replaces `host.docker.internal` throughout |
+| Agent runs in a Linux container; apps run on the developer's Windows host | Command prompts only; the Verifier reads topology from the profile (`playbook-probe.mjs`) | Your topology — if agent and apps share a host, `localhost` replaces `host.docker.internal` throughout |
 | .NET backend + React frontend | `dotnet build`, `npm run start:local`, `verification/<feature>Runner/` consoles | Your build, run, and test commands |
 | Raw SQL over `sqlcmd`; **no** Entity Framework | Deployment Steps rules in `/implement`, `/fix` | Your migration tool |
-| Playwright MCP on port 8931 | Verifier Rules 2 and probes | Your port, or drop the probe |
+| Playwright MCP on port 8931 | `opencode.json` MCP entry; the Verifier uses the profile's `browser.endpoint` | Your port, or drop the probe |
 | Config read from `appsettings.Development.json` | Verifier Steps 1 and 3 | Your config file |
 | Jira via REST v3 + a `jira-config.json` at the shared root | `/create-issue-list` | Your tracker, or use the command's plain-text input mode |
 

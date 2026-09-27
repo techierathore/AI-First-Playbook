@@ -1,4 +1,5 @@
 # /add-doc
+<!-- template-schema: {"produces":"/add-doc document","required":["Contract","usage","requested doc","code/runtime inputs","execution","output"],"optional":["Flow or business branch"],"budget":{"small":[260,380],"medium":[350,500],"large":[450,650]},"rows":"One flow step; real names in developer docs; business language in business docs."} -->
 
 **Persona:** Analyst · **Cost:** 🟡–🔴 · **Introduced:** v2.4, extended v2.5
 

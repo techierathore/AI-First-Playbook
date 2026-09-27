@@ -51,12 +51,21 @@ jobs:
             exit 1
           fi
 
+      - name: Install the supported OpenCode
+        run: npm install --global "opencode-ai@$(node --print "require('./package.json').opencode.supported")"
+
       - name: Validate package
         run: |
           npm run validate
           npm run test:guardrails
           npm run test:misses
+          npm run test:install
           npm pack --dry-run
+
+      - name: Grade requirements
+        env:
+          PLAYBOOK_ACTOR: release
+        run: node scripts/playbook-grade.mjs docs/Playbook-Requirements.md --run-id="release-${{ github.run_id }}" --telemetry="${RUNNER_TEMP}/grades.ndjson"
 
       - name: Check release commit whitespace
         if: github.event_name == 'release'

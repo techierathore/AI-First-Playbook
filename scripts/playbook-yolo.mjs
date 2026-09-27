@@ -32,12 +32,12 @@
  * retryAt), cycles/<n>.log (full OpenCode output) and rate-limit.json (written by
  * the OpenCode plugin when it sees the error first-hand). Nothing here touches
  * git: the supervisor sets PLAYBOOK_YOLO=1 and the OpenCode plugin denies git
- * writes mechanically (harness/opencode/plugin/yolo-policy.mjs).
+ * writes mechanically (harness/opencode/playbook-plugin/yolo-policy.mjs).
  */
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { rateLimitPlan, runOutcome, hasYoloToken, SENTINEL_COMPLETE, SENTINEL_BLOCKED, DEFAULT_BUFFER_MINUTES, DEFAULT_UNPARSED_WAIT_MINUTES, MAX_WAIT_MINUTES } from "../harness/opencode/plugin/yolo-policy.mjs";
+import { rateLimitPlan, runOutcome, hasYoloToken, SENTINEL_COMPLETE, SENTINEL_BLOCKED, DEFAULT_BUFFER_MINUTES, DEFAULT_UNPARSED_WAIT_MINUTES, MAX_WAIT_MINUTES } from "../harness/opencode/playbook-plugin/yolo-policy.mjs";
 
 // ── args ────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);

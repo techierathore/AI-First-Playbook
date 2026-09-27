@@ -18,6 +18,51 @@ const runtimeMappings = [
   ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
   ["scripts/miss-lib.mjs", ".playbook/scripts/miss-lib.mjs"],
   ["scripts/playbook-telemetry.mjs", ".playbook/scripts/playbook-telemetry.mjs"],
+  ["scripts/profile-lib.mjs", ".playbook/scripts/profile-lib.mjs"],
+  ["scripts/playbook-probe.mjs", ".playbook/scripts/playbook-probe.mjs"],
+  ["scripts/playbook-app-lifecycle.mjs", ".playbook/scripts/playbook-app-lifecycle.mjs"],
+  ["scripts/profile-gates.mjs", ".playbook/scripts/profile-gates.mjs"],
+  ["scripts/checklist-lib.mjs", ".playbook/scripts/checklist-lib.mjs"],
+  ["scripts/checklist-plan.mjs", ".playbook/scripts/checklist-plan.mjs"],
+  ["scripts/checklist-lint.mjs", ".playbook/scripts/checklist-lint.mjs"],
+  ["scripts/handoff-record.mjs", ".playbook/scripts/handoff-record.mjs"],
+  ["scripts/phase-complete.mjs", ".playbook/scripts/phase-complete.mjs"],
+  ["scripts/plan-coverage.mjs", ".playbook/scripts/plan-coverage.mjs"],
+  ["scripts/checklist-create.mjs", ".playbook/scripts/checklist-create.mjs"],
+  ["scripts/checklist-miss-coordinator.mjs", ".playbook/scripts/checklist-miss-coordinator.mjs"],
+  ["scripts/doc-lib.mjs", ".playbook/scripts/doc-lib.mjs"],
+  ["scripts/doc-scaffold.mjs", ".playbook/scripts/doc-scaffold.mjs"],
+  ["scripts/doc-check.mjs", ".playbook/scripts/doc-check.mjs"],
+  ["scripts/render-docs.mjs", ".playbook/scripts/render-docs.mjs"],
+  ["scripts/reference-lint.mjs", ".playbook/scripts/reference-lint.mjs"],
+  ["scripts/doc-drift.mjs", ".playbook/scripts/doc-drift.mjs"],
+  ["scripts/doc-upgrade.mjs", ".playbook/scripts/doc-upgrade.mjs"],
+  ["playbook/document-schemas.json", ".playbook/document-schemas.json"],
+  ["scripts/playbook-sweep.mjs", ".playbook/scripts/playbook-sweep.mjs"],
+  ["scripts/checklist-edit-lib.mjs", ".playbook/scripts/checklist-edit-lib.mjs"],
+  ["scripts/deployment-step-runner.mjs", ".playbook/scripts/deployment-step-runner.mjs"],
+  ["scripts/verification-result-writer.mjs", ".playbook/scripts/verification-result-writer.mjs"],
+  ["scripts/verification-summary.mjs", ".playbook/scripts/verification-summary.mjs"],
+  ["scripts/secret-safe-config-resolver.mjs", ".playbook/scripts/secret-safe-config-resolver.mjs"],
+  ["scripts/smoke-runner.mjs", ".playbook/scripts/smoke-runner.mjs"],
+  ["scripts/self-test-result-writer.mjs", ".playbook/scripts/self-test-result-writer.mjs"],
+  ["scripts/checklist-infra.mjs", ".playbook/scripts/checklist-infra.mjs"],
+  ["scripts/checklist-deploy.mjs", ".playbook/scripts/checklist-deploy.mjs"],
+  ["scripts/checklist-amend.mjs", ".playbook/scripts/checklist-amend.mjs"],
+  ["scripts/checklist-archive.mjs", ".playbook/scripts/checklist-archive.mjs"],
+  ["scripts/issues-file.mjs", ".playbook/scripts/issues-file.mjs"],
+  ["scripts/jira-issues.mjs", ".playbook/scripts/jira-issues.mjs"],
+  ["scripts/feature-context.mjs", ".playbook/scripts/feature-context.mjs"],
+  ["scripts/checklist-ingest.mjs", ".playbook/scripts/checklist-ingest.mjs"],
+  ["scripts/escaped-bug-workflow.mjs", ".playbook/scripts/escaped-bug-workflow.mjs"],
+  ["scripts/incident-workflow.mjs", ".playbook/scripts/incident-workflow.mjs"],
+  ["scripts/gate-check.mjs", ".playbook/scripts/gate-check.mjs"],
+  ["scripts/dotnet-restore-diagnostics.mjs", ".playbook/scripts/dotnet-restore-diagnostics.mjs"],
+  ["scripts/windows-app-bridge-client.mjs", ".playbook/scripts/windows-app-bridge-client.mjs"],
+  ["playbook/checklist-schema.json", ".playbook/checklist-schema.json"],
+  ["playbook/handoff-schema.json", ".playbook/handoff-schema.json"],
+  ["templates/checklist-item-template.md", ".playbook/templates/checklist-item-template.md"],
+  ["templates/deployment-steps-template.md", ".playbook/templates/deployment-steps-template.md"],
   ["playbook/model-tiers.yml", ".playbook/model-tiers.yml"],
   ["playbook/environment-profile.yml", ".playbook/environment-profile.yml"],
 ];
@@ -31,22 +76,19 @@ const operatorAssets = [
   "templates/issues-file-template.md",
 ];
 const userDocs = [
-  "Adoption-Metrics.md",
-  "Brownfield-Case-Study.md",
-  "Environment-Profile.md",
   "Getting-Started.md",
-  "Greenfield-Case-Study.md",
-  "Handoffs.md",
-  "Installation.md",
-  "OpenCode-WSL-Setup-Guide.md",
-  "Operating-Model.md",
-  "Release-And-Operations.md",
-  "Repository-Structure.md",
-  "Security.md",
-  "Telemetry-Guide.md",
-  "Troubleshooting.md",
-  "Usage.md",
-  "YOLO-Mode-Guide.md",
+  "Operating-Guide.md",
+  "Playbook-How-It-Works.md",
+  "examples/Greenfield-Case-Study.md",
+  "examples/Brownfield-Case-Study.md",
+];
+// Guides shipped by earlier releases; kept so upgrade and uninstall still
+// recognise them in an existing .playbook/installation.json.
+const legacyUserDocs = [
+  "Adoption-Metrics.md", "Brownfield-Case-Study.md", "Environment-Profile.md", "Greenfield-Case-Study.md",
+  "Handoffs.md", "Installation.md", "OpenCode-WSL-Setup-Guide.md", "Operating-Model.md",
+  "Release-And-Operations.md", "Repository-Structure.md", "Security.md", "Telemetry-Guide.md",
+  "Troubleshooting.md", "Usage.md", "YOLO-Mode-Guide.md",
 ];
 const harnessExclusions = new Set(["command/update-context.md"]);
 const created = [];
@@ -58,6 +100,8 @@ const frameworkIgnoreRules = [
   "/.opencode/",
   "/.playbook/",
   "/verification/telemetry/events.ndjson",
+  "/verification/runs/",
+  "/verification/yolo/",
 ];
 const supportedManagedPaths = new Set();
 addMappedFiles(join(sourceRoot, "harness/opencode"), ".opencode", harnessExclusions, join(sourceRoot, "harness/opencode"));
@@ -65,10 +109,14 @@ for (const [source, destination] of runtimeMappings) {
   supportedManagedPaths.add(source);
   supportedManagedPaths.add(destination);
 }
+// Before 0.1.x the plugins lived in OpenCode's auto-discovered .opencode/plugin/,
+// whose load order follows the file system; an old record may still name them,
+// and `install --force` removes them.
+for (const file of ["spec-guardrails.ts", "telemetry.ts", "write-policy.mjs", "yolo-policy.mjs", "yolo.ts"]) supportedManagedPaths.add(`.opencode/plugin/${file}`);
 supportedManagedPaths.add("AGENTS.md");
 supportedManagedPaths.add("opencode.json");
 supportedManagedPaths.add(".playbook/AGENTS.md");
-for (const file of userDocs) {
+for (const file of [...userDocs, ...legacyUserDocs]) {
   supportedManagedPaths.add(`docs/${file}`);
   supportedManagedPaths.add(`.playbook/guides/docs/${file}`);
 }
@@ -241,6 +289,8 @@ function install() {
   copyText(join(sourceRoot, "AGENTS.md"), join(target, ".playbook", "AGENTS.md"), [
     ["playbook/environment-profile.yml", ".playbook/environment-profile.yml"],
     ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
+    ["scripts/handoff-record.mjs", ".playbook/scripts/handoff-record.mjs"],
+    ["scripts/checklist-lint.mjs", ".playbook/scripts/checklist-lint.mjs"],
   ]);
   if (includeGuides) {
     for (const file of userDocs) copy(join(sourceRoot, "docs", file), join(target, ".playbook", "guides", "docs", file));

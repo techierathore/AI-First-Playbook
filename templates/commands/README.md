@@ -1,8 +1,9 @@
 # The Command Library
+<!-- template-schema: {"produces":"Command index","required":["Purpose","universal rules","daily table","admin table","cost table"],"optional":["Install and routing notes"],"budget":{"small":[350,500],"medium":[420,600],"large":[500,700]},"rows":"One command, persona, tier, and purpose per row."} -->
 
 Fifteen commands: **four carry the daily loop**, eleven support it. Each has a spec file
 here — and a **runnable counterpart** in
-[`harness/opencode/command/`](../../harness/opencode/command/), which is the actual file
+[`harness/opencode/command/`](../../harness/opencode/command), which is the actual file
 the harness loads. Read the specs here to understand the process; install from `harness/`.
 
 Every command is a markdown file in the harness's command directory; custom commands
