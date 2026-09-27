@@ -53,15 +53,26 @@ async function v2Api(oc, target) {
     return (await res.json()).data;
   };
   try {
-    // The location activates its plugins on first use; wait for the commands.
+    // The location activates its plugins on first use, in the background: the
+    // built-in commands answer before the configured ones. Read once a second
+    // until three reads agree (a plugin that never loads settles without it).
     const deadline = Date.now() + 120000;
-    let commands = [];
+    let previous = null;
+    let agreeing = 0;
+    let snapshot = null;
     while (Date.now() < deadline) {
-      try { commands = await get("/api/command"); if (commands.length) break; } catch {}
+      try {
+        snapshot = { commands: await get("/api/command"), agents: await get("/api/agent"), plugins: await get("/api/plugin") };
+        const key = JSON.stringify([snapshot.commands.map((c) => c.name), snapshot.agents.map((a) => a.id), snapshot.plugins.map((p) => [p.id, p.state?.status])]);
+        agreeing = key === previous ? agreeing + 1 : 0;
+        previous = key;
+        if (snapshot.agents.length && agreeing >= 2) break;
+      } catch {}
       if (child.exitCode !== null) throw new Error(`opencode serve exited ${child.exitCode}: ${stderr}`);
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 1000));
     }
-    return { commands, agents: await get("/api/agent"), plugins: await get("/api/plugin") };
+    if (!snapshot) throw new Error(`opencode serve did not answer within 120 s: ${stderr}`);
+    return snapshot;
   } finally {
     child.kill("SIGTERM");
   }

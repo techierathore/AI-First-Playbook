@@ -193,3 +193,14 @@ load and is checked by things that load without them:
 - Docs: Getting Started, Operating Guide (including the `PLAYBOOK_*` variables on 2.x), OpenCode
   Guide (install commands for both), YOLO guide, WSL guide, Repository Structure, the live-model
   runbook, and the requirement list's owner decisions.
+
+## CI on the OpenCode 2 change
+
+- Run 36339441774 (`caee7ca`): 7 of 8 Platforms jobs green, including all four macOS jobs on both
+  versions. **ubuntu-latest, TZ=Asia/Kolkata, OpenCode 2.0.18 failed PB-01**: resolved commands,
+  agents and plugins all empty. Cause: `tests/opencode.mjs` stopped polling the v2 server as soon
+  as `/api/command` answered, and on that runner the built-in commands (`init`, `review`) answered
+  before the location had activated its configured commands, agents and plugins. Not a time-zone
+  or plugin fault (PB-19 and PB-45 passed live in the same job). Fixed: the helper reads commands,
+  agents and plugins once a second until three reads agree. A plugin that never loads still
+  settles without it and fails. Failure 1 of the three-strikes budget.
