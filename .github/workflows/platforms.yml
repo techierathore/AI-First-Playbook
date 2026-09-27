@@ -1,0 +1,66 @@
+name: Platforms
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  grade:
+    name: ${{ matrix.os }} / TZ=${{ matrix.tz }} / OpenCode ${{ matrix.opencode }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        tz: [UTC, Asia/Kolkata]
+        opencode: ["1.18.32"]
+    env:
+      TZ: ${{ matrix.tz }}
+      PLAYBOOK_ACTOR: ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: {node-version: 22.14.0}
+      - name: Set up npm
+        run: npm install --global npm@11.5.1
+      - name: Install OpenCode ${{ matrix.opencode }}
+        shell: bash
+        run: |
+          case "${{ matrix.opencode }}" in
+            1.*) npm install --global "opencode-ai@${{ matrix.opencode }}" ;;
+            *) npm install --global "@opencode/cli@${{ matrix.opencode }}" ;;
+          esac
+          opencode --version
+      - name: Report the platform
+        shell: bash
+        run: |
+          uname -a; date; node -e 'console.log(Intl.DateTimeFormat().resolvedOptions().timeZone, new Date().getTimezoneOffset())'
+          node --version; npm --version; opencode --version
+      - name: validate
+        if: always()
+        run: npm run validate
+      - name: test:guardrails
+        if: always()
+        run: npm run test:guardrails
+      - name: test:misses
+        if: always()
+        run: npm run test:misses
+      - name: test:install
+        if: always()
+        run: npm run test:install
+      - name: Grade requirements
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p grader-output
+          node scripts/playbook-grade.mjs docs/Playbook-Requirements.md --run-id="platforms-${{ github.run_id }}-${{ strategy.job-index }}" --telemetry=grader-output/grades.ndjson | tee grader-output/grader.txt
+      - name: Upload grader output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: grader-${{ matrix.os }}-${{ strategy.job-index }}-oc${{ matrix.opencode }}
+          path: grader-output/
+          retention-days: 30
