@@ -6,8 +6,8 @@ pass on macOS, in any time zone, and on OpenCode 2. Updated and pushed after eac
 | Step | Goal | Status |
 |---:|---|---|
 | 1 | CI on macos-latest and ubuntu-latest, TZ=UTC and TZ=Asia/Kolkata, OpenCode 1.18.32; reproduce the owner's 23 macOS failures | Done 2026-09-27: all 23 reproduce on macOS |
-| 2 | Fix every macOS and time-zone failure at its cause; record each as a miss | Fixed; awaiting CI |
-| 3 | OpenCode 2: plugins load on 1.18.x and 2.x in the order telemetry, guardrails, YOLO; 2.0.18 in CI | Not started |
+| 2 | Fix every macOS and time-zone failure at its cause; record each as a miss | Done 2026-09-27: all four jobs green on `699dba0` |
+| 3 | OpenCode 2: plugins load on 1.18.x and 2.x in the order telemetry, guardrails, YOLO; 2.0.18 in CI | In progress |
 | 4 | Guard: a session without the guard plugins says so loudly at start; requirement line | Not started |
 | 5 | Supported versions (1.18.32, 2.0.18) in `package.json` and the docs | Not started |
 
@@ -95,4 +95,12 @@ Misses: `MISS-20260927-01` to `-24`, one per ID above in table order, recorded t
 `insufficient-verify-method`, protocol `spec=yes,playbook=yes,check=yes` → `weak-check`: the checks
 existed but only ever ran on Linux, whose temporary folder is not a symlink). `-15` (PB-33) was
 found by this CI, not on the owner's Mac; the record says `found_by: human` like the others, and
-that field cannot be amended. Each is closed `pass` once CI is green on every job.
+that field cannot be amended. All 24 were closed `pass` after run 36337733186 (commit `699dba0`)
+was green on every job:
+
+| Job | Result on `699dba0` |
+|---|---|
+| ubuntu-latest, TZ=UTC | green: grader and the four npm scripts |
+| ubuntu-latest, TZ=Asia/Kolkata | green |
+| macos-latest, TZ=UTC | green |
+| macos-latest, TZ=Asia/Kolkata | green |
