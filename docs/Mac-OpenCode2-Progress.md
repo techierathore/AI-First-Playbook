@@ -7,9 +7,9 @@ pass on macOS, in any time zone, and on OpenCode 2. Updated and pushed after eac
 |---:|---|---|
 | 1 | CI on macos-latest and ubuntu-latest, TZ=UTC and TZ=Asia/Kolkata, OpenCode 1.18.32; reproduce the owner's 23 macOS failures | Done 2026-09-27: all 23 reproduce on macOS |
 | 2 | Fix every macOS and time-zone failure at its cause; record each as a miss | Done 2026-09-27: all four jobs green on `699dba0` |
-| 3 | OpenCode 2: plugins load on 1.18.x and 2.x in the order telemetry, guardrails, YOLO; 2.0.18 in CI | Done locally on both versions; awaiting CI |
-| 4 | Guard: a session without the guard plugins says so loudly at start; requirement line | PB-45 passes locally on both versions; awaiting CI |
-| 5 | Supported versions (1.18.32, 2.0.18) in `package.json` and the docs | Done; awaiting CI |
+| 3 | OpenCode 2: plugins load on 1.18.x and 2.x in the order telemetry, guardrails, YOLO; 2.0.18 in CI | Done 2026-09-27: green on `3bc426b` |
+| 4 | Guard: a session without the guard plugins says so loudly at start; requirement line | Done 2026-09-27: PB-45 green on `3bc426b` |
+| 5 | Supported versions (1.18.32, 2.0.18) in `package.json` and the docs | Done 2026-09-27: green on `3bc426b` |
 
 ## Step 1 — CI
 
@@ -210,3 +210,45 @@ load and is checked by things that load without them:
   and stops v2's background service after `debug config` unless it was already running.
   Local run on Linux with npm 11.5.1: 42 of 45 graded, 42 pass, 0 fail, 16 by a script, on both
   1.18.32 and 2.0.18. No OpenCode process is left afterwards.
+
+## Final CI (`3bc426b`)
+
+Platforms run 36340854708 and Validate runs 36340854695 / 36340851409: every job green. Each job
+runs `validate`, `test:guardrails`, `test:misses`, `test:install` and the grader (exit 0; locally
+the same commit grades 42 of 45 graded, 42 pass, 0 fail, 16 by a script on both versions).
+
+| Job | Result |
+|---|---|
+| ubuntu-latest, TZ=UTC, OpenCode 1.18.32 | green |
+| ubuntu-latest, TZ=UTC, OpenCode 2.0.18 | green |
+| ubuntu-latest, TZ=Asia/Kolkata, OpenCode 1.18.32 | green |
+| ubuntu-latest, TZ=Asia/Kolkata, OpenCode 2.0.18 | green |
+| macos-latest, TZ=UTC, OpenCode 1.18.32 | green |
+| macos-latest, TZ=UTC, OpenCode 2.0.18 | green |
+| macos-latest, TZ=Asia/Kolkata, OpenCode 1.18.32 | green |
+| macos-latest, TZ=Asia/Kolkata, OpenCode 2.0.18 | green |
+| Validate playbook, docs (1.18.32) | green |
+| Validate playbook, docs (2.0.18) | green |
+
+`MISS-20260927-25` and `-26` closed `pass`. Open misses: only `MISS-20260926-03` (PB-04, the
+owner's decision, unchanged).
+
+## Left for the owner
+
+- **Run it on the Mac** (macOS 26, Apple Silicon): `macos-latest` is a GitHub-hosted Mac, not
+  that machine. Clean clone of this branch, `npm run grade` with 1.18.32, then again with 2.0.18.
+- **A real model on OpenCode 2** (PB-20, PB-34 runbooks): the scripted model proves the hooks
+  fire, not how a real model reacts to `PLAYBOOK GUARDS NOT LOADED`.
+- **Upgrading existing installs:** `npx @techierathore/ai-first-playbook install --force`. A
+  non-forced upgrade keeps the old `.opencode/opencode.json` (single-file plugins, `../.playbook`
+  instructions); the installer now prints the banner when that happens.
+- **OpenCode 2 and `PLAYBOOK_*` variables:** YOLO, telemetry, git approval and the selected
+  checklist reach 2.x only through the OpenCode server's environment (`--standalone`, or the
+  service's environment). The TUI through the background service will not see a variable
+  exported in the shell.
+- **Telemetry on 2.x records tool rows only** (no phase, turn or subagent rows yet).
+- **Refusals on 2.x are a workaround:** a refused call is renamed to its block message, because
+  a thrown hook error ends the turn and plugins cannot construct `Tool.Error`. If a later
+  OpenCode 2 exposes `Tool.Error` to plugins, switch to it.
+- **PB-04** (the Verifier running `npm test`) is still the owner's decision, as before.
+- Not published, not tagged, `main` untouched. Review and merge the draft PR when satisfied.
