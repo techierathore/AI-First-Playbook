@@ -41,8 +41,10 @@ const freePort = () => new Promise((resolve, reject) => {
 async function v2Api(oc, target) {
   const port = await freePort();
   const password = randomBytes(16).toString("hex");
+  // Its own process group: the npm wrapper starts the real binary as a child,
+  // and both must go when the check is done.
   const child = spawn(oc.bin, ["serve", "--hostname", "127.0.0.1", "--port", String(port)], {
-    cwd: target, stdio: ["ignore", "ignore", "pipe"], env: { ...env(target), OPENCODE_PASSWORD: password },
+    cwd: target, stdio: ["ignore", "ignore", "pipe"], env: { ...env(target), OPENCODE_PASSWORD: password }, detached: process.platform !== "win32",
   });
   let stderr = "";
   child.stderr.on("data", (d) => (stderr = `${stderr}${d}`.slice(-2000)));
@@ -74,7 +76,7 @@ async function v2Api(oc, target) {
     if (!snapshot) throw new Error(`opencode serve did not answer within 120 s: ${stderr}`);
     return snapshot;
   } finally {
-    child.kill("SIGTERM");
+    try { process.platform === "win32" ? child.kill() : process.kill(-child.pid, "SIGTERM"); } catch {}
   }
 }
 
@@ -96,7 +98,15 @@ export async function resolved(oc, target) {
       instructions: (config.instructions ?? []).map(String),
     };
   }
-  const sources = debugJson(oc, target, ["debug", "config"]);
+  // `debug config` starts OpenCode 2's background service when none runs; stop
+  // it again afterwards unless it was already running.
+  const serviceWasRunning = !/stopped/.test(spawnSync(oc.bin, ["service", "status"], { encoding: "utf8", env: env(target) }).stdout ?? "");
+  let sources;
+  try {
+    sources = debugJson(oc, target, ["debug", "config"]);
+  } finally {
+    if (!serviceWasRunning) spawnSync(oc.bin, ["service", "stop"], { encoding: "utf8", env: env(target) });
+  }
   const documents = sources.filter((s) => s.type === "document" && s.info);
   const api = await v2Api(oc, target);
   const local = api.plugins.filter((p) => p.source?.type === "local");

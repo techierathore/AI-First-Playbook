@@ -204,3 +204,9 @@ load and is checked by things that load without them:
   or plugin fault (PB-19 and PB-45 passed live in the same job). Fixed: the helper reads commands,
   agents and plugins once a second until three reads agree. A plugin that never loads still
   settles without it and fails. Failure 1 of the three-strikes budget.
+- Run 36340012837 (`f3ccb21`): all eight Platforms jobs and both Validate jobs green.
+- Housekeeping after that run: the v2 checks left OpenCode processes behind (CI terminated an
+  orphan `opencode.exe`). `tests/opencode.mjs` now stops the private server by process group,
+  and stops v2's background service after `debug config` unless it was already running.
+  Local run on Linux with npm 11.5.1: 42 of 45 graded, 42 pass, 0 fail, 16 by a script, on both
+  1.18.32 and 2.0.18. No OpenCode process is left afterwards.
