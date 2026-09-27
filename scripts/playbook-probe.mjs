@@ -11,10 +11,11 @@
  * Exit 0 when nothing is blocked or down, 1 otherwise; the Verifier reads the
  * lines, it does not re-probe.
  */
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { field, placeholders, readProfile, runDirectory } from "./profile-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 const root = process.cwd();
 const args = process.argv.slice(2);
@@ -69,7 +70,7 @@ export async function probe(rootDir = root) {
   return { profile: path, facts };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = await probe();
   const id = opt("run-id");
   if (id) {

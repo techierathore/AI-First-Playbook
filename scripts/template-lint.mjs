@@ -8,7 +8,7 @@
  *
  *   node scripts/template-lint.mjs [templates-dir]
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, realpathSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -59,7 +59,7 @@ export function lintTemplates(dir = join(root, "templates"), handoffSchema = JSO
   return { files: files.length, problems };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { files, problems } = lintTemplates(process.argv[2] ?? join(root, "templates"));
   for (const p of problems) console.log(p);
   console.log(`template-lint: ${files - new Set(problems.map((p) => p.split(":")[0])).size} of ${files} template(s) declare a valid schema`);

@@ -7,7 +7,7 @@
  *   node scripts/document-schemas-doc.mjs          # rewrite the page
  *   node scripts/document-schemas-doc.mjs --check  # exit 1 if the page is stale
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,7 +57,7 @@ export function render() {
   return out.join("\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const path = join(root, "docs/Playbook-Document-Schemas.md");
   const text = render();
   if (process.argv.includes("--check")) {

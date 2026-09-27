@@ -11,8 +11,9 @@
  * root; checklist Location lines are always checked. External URLs are not
  * fetched. One line per broken reference; exit 1 on any.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const slug = (heading) => heading.toLowerCase().trim().replace(/<[^>]+>/g, "").replace(/[^\p{L}\p{N}\s_-]/gu, "").replace(/\s/g, "-");
 
@@ -66,7 +67,7 @@ function collect(paths) {
   return out;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const root = resolve(args.find((a) => a.startsWith("--root="))?.slice(7) ?? process.cwd());
   const files = collect(args.filter((a) => !a.startsWith("--")));

@@ -8,7 +8,7 @@
  * Prints one line per problem as `<line>: <item or section>: <problem>` and a
  * summary with the size class. Exit 1 on any problem.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { itemType, parseChecklist, wordCount } from "./checklist-lib.mjs";
@@ -136,7 +136,7 @@ export function lintChecklist(text, schema = loadSchema()) {
   return { problems, items: items.length, active, size };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const file = process.argv[2];
   if (!file) { console.log("usage: checklist-lint.mjs <checklist.md> [--json]"); process.exit(2); }
   const result = lintChecklist(readFileSync(file, "utf8"));

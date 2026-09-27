@@ -25,7 +25,7 @@
  * set-tier | set-model | set-escalation | bind) — it edits the map and calls
  * applyTiers() from here, so the two never disagree.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseTiersYaml, resolveModel, stampFrontmatter, removeFrontmatterField, readFrontmatterField, routingEnabled, UNROUTED_TIERS } from "./tier-lib.mjs";
@@ -99,7 +99,7 @@ export function printResolved(config) {
 }
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const unknown = args.filter((arg) => !["--check", "--print"].includes(arg));
   if (unknown.length) {

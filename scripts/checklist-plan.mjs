@@ -14,8 +14,9 @@
  * never edit the same file; a slice runs in a later wave than every slice it
  * depends on. A dependency cycle or an unknown dependency stops the plan.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { itemType, parseChecklist } from "./checklist-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export const ADAPTERS = {
   ui: "ui", "backend-api": "api", "backend-service": "api", db: "db",
@@ -105,7 +106,7 @@ export function wavePlan(text, mode) {
   return { mode, scope: [...scope], waves: waves.filter(Boolean), errors };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [mode, path] = process.argv.slice(2);
   if (!["verify", "implement", "fix"].includes(mode) || !path) {
     console.log("usage: checklist-plan.mjs verify|implement|fix <checklist> [--json]");

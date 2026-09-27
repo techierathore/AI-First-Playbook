@@ -10,7 +10,7 @@
  */
 
 import { existsSync, lstatSync, realpathSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 // ────────────────────────────────────────────────────────────────────────────
 // FORBIDDEN FILE PATTERNS
@@ -180,20 +180,35 @@ export function pathsInPatch(value) {
     .map((m) => m[0].replace(/^(?:\+\+\+|---|\*\*\* (?:Add|Update|Delete) File:)\s*/, "").trim());
 }
 
+/**
+ * The canonical form of a path that may not exist yet: the real path of its
+ * deepest existing ancestor plus the rest. The project root and the tool's
+ * path can name the same folder through different spellings (macOS
+ * /var → /private/var, a symlinked checkout), so both are compared canonically.
+ */
+function canonical(absolute) {
+  let head = absolute;
+  const rest = [];
+  while (!existsSync(head)) {
+    const parent = dirname(head);
+    if (parent === head) return absolute;
+    rest.unshift(basename(head));
+    head = parent;
+  }
+  return join(realpathSync(head), ...rest);
+}
+
 export function normalizePath(path, root = process.cwd()) {
   if (!path || /[\0\r\n]/.test(path)) return null;
   const unix = path.replaceAll("\\", "/");
   const absolute = isAbsolute(unix) ? resolve(unix) : resolve(root, unix);
-  const rel = relative(root, absolute);
-  if (rel === ".." || rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) || isAbsolute(rel)) return null;
-  if (existsSync(absolute)) {
-    try {
-      const real = realpathSync(absolute);
-      const realRel = relative(root, real);
-      if (realRel === ".." || realRel.startsWith("../") || isAbsolute(realRel)) return null;
-    } catch { return null; }
-    if (lstatSync(absolute).isSymbolicLink()) return null;
-  }
+  const outside = (rel) => rel === ".." || rel.startsWith("../") || rel.startsWith("..\\") || isAbsolute(rel);
+  let rel;
+  try {
+    rel = relative(canonical(resolve(root)), canonical(absolute));
+  } catch { return null; }
+  if (outside(rel)) return null;
+  if (existsSync(absolute) && lstatSync(absolute).isSymbolicLink()) return null;
   return rel.replaceAll("\\", "/");
 }
 

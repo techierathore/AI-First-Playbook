@@ -29,6 +29,33 @@ for (const agent of ["analyst.md", "builder.md", "orchestrator.md", "verifier.md
   }
   if (canonical.includes("input.arguments")) { console.error("OpenCode telemetry plugin persists raw command arguments"); process.exit(1); }
 }
+// ── Path spelling: the project root and a tool path can name one folder two
+// ways (macOS /var → /private/var). Both spellings resolve inside; a new file
+// under an in-project symlink that leaves the project stays outside. ─────────
+{
+  const { mkdirSync, mkdtempSync, rmSync, symlinkSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { normalizePath } = await import(policyUrl);
+  const sandbox = mkdtempSync(join(tmpdir(), "playbook-path-spelling-"));
+  const real = join(sandbox, "real");
+  mkdirSync(join(real, "project/verification"), { recursive: true });
+  mkdirSync(join(sandbox, "elsewhere"));
+  symlinkSync(real, join(sandbox, "alias"));
+  symlinkSync(join(sandbox, "elsewhere"), join(real, "project/escape"));
+  const viaAlias = join(sandbox, "alias/project");
+  const viaReal = join(real, "project");
+  const expectations = [
+    [normalizePath(join(viaAlias, "verification/run-1/probe.txt"), viaReal), "verification/run-1/probe.txt", "alias path under a real root"],
+    [normalizePath(join(viaReal, "verification/run-1/probe.txt"), viaAlias), "verification/run-1/probe.txt", "real path under an alias root"],
+    [normalizePath("escape/new-file.txt", viaReal), null, "new file under a symlink leaving the project"],
+    [normalizePath(join(sandbox, "alias/other.txt"), viaReal), null, "alias path outside the project"],
+  ];
+  rmSync(sandbox, { recursive: true, force: true });
+  for (const [got, want, label] of expectations) {
+    if (got !== want) { console.error(`guardrail path spelling: ${label}: expected ${want}, got ${got}`); process.exit(1); }
+  }
+}
 const harnessPromptFiles = [
   "commands/verify.md",
   "agents/verifier.md",

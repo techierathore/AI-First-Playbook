@@ -14,11 +14,12 @@
  * says [ANALYZE], names an item that does not exist, or (given the Issues
  * file) an issue has no block; the checklist must also lint clean.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { basename } from "node:path";
 import { Checklist, today } from "./checklist-edit-lib.mjs";
 import { lintChecklist } from "./checklist-lint.mjs";
 import { parseIssues } from "./issues-file.mjs";
+import { fileURLToPath } from "node:url";
 
 const ID = /\b[A-Z][A-Z0-9]*-\d{3,}\b/g;
 
@@ -68,7 +69,7 @@ export function validateIngest(text, issuesText = null, issuesFile = "") {
   return problems;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, path, source, ...rest] = process.argv.slice(2);
   const opt = (n) => [source, ...rest].find((a) => a?.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   if (!["bug", "story", "validate"].includes(verb) || !path) { console.log("usage: bug|story|validate <checklist> <source> ..."); process.exit(2); }

@@ -15,7 +15,7 @@
  * same as a change summary. `sync` rewrites only the generated block; the
  * hand-written parts (principles, gotchas, history) are never touched.
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -50,7 +50,7 @@ export function diff(contextText, cmds, root = repo) {
   return problems;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, ...rest] = process.argv.slice(2);
   const opt = (n, d) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=") ?? d;
   const contextPath = join(repo, opt("context", "Context-Prompt.md"));

@@ -9,10 +9,11 @@
  * lists FAIL, DATA-GAP (with setup) and BLOCKED items, the Manual deployment
  * rows still pending, and the next command. Names no file but the checklist.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { itemType, parseChecklist } from "./checklist-lib.mjs";
 import { latestVerdict } from "./checklist-plan.mjs";
 import { deploymentRows } from "./deployment-step-runner.mjs";
+import { fileURLToPath } from "node:url";
 
 export function summary(path) {
   const text = readFileSync(path, "utf8");
@@ -43,7 +44,7 @@ export function summary(path) {
   return { verdict, text: out.join("\n") };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const path = process.argv[2];
   if (!path) { console.log("usage: verification-summary.mjs <checklist>"); process.exit(2); }
   console.log(summary(path).text);

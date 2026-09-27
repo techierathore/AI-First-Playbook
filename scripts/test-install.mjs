@@ -50,6 +50,7 @@ const maintainerOnly = [
   "docs/Playbook-Reset-Plan.md",
   "docs/Playbook-Requirements.md",
   "docs/Reset-Progress.md",
+  "docs/Mac-OpenCode2-Progress.md",
 ];
 
 function run(script, args, options = {}) {
@@ -275,6 +276,22 @@ try {
     : spawnSync("npm", npmExecArgs, { cwd: npxTarget, encoding: "utf8" });
   if (npmExec.status !== 0) throw new Error(`one-shot npm exec test failed:\n${npmExec.stdout}${npmExec.stderr}`);
   assert(JSON.stringify(readdirSync(npxTarget).sort()) === JSON.stringify([".gitignore", ".opencode", ".playbook"]), "one-shot npm exec left package-manager or visible framework artifacts in the target");
+
+  // A project reached through a symlink (macOS /var → /private/var) still runs
+  // its scripts: Node reports the main module by its real path, so a
+  // `file://${argv[1]}` main check silently did nothing there.
+  const realTarget = join(sandbox, "real-install");
+  mkdirSync(realTarget);
+  run("scripts/install.mjs", ["install", `--target=${realTarget}`]);
+  const aliasTarget = join(sandbox, "alias-install");
+  symlinkSync(realTarget, aliasTarget);
+  const viaAlias = spawnSync(process.execPath, [join(aliasTarget, ".playbook/scripts/playbook-sweep.mjs")], { cwd: aliasTarget, encoding: "utf8" });
+  assert(viaAlias.status === 0 && /^sweep: /m.test(viaAlias.stdout), `an installed script run through a symlinked path printed nothing: ${viaAlias.stdout}${viaAlias.stderr}`);
+  for (const file of readdirSync(join(root, "scripts")).filter((f) => f.endsWith(".mjs"))) {
+    const text = readFileSync(join(root, "scripts", file), "utf8");
+    if (!/process\.argv\[1\]/.test(text) || !/import\.meta\.url/.test(text)) continue;
+    assert(text.includes("realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)"), `scripts/${file} decides it is the main module without resolving symlinks`);
+  }
 
   console.log("installer tests passed");
 } finally {

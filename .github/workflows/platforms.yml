@@ -1,7 +1,5 @@
 name: Platforms
 on:
-  push:
-    branches-ignore: [main]
   pull_request:
   workflow_dispatch:
 permissions:

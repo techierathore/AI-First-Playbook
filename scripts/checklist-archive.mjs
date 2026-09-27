@@ -18,12 +18,13 @@
  * resets it to `planned` and appends a Restored line: it must be verified again.
  * IDs never change.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { basename } from "node:path";
 import { Checklist, findItem, utcNow } from "./checklist-edit-lib.mjs";
 import { parseChecklist } from "./checklist-lib.mjs";
 import { latestVerdict } from "./checklist-plan.mjs";
 import { deploymentRows } from "./deployment-step-runner.mjs";
+import { fileURLToPath } from "node:url";
 
 const DAY = 86400000;
 export const historyPath = (path) => path.replace(/\.md$/, "-Verified-History.md");
@@ -67,7 +68,7 @@ function runLog(c, entry) {
   if (r) c.lines.splice(r.end, 0, "", ...entry); else c.lines.push("", "## Verifier Run Log", "", ...entry);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, path, ...rest] = process.argv.slice(2);
   const opt = (n) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   if (!["candidates", "archive", "restore"].includes(verb) || !path) { console.log("usage: candidates|archive|restore <checklist> ..."); process.exit(2); }

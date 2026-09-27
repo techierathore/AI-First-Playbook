@@ -14,14 +14,14 @@
  * document; those documents live only under docs/maintainer/cross-framework/;
  * every reader document's links resolve.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { lintFile } from "./reference-lint.mjs";
 
 const repo = fileURLToPath(new URL("..", import.meta.url));
 export const READER_DOCS = ["README.md", "docs/Getting-Started.md", "docs/Playbook-How-It-Works.md", "docs/Operating-Guide.md"];
-export const CONTROL_FILES = ["Playbook-Reset-Plan.md", "Playbook-Requirements.md", "Reset-Progress.md", "Playbook-Document-Schemas.md"];
+export const CONTROL_FILES = ["Playbook-Reset-Plan.md", "Playbook-Requirements.md", "Reset-Progress.md", "Playbook-Document-Schemas.md", "Mac-OpenCode2-Progress.md"];
 export const DOC_FOLDERS = ["examples", "maintainer", "archive", "runbooks"];
 export const CROSS_FRAMEWORK = /(TechieFlow|TfLens)/;
 export const GETTING_STARTED_MAX = 1500;
@@ -80,7 +80,7 @@ export function readerPath(root = repo) {
   return { reader: reader.length, problems16, problems17 };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = resolve(process.argv.find((a) => a.startsWith("--root="))?.slice(7) ?? repo);
   const r = readerPath(root);
   if (process.argv.includes("--json")) console.log(JSON.stringify(r, null, 2));

@@ -6,7 +6,7 @@
 //   node tests/live/run.mjs PB-04 [--record]   Verifier boundary incl. the safe test command
 //   node tests/live/run.mjs PB-19 [--record]   Verifier product-write block and git denial, normal and YOLO
 // --record rewrites tests/live/transcripts/<ID>-*.log (redacted).
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,7 +23,9 @@ const cleanup = [];
 process.on("exit", () => { for (const dir of cleanup) rmSync(dir, { recursive: true, force: true }); });
 
 function makeTarget() {
-  const target = mkdtempSync(join(tmpdir(), "pb-live-"));
+  // OpenCode names the project by its real path (macOS: /private/var/...), and
+  // a model writes to the paths OpenCode reports; /var/... is "external" to it.
+  const target = realpathSync(mkdtempSync(join(tmpdir(), "pb-live-")));
   cleanup.push(target);
   writeFileSync(join(target, "package.json"), JSON.stringify({ name: "pb-live", version: "1.0.0", scripts: { test: "node --test" } }));
   mkdirSync(join(target, "src"));

@@ -11,8 +11,9 @@
  * allowed only with a reason and leaves status unchanged. The writer never
  * sets `pass`: only the Verifier does. The Status Table is re-synced.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { Checklist, cleanText, today, utcNow } from "./checklist-edit-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export function writeSelfTests(path, results, now = new Date()) {
   const c = new Checklist(path);
@@ -34,7 +35,7 @@ export function writeSelfTests(path, results, now = new Date()) {
   return [...byItem.entries()];
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [checklist, ...rest] = process.argv.slice(2);
   const opt = (n) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   let results;

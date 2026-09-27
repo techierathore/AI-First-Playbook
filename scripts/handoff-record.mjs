@@ -11,7 +11,7 @@
  * `create` refuses to write a record that fails validation. Values never
  * carry secrets: a value the shared redactor would change is rejected.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { redact } from "./miss-lib.mjs";
@@ -104,7 +104,7 @@ export function validateRecord(text, schema = loadSchema()) {
   return problems;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, ...rest] = process.argv.slice(2);
   const schema = loadSchema();
   if (verb === "kinds") { console.log(Object.keys(schema.kinds).join("\n")); process.exit(0); }

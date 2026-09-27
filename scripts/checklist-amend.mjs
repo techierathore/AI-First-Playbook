@@ -13,11 +13,12 @@
  * The result must pass checklist-lint.mjs, or nothing is written; the report
  * names the change and the next command.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { Checklist, cleanText, utcNow } from "./checklist-edit-lib.mjs";
 import { FIELD_ORDER, parseChecklist } from "./checklist-lib.mjs";
 import { lintChecklist } from "./checklist-lint.mjs";
 import { syncStatusTable } from "./checklist-create.mjs";
+import { fileURLToPath } from "node:url";
 
 export function nextId(text, prefix) {
   const ids = [...text.matchAll(/"id":"([A-Z][A-Z0-9]*)-(\d+)"/g)];
@@ -74,7 +75,7 @@ function amend(verb, path, rest, now = new Date()) {
   return { change, next, unchanged: before === c.lines.join("\n") };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, path, ...rest] = process.argv.slice(2);
   if (!["add", "update", "remove"].includes(verb) || !path) { console.log("usage: add|update|remove <checklist> ..."); process.exit(2); }
   try {

@@ -11,9 +11,10 @@
  * with its kind: agent document, schema document (and its kind), handoff,
  * Issues file, or other; the input for /refresh-doc Mode B.
  */
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { isAgentDocument, kindOf } from "./doc-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 function walk(dir, out = []) {
   for (const e of readdirSync(dir).sort()) {
@@ -47,7 +48,7 @@ export function locate(target) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, target] = process.argv.slice(2);
   if (!["locate", "inventory-docs"].includes(verb) || !target || !existsSync(target)) { console.log("usage: locate|inventory-docs <folder|checklist> [--json]"); process.exit(2); }
   const json = process.argv.includes("--json");

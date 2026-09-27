@@ -9,7 +9,7 @@
  *
  *   node scripts/instruction-budget.mjs [--json] [--root=<dir>]
  */
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -51,7 +51,7 @@ export function measure(root = repo) {
   return { phases: [...result.values()], adapters };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = process.argv.find((a) => a.startsWith("--root="))?.slice(7) ?? repo;
   const { phases, adapters } = measure(root);
   if (process.argv.includes("--json")) console.log(JSON.stringify({ phases, adapters }, null, 2));

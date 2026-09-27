@@ -17,9 +17,10 @@
  * headless runner, and absence is never a BLOCKED reason. Screenshots go to
  * verification/runs/<id>/.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { runDirectory } from "./profile-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 async function call(base, method, path, body) {
   const res = await fetch(`${base.replace(/\/$/, "")}${path}`, {
@@ -28,7 +29,7 @@ async function call(base, method, path, body) {
   return res;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, ...rest] = process.argv.slice(2);
   const opt = (n) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   const base = process.env.WINAPP_BRIDGE;

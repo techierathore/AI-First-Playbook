@@ -15,6 +15,8 @@
  */
 import { Checklist, cleanText } from "./checklist-edit-lib.mjs";
 import { deploymentRows } from "./deployment-step-runner.mjs";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const CREDENTIAL = /(\s-P\s+\S|--password[= ]\S|--token[= ]\S|\/\/[^/\s:@]+:[^/\s@]+@|\b(password|pwd|secret|token|api[_-]?key)=\S)/i;
 
@@ -35,7 +37,7 @@ export function validateDeploy(c) {
   return problems;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, path, ...rest] = process.argv.slice(2);
   const opt = (n) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   if (!["add", "none", "validate"].includes(verb) || !path) { console.log("usage: add|none|validate <checklist> [...]"); process.exit(2); }
