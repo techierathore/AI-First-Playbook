@@ -29,7 +29,7 @@
 // ────────────────────────────────────────────────────────────────────────────
 
 /** OpenCode tool names that reach the shell. */
-export const SHELL_TOOLS_YOLO = new Set(["bash"]);
+export const SHELL_TOOLS_YOLO = new Set(["bash", "shell"]);
 
 /** True when the environment says we are in an unattended YOLO run. */
 export function isYoloEnv(env = process.env) {

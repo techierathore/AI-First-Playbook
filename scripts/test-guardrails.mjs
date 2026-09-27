@@ -10,7 +10,7 @@ for (const copy of ["../.opencode/playbook-plugin/write-policy.mjs"]) {
   if (!existsSync(url)) { console.error(`guardrail policy copy missing: ${copy}`); process.exit(1); }
   if (readFileSync(url, "utf8") !== source) { console.error(`guardrail policy copy drift: ${copy}`); process.exit(1); }
 }
-for (const carrier of ["../harness/opencode/playbook-plugin/spec-guardrails.ts"]) {
+for (const carrier of ["../harness/opencode/playbook-plugin/spec-guardrails/index.ts", "../harness/opencode/playbook-plugin/spec-guardrails/server.ts"]) {
   const url = new URL(carrier, import.meta.url);
   if (!existsSync(url)) { console.error(`guardrail carrier missing: ${carrier}`); process.exit(1); }
   if (!readFileSync(url, "utf8").includes("write-policy.mjs")) { console.error(`guardrail carrier does not use shared policy: ${carrier}`); process.exit(1); }
@@ -21,9 +21,12 @@ for (const agent of ["analyst.md", "builder.md", "orchestrator.md", "verifier.md
   if (local !== canonical) { console.error(`OpenCode agent copy drift: ${agent}`); process.exit(1); }
 }
 {
-  const canonical = readFileSync(new URL("../harness/opencode/playbook-plugin/telemetry.ts", import.meta.url), "utf8");
-  const local = readFileSync(new URL("../.opencode/playbook-plugin/telemetry.ts", import.meta.url), "utf8");
-  if (local !== canonical) { console.error("OpenCode telemetry plugin copy drift"); process.exit(1); }
+  for (const file of ["telemetry/index.ts", "telemetry/server.ts", "spec-guardrails/index.ts", "spec-guardrails/server.ts", "yolo/index.ts", "yolo/server.ts", "yolo-policy.mjs", "guard-signal.mjs"]) {
+    const harness = readFileSync(new URL(`../harness/opencode/playbook-plugin/${file}`, import.meta.url), "utf8");
+    const copy = new URL(`../.opencode/playbook-plugin/${file}`, import.meta.url);
+    if (!existsSync(copy) || readFileSync(copy, "utf8") !== harness) { console.error(`OpenCode plugin copy drift: ${file}`); process.exit(1); }
+  }
+  const canonical = readFileSync(new URL("../harness/opencode/playbook-plugin/telemetry/index.ts", import.meta.url), "utf8");
   for (const requiredTerm of ["randomUUID()", 'kind: "subagent-start"', 'kind: "subagent-end"', 'kind: "tool-start"', 'kind: "tool-end"', "activeMs"]) {
     if (!canonical.includes(requiredTerm)) { console.error(`OpenCode telemetry plugin missing schema-2 capture: ${requiredTerm}`); process.exit(1); }
   }
@@ -229,7 +232,7 @@ console.log("guardrail policy coverage passed");
 // ── YOLO policy: git writes denied, everything else allowed, limit parsing ──
 {
   const yoloUrl = new URL("../harness/opencode/playbook-plugin/yolo-policy.mjs", import.meta.url);
-  for (const carrier of ["../harness/opencode/playbook-plugin/yolo.ts", "./playbook-yolo.mjs"]) {
+  for (const carrier of ["../harness/opencode/playbook-plugin/yolo/index.ts", "../harness/opencode/playbook-plugin/yolo/server.ts", "./playbook-yolo.mjs"]) {
     const url = new URL(carrier, import.meta.url);
     if (!existsSync(url)) { console.error(`yolo carrier missing: ${carrier}`); process.exit(1); }
     if (!readFileSync(url, "utf8").includes("yolo-policy.mjs")) { console.error(`yolo carrier does not use shared policy: ${carrier}`); process.exit(1); }

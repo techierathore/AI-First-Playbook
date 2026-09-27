@@ -116,10 +116,20 @@ for (const name of readdirSync(join(root, "docs"))) {
   if (/^[A-Z0-9_-]+\.md$/.test(name)) errors.push(`docs/${name}: use Pascal/kebab-case, not all caps`);
 }
 const config = JSON.parse(read("opencode.json"));
-if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/playbook-plugin/spec-guardrails.ts")) errors.push("plugin is not explicitly registered");
-if (!Array.isArray(config.plugin) || !config.plugin.includes("./.opencode/playbook-plugin/yolo.ts")) errors.push("yolo plugin is not explicitly registered in opencode.json");
-if (config.plugin?.indexOf("./.opencode/playbook-plugin/spec-guardrails.ts") > config.plugin?.indexOf("./.opencode/playbook-plugin/yolo.ts")) errors.push("opencode.json: spec-guardrails.ts must be registered before yolo.ts (forbidden writes are blocked before YOLO can allow them)");
-for (const f of ["harness/opencode/playbook-plugin/yolo-policy.mjs", "harness/opencode/playbook-plugin/yolo.ts", "scripts/playbook-yolo.mjs", "docs/maintainer/YOLO-Mode-Guide.md"]) {
+// Plugins are configured as directories, in load order: OpenCode 2 loads a
+// configured plugin only as a directory (its server.ts), OpenCode 1 loads the
+// directory's index.ts. Guardrails before YOLO: forbidden writes are blocked
+// before YOLO can allow them (MISS-20260926-07).
+const PLUGIN_ORDER = ["telemetry", "spec-guardrails", "yolo"];
+for (const [file, prefix] of [["opencode.json", "./.opencode/playbook-plugin/"], ["harness/opencode/opencode.json", "./playbook-plugin/"]]) {
+  const plugins = file === "opencode.json" ? config.plugin : JSON.parse(read(file)).plugin;
+  const expected = PLUGIN_ORDER.map((name) => `${prefix}${name}`);
+  if (JSON.stringify(plugins) !== JSON.stringify(expected)) errors.push(`${file}: plugin must be exactly ${JSON.stringify(expected)} (directories, in load order)`);
+}
+for (const name of PLUGIN_ORDER) for (const entry of ["index.ts", "server.ts"]) {
+  if (!existsSync(join(root, "harness/opencode/playbook-plugin", name, entry))) errors.push(`missing harness/opencode/playbook-plugin/${name}/${entry} (${entry === "index.ts" ? "OpenCode 1" : "OpenCode 2"} entry)`);
+}
+for (const f of ["harness/opencode/playbook-plugin/yolo-policy.mjs", "harness/opencode/playbook-plugin/yolo/index.ts", "scripts/playbook-yolo.mjs", "docs/maintainer/YOLO-Mode-Guide.md"]) {
   if (!existsSync(join(root, f))) errors.push(`missing ${f}`);
 }
 if (!read("AGENTS.md").includes("## YOLO mode")) errors.push("AGENTS.md: missing the '## YOLO mode' standing rules");

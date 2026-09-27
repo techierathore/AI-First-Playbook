@@ -8,7 +8,7 @@ the grader and CI do not have. Run it on a laptop.
 
 ## Before you start
 
-- OpenCode 1.18.32 (`opencode --version`; the supported version is in `package.json`
+- OpenCode 1.18.32 or 2.0.18 (`opencode --version`; the supported versions are in `package.json`
   `opencode.supported`).
 - A configured model provider (`opencode auth login`), and Node 22.14.0+ with npm 11.5.1+.
 - No secrets on the command line: log in interactively or use your secret manager.

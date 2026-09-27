@@ -50,6 +50,7 @@
     "scripts/npm-lifecycle.mjs",
     "scripts/npm-cleanup.mjs",
     "scripts/playbook-miss.mjs",
+    "scripts/playbook-guards.mjs",
     "scripts/miss-lib.mjs",
     "scripts/playbook-telemetry.mjs",
     "scripts/profile-lib.mjs",
@@ -100,5 +101,5 @@
   ],
   "scripts": {"preinstall": "node scripts/npm-lifecycle.mjs prepare", "postinstall": "node scripts/npm-lifecycle.mjs install", "validate": "node scripts/playbook-validate.mjs", "test:guardrails": "node scripts/test-guardrails.mjs", "test:misses": "node scripts/test-misses.mjs", "test:install": "node scripts/test-install.mjs", "routing": "node scripts/playbook-routing.mjs", "grade": "node scripts/playbook-grade.mjs docs/Playbook-Requirements.md", "pack:check": "npm pack --dry-run", "prepublishOnly": "npm run validate && npm run test:guardrails && npm run test:misses && npm run test:install && npm run pack:check"},
   "engines": {"node": ">=22.14.0", "npm": ">=11.5.1"},
-  "opencode": {"supported": "1.18.32"}
+  "opencode": {"supported": ["1.18.32", "2.0.18"]}
 }

@@ -71,3 +71,10 @@ The checklist is the only report. The parent, in checklist order, one item at a 
    and writes nothing.
 3. Stop the processes you started. The final message is the output of
    `node .playbook/scripts/verification-summary.mjs <checklist>`.
+
+## Guard check
+
+Your context must hold `[playbook-guard] telemetry loaded`, `[playbook-guard] spec-guardrails loaded`
+and `[playbook-guard] yolo loaded`. If any is missing, begin your first reply with
+`PLAYBOOK GUARDS NOT LOADED: <missing> — this session is unguarded.`, run
+`node .playbook/scripts/playbook-guards.mjs` and write nothing until a human answers.

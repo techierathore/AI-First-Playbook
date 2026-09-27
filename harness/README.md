@@ -47,7 +47,7 @@ enforce consistency with `node scripts/apply-model-tiers.mjs --check`. Operator 
 
 Add the token `YOLO` to a command (`/implement YOLO @checklist`) or start OpenCode with
 `PLAYBOOK_YOLO=1`. The prompts then treat every approval gate as pre-approved and
-`plugin/yolo.ts`, backed by `plugin/yolo-policy.mjs`, auto-approves every permission
+`playbook-plugin/yolo/` (`index.ts` on OpenCode 1, `server.ts` on 2), backed by `playbook-plugin/yolo-policy.mjs`, auto-approves every permission
 request except git history writes, which they deny. For a run that also survives the
 provider's 5-hour / weekly usage limit, use the supervisor — it sets the variable, parses the
 reset time from the limit error, waits it out (+15 min) and resumes the same session until

@@ -24,7 +24,7 @@ disappears · **degrades** = runs but loses a property the framework was built t
   `verification/**` + `deploy/<feature>/**`.
 - **Where:** `harness/opencode/plugins/spec-guardrails.ts:191-226` (hook + throw),
   `:134-143` (`checkWritePolicy`); registered via `opencode.json:4`; re-exported at
-  `.opencode/playbook-plugin/spec-guardrails.ts:1`.
+  `.opencode/playbook-plugin/spec-guardrails/index.ts` (OpenCode 1) and `server.ts` (OpenCode 2).
 - **Severity: breaks.** Without it, Phase 6's "no separate report file" rule reverts to
   prompt-only enforcement, which `harness/README.md:154-163` documents as having failed three
   times. The run *appears* to work — which is worse than crashing.

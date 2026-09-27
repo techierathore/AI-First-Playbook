@@ -2,6 +2,7 @@
 import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, rmdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { banner, configProblems, GUARD_PLUGINS } from "./playbook-guards.mjs";
 
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageMetadata = JSON.parse(readFileSync(join(sourceRoot, "package.json"), "utf8"));
@@ -16,6 +17,7 @@ const includeGuides = args.includes("--with-guides") && !args.includes("--no-doc
 const manageGitignore = !args.includes("--no-gitignore");
 const runtimeMappings = [
   ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
+  ["scripts/playbook-guards.mjs", ".playbook/scripts/playbook-guards.mjs"],
   ["scripts/miss-lib.mjs", ".playbook/scripts/miss-lib.mjs"],
   ["scripts/playbook-telemetry.mjs", ".playbook/scripts/playbook-telemetry.mjs"],
   ["scripts/profile-lib.mjs", ".playbook/scripts/profile-lib.mjs"],
@@ -113,6 +115,10 @@ for (const [source, destination] of runtimeMappings) {
 // whose load order follows the file system; an old record may still name them,
 // and `install --force` removes them.
 for (const file of ["spec-guardrails.ts", "telemetry.ts", "write-policy.mjs", "yolo-policy.mjs", "yolo.ts"]) supportedManagedPaths.add(`.opencode/plugin/${file}`);
+// Until 0.1.x each plugin was one .ts file in .opencode/playbook-plugin/; OpenCode 2
+// loads a configured plugin only as a directory, so each is now a directory
+// with index.ts (OpenCode 1) and server.ts (OpenCode 2).
+for (const file of ["spec-guardrails.ts", "telemetry.ts", "yolo.ts"]) supportedManagedPaths.add(`.opencode/playbook-plugin/${file}`);
 supportedManagedPaths.add("AGENTS.md");
 supportedManagedPaths.add("opencode.json");
 supportedManagedPaths.add(".playbook/AGENTS.md");
@@ -289,6 +295,7 @@ function install() {
   copyText(join(sourceRoot, "AGENTS.md"), join(target, ".playbook", "AGENTS.md"), [
     ["playbook/environment-profile.yml", ".playbook/environment-profile.yml"],
     ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
+    ["scripts/playbook-guards.mjs", ".playbook/scripts/playbook-guards.mjs"],
     ["scripts/handoff-record.mjs", ".playbook/scripts/handoff-record.mjs"],
     ["scripts/checklist-lint.mjs", ".playbook/scripts/checklist-lint.mjs"],
   ]);
@@ -316,6 +323,12 @@ function install() {
     console.log(`verified hidden runtime (${runtimeMappings.length} files)`);
   }
   console.log(`${dryRun ? "Would install" : "Installed"} AI-First Playbook in ${target}`);
+  if (!dryRun) {
+    // A preserved config (an upgrade without --force) can still list the old
+    // single-file plugins, which OpenCode 2 skips: say so now, loudly.
+    const problems = configProblems(target);
+    if (problems.length) console.log(`\n${banner(GUARD_PLUGINS, problems)}\n`);
+  }
   if (manageGitignore) console.log("The hidden .opencode/ and .playbook/ framework copies are covered by the managed .gitignore block.");
   console.log("Next: replace placeholders in .playbook/environment-profile.yml, run your approved smoke test, and restart OpenCode.");
 }

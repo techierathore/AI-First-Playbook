@@ -107,7 +107,8 @@ try {
   for (const path of [
     ".opencode/command/verify.md",
     ".opencode/agent/verifier.md",
-    ".opencode/playbook-plugin/spec-guardrails.ts",
+    ".opencode/playbook-plugin/spec-guardrails/index.ts",
+    ".opencode/playbook-plugin/spec-guardrails/server.ts",
     ".opencode/opencode.json",
     ".playbook/AGENTS.md",
     ".playbook/environment-profile.yml",
@@ -134,7 +135,9 @@ try {
   const hiddenAgents = readFileSync(join(directTarget, ".playbook/AGENTS.md"), "utf8");
   assert(hiddenAgents.includes(".playbook/environment-profile.yml"), "installed standing rules point at the visible legacy profile path");
   const hiddenConfig = readFileSync(join(directTarget, ".opencode/opencode.json"), "utf8");
-  assert(hiddenConfig.includes("../.playbook/AGENTS.md"), "hidden OpenCode config does not load hidden standing rules");
+  // OpenCode 1 finds a relative instruction by searching up from the project directory,
+  // so the entry is project-relative, not relative to .opencode/ (../ pointed above the project).
+  assert(JSON.stringify(JSON.parse(hiddenConfig).instructions) === JSON.stringify([".playbook/AGENTS.md", ".playbook/environment-profile.yml"]), "hidden OpenCode config does not load hidden standing rules");
   for (const path of [".opencode/agent/orchestrator.md", ".opencode/agent/verifier.md", ".opencode/command/fix.md", ".opencode/command/implement.md", ".opencode/command/legacy-audit.md"]) {
     const installedPrompt = readFileSync(join(directTarget, path), "utf8");
     assert(installedPrompt.includes(".playbook/AGENTS.md"), `installed prompt does not reference hidden standing rules: ${path}`);
@@ -174,11 +177,11 @@ try {
 
   const migrationTarget = join(sandbox, "legacy-layout");
   mkdirSync(join(migrationTarget, ".playbook"), { recursive: true });
-  for (const [path, content] of [["AGENTS.md", "legacy\n"], ["opencode.json", "{}\n"], ["playbook/environment-profile.yml", "legacy\n"], ["scripts/playbook-miss.mjs", "legacy\n"], ["docs/Installation.md", "legacy\n"], [".opencode/plugin/yolo.ts", "legacy\n"], [".opencode/plugin/spec-guardrails.ts", "legacy\n"]]) {
+  for (const [path, content] of [["AGENTS.md", "legacy\n"], ["opencode.json", "{}\n"], ["playbook/environment-profile.yml", "legacy\n"], ["scripts/playbook-miss.mjs", "legacy\n"], ["docs/Installation.md", "legacy\n"], [".opencode/plugin/yolo.ts", "legacy\n"], [".opencode/plugin/spec-guardrails.ts", "legacy\n"], [".opencode/playbook-plugin/yolo.ts", "legacy\n"], [".opencode/playbook-plugin/spec-guardrails.ts", "legacy\n"], [".opencode/playbook-plugin/telemetry.ts", "legacy\n"]]) {
     mkdirSync(join(migrationTarget, path, ".."), { recursive: true });
     writeFileSync(join(migrationTarget, path), content);
   }
-  const legacyCreated = ["AGENTS.md", "opencode.json", "playbook/environment-profile.yml", "scripts/playbook-miss.mjs", "docs/Installation.md", ".opencode/plugin/yolo.ts", ".opencode/plugin/spec-guardrails.ts"];
+  const legacyCreated = ["AGENTS.md", "opencode.json", "playbook/environment-profile.yml", "scripts/playbook-miss.mjs", "docs/Installation.md", ".opencode/plugin/yolo.ts", ".opencode/plugin/spec-guardrails.ts", ".opencode/playbook-plugin/yolo.ts", ".opencode/playbook-plugin/spec-guardrails.ts", ".opencode/playbook-plugin/telemetry.ts"];
   writeFileSync(join(migrationTarget, ".playbook/installation.json"), `${JSON.stringify({ package: "@techierathore/ai-first-playbook", version: "0.0.1", created: legacyCreated })}\n`);
   run("scripts/install.mjs", ["install", `--target=${migrationTarget}`]);
   for (const path of legacyCreated) assert(existsSync(join(migrationTarget, path)), `non-forced upgrade deleted legacy asset ${path}`);
@@ -189,6 +192,9 @@ try {
   assert(existsSync(join(migrationTarget, ".opencode/opencode.json")), "forced upgrade did not install the hidden OpenCode config");
   // Plugins left in OpenCode's auto-discovered plugin/ folder would load again, in file-system order.
   assert(!existsSync(join(migrationTarget, ".opencode/plugin")), "forced upgrade left the auto-discovered .opencode/plugin folder");
+  // OpenCode 2 skips a configured plugin file; the upgrade configures the plugin directories.
+  const migratedConfig = JSON.parse(readFileSync(join(migrationTarget, ".opencode/opencode.json"), "utf8"));
+  assert(JSON.stringify(migratedConfig.plugin) === JSON.stringify(["./playbook-plugin/telemetry", "./playbook-plugin/spec-guardrails", "./playbook-plugin/yolo"]), `forced upgrade configured plugins ${JSON.stringify(migratedConfig.plugin)}`);
   const migratedMarker = JSON.parse(readFileSync(join(migrationTarget, ".playbook/installation.json"), "utf8"));
   for (const path of legacyCreated) assert(!migratedMarker.created.includes(path), `forced upgrade retained stale ownership for ${path}`);
 

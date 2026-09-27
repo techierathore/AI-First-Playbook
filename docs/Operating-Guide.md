@@ -219,8 +219,16 @@ command's `model:` front matter overrides the TUI choice by design. In a source 
 
 The owner releases the npm package; agents never publish or tag. CI
 (`.github/workflows/validate.yml`) runs the four npm test scripts and the grader on every push, on
-Node 22.14.0, npm 11.5.1 and the supported OpenCode, and keeps the grader output as the
-`grader-output` artefact for 90 days; the release workflow runs the same checks before publishing.
+Node 22.14.0, npm 11.5.1 and each supported OpenCode (1.18.32 and 2.0.18), and keeps the grader
+output as a `grader-output-oc<version>` artefact for 90 days; `platforms.yml` repeats them on macOS
+and Linux in UTC and Asia/Kolkata; the release workflow runs the same checks before publishing.
+
+OpenCode 1 and 2 load the same install: each guard plugin is a directory under
+`.opencode/playbook-plugin/` with `index.ts` (1.x) and `server.ts` (2.x). On 2.x the `PLAYBOOK_*`
+variables (`PLAYBOOK_YOLO`, `PLAYBOOK_TELEMETRY`, `PLAYBOOK_GIT_APPROVED`, `PLAYBOOK_CHECKLIST`) are
+read by the OpenCode server: start it with `--standalone` from the shell that sets them, or set them
+on the background service. `node .playbook/scripts/playbook-guards.mjs --config` checks the plugin
+configuration before a session.
 The procedure is in
 [maintainer/Npm-Release-Guide.md](maintainer/Npm-Release-Guide.md).
 

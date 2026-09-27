@@ -159,9 +159,14 @@ unchanged.
 
 - `opencode run --auto` approves everything not explicitly denied; the plugin additionally
   answers `permission.ask` so the TUI path works too, and denies git writes on both paths.
-- The plugin is loaded from `.opencode/playbook-plugin/` (not auto-discovered) and must be listed **after**
-  `spec-guardrails.ts` in `opencode.json` so a forbidden filename is blocked before YOLO
-  could allow it. `scripts/playbook-validate.mjs` checks the order.
+- The plugin is the directory `.opencode/playbook-plugin/yolo/` (not auto-discovered; `index.ts`
+  for OpenCode 1, `server.ts` for 2) and must be listed **after** `spec-guardrails` in
+  `opencode.json` so a forbidden filename is blocked before YOLO could allow it.
+  `scripts/playbook-validate.mjs` checks the order.
+- On OpenCode 2 the plugin answers the `permission` `evaluate` hook and records limits from the
+  `session` `retry` hook, and `PLAYBOOK_YOLO=1` must be in the OpenCode server's environment:
+  `opencode run --standalone` or `opencode --standalone` from the shell that sets it, or the
+  background service's own environment.
 
 ### Permission decision flow
 

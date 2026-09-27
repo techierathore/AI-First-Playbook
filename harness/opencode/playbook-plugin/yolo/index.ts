@@ -27,10 +27,16 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { isYoloEnv, yoloDecision, gitWriteReason, rateLimitPlan, SHELL_TOOLS_YOLO } from "./yolo-policy.mjs";
+import { isYoloEnv, yoloDecision, gitWriteReason, rateLimitPlan, SHELL_TOOLS_YOLO } from "../yolo-policy.mjs";
+import { GUARD_ENV, guardLine, withGuard } from "../guard-signal.mjs";
 
 export const PlaybookYolo: Plugin = async ({ directory, client }) => {
-  if (!isYoloEnv()) return {};
+  const guard = {
+    // Guard signal (guard-signal.mjs): the session can tell this plugin loaded.
+    "experimental.chat.system.transform": async (_input, output) => { output.system.push(guardLine("yolo")); },
+    "shell.env": async (_input, output) => { output.env[GUARD_ENV] = withGuard(output.env[GUARD_ENV], "yolo"); },
+  };
+  if (!isYoloEnv()) return guard;
 
   const log = async (level: "info" | "warn" | "error", message: string, extra?: Record<string, unknown>) => {
     try {
@@ -46,6 +52,7 @@ export const PlaybookYolo: Plugin = async ({ directory, client }) => {
   await log("info", "YOLO mode active: permissions auto-approved, git writes denied, rate-limit resets recorded", { limitFile });
 
   return {
+    ...guard,
     "permission.ask": async (input, output) => {
       try {
         const meta = ((input as any).metadata ?? {}) as Record<string, unknown>;

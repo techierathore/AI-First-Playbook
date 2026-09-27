@@ -50,9 +50,9 @@ bmad-method`, for the same reason.
 | `.opencode/opencode.json` | Hidden project-level framework config | OpenCode merges it from the `.opencode` configuration directory. It loads the hidden standing rules and environment profile. |
 | `.opencode/command/*.md` | Slash commands | OpenCode discovers `/feature-plan`, `/implement`, `/verify`, `/fix`, and supporting commands. |
 | `.opencode/agent/*.md` | Specialized agents | OpenCode discovers the analyst, orchestrator, builder, and verifier. |
-| `.opencode/playbook-plugin/*` | Mechanical guardrails and optional telemetry/YOLO behavior | Registered in order in `opencode.json`; kept out of OpenCode's auto-discovered `plugin/` folder, whose load order follows the file system. |
+| `.opencode/playbook-plugin/*` | Mechanical guardrails and optional telemetry/YOLO behavior | One directory per plugin (`telemetry`, `spec-guardrails`, `yolo`), each with `index.ts` (OpenCode 1) and `server.ts` (OpenCode 2); registered in that order in `opencode.json`; kept out of OpenCode's auto-discovered `plugin/` folder, whose load order follows the file system. |
 | `.opencode/templates/doc-shell.html` | HTML rendering shell | Documentation commands read it explicitly when rendering project documents. |
-| `.playbook/AGENTS.md` | Shared framework rules | `.opencode/opencode.json` includes it as standing instructions. |
+| `.playbook/AGENTS.md` | Shared framework rules | `.opencode/opencode.json` includes it as standing instructions (OpenCode 1); on OpenCode 2.0.18, which ignores `instructions`, the spec-guardrails plugin adds it. |
 | `.playbook/environment-profile.yml` | Project topology and command contract | Every build/verify command reads it before running tools. This is the file the operator customizes. |
 | `.playbook/model-tiers.yml` | Optional model routing and attribution | Runtime utilities read it when routing or telemetry is enabled. |
 | `.playbook/scripts/*.mjs` | Miss and telemetry runtime | Framework commands invoke these exact hidden paths; they are not auto-run merely because they exist. |

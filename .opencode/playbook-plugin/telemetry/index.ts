@@ -33,9 +33,15 @@ import type { Plugin } from "@opencode-ai/plugin";
 import { appendFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import { GUARD_ENV, guardLine, withGuard } from "../guard-signal.mjs";
 
 export const PlaybookTelemetry: Plugin = async ({ directory, client }) => {
-  if (process.env.PLAYBOOK_TELEMETRY !== "1") return {};
+  const guard = {
+    // Guard signal (guard-signal.mjs): the session can tell this plugin loaded.
+    "experimental.chat.system.transform": async (_input, output) => { output.system.push(guardLine("telemetry")); },
+    "shell.env": async (_input, output) => { output.env[GUARD_ENV] = withGuard(output.env[GUARD_ENV], "telemetry"); },
+  };
+  if (process.env.PLAYBOOK_TELEMETRY !== "1") return guard;
 
   // sessionID -> parentID (null for top-level sessions). Populated from
   // session.created/session.updated; lazily backfilled via the SDK when a turn
@@ -98,6 +104,7 @@ export const PlaybookTelemetry: Plugin = async ({ directory, client }) => {
   const marker = () => ({ seq: sequence++, ts: new Date().toISOString() });
 
   return {
+    ...guard,
     "command.execute.before": async (input) => {
       const mark = marker();
       try {

@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         tz: [UTC, Asia/Kolkata]
-        opencode: ["1.18.32"]
+        opencode: ["1.18.32", "2.0.18"]
     env:
       TZ: ${{ matrix.tz }}
       PLAYBOOK_ACTOR: ci
@@ -26,10 +26,7 @@ jobs:
       - name: Install OpenCode ${{ matrix.opencode }}
         shell: bash
         run: |
-          case "${{ matrix.opencode }}" in
-            1.*) npm install --global "opencode-ai@${{ matrix.opencode }}" ;;
-            *) npm install --global "@opencode/cli@${{ matrix.opencode }}" ;;
-          esac
+          npm install --global "$(node scripts/opencode-package.mjs "${{ matrix.opencode }}")"
           opencode --version
       - name: Report the platform
         shell: bash

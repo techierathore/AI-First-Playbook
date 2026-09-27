@@ -43,3 +43,10 @@ Rules:
   — decide, note the decision in your report so the orchestrator can log it
   under `## YOLO Decisions`, and finish every item in your slice. Deleting
   files and read-only git are allowed; committing is not.
+
+## Guard check
+
+Your context must hold `[playbook-guard] telemetry loaded`, `[playbook-guard] spec-guardrails loaded`
+and `[playbook-guard] yolo loaded`. If any is missing, begin your first reply with
+`PLAYBOOK GUARDS NOT LOADED: <missing> — this session is unguarded.`, run
+`node .playbook/scripts/playbook-guards.mjs` and write nothing until a human answers.

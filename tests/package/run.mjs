@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
 import { assert, repoRoot, requirementId, runCases, ungraded } from "../lib.mjs";
+import { opencodeInfo, resolved } from "../opencode.mjs";
 
 const id = requirementId("PB-01");
 const pkg = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
@@ -43,49 +44,36 @@ function walk(dir, base = dir, out = []) {
   return out;
 }
 
-function opencodeBin() {
-  const bin = process.env.PLAYBOOK_OPENCODE_BIN || "opencode";
-  const probe = spawnSync(bin, ["--version"], { encoding: "utf8" });
-  return probe.status === 0 ? { bin, version: probe.stdout.trim() } : null;
-}
-
 const expectedCommands = pkg.files
   .filter((f) => f.startsWith("harness/opencode/command/") && f.endsWith(".md"))
   .map((f) => basename(f, ".md")).sort();
 const expectedAgents = ["analyst", "builder", "orchestrator", "verifier"];
 
 if (id === "PB-01") {
-  const oc = opencodeBin();
+  const oc = opencodeInfo();
   if (!oc) ungraded(id, "opencode is not on PATH (set PLAYBOOK_OPENCODE_BIN); resolution cannot be observed");
   const { target } = packAndInstall();
   await runCases(id, [
     ["the package declares 14 OpenCode commands", () => assert(expectedCommands.length === 14, `package.json ships ${expectedCommands.length} commands`)],
-    [`OpenCode ${oc.version} resolves every packaged command and agent in the installed target`, () => {
-      // OpenCode can exit before a pipe drains; capture through a file.
-      const out = join(work, "config.json");
-      const fd = openSync(out, "w");
-      const child = spawnSync(oc.bin, ["debug", "config"], { cwd: target, stdio: ["ignore", fd, "pipe"], encoding: "utf8", timeout: 180000, env: { ...process.env, OPENCODE_DISABLE_AUTOUPDATE: "1" } });
-      closeSync(fd);
-      assert(child.status === 0, `opencode debug config exited ${child.status}: ${(child.stderr || "").slice(-300)}`);
-      const text = readFileSync(out, "utf8");
-      const config = JSON.parse(text.slice(text.indexOf("{")));
-      const commands = Object.keys(config.command ?? {}).sort();
-      const agents = Object.keys(config.agent ?? {}).sort();
-      const plugins = (config.plugin ?? []).map((p) => basename(String(p)));
+    [`OpenCode ${oc.version} resolves every packaged command, agent and plugin in the installed target`, async () => {
+      const r = await resolved(oc, target);
       const problems = [];
-      if (JSON.stringify(commands) !== JSON.stringify(expectedCommands)) problems.push(`resolved commands ${commands.join(",")}`);
-      for (const agent of expectedAgents) if (!agents.includes(agent)) problems.push(`agent ${agent} did not resolve`);
+      if (JSON.stringify(r.commands) !== JSON.stringify(expectedCommands)) problems.push(`resolved commands ${r.commands.join(",")}`);
+      for (const agent of expectedAgents) if (!r.agents.includes(agent)) problems.push(`agent ${agent} did not resolve`);
       // Order must come from opencode.json: plugins in OpenCode's auto-discovered plugin/ folder
-      // load in file-system order (on CI: yolo before the guardrails).
-      if (plugins.join(",") !== "telemetry.ts,spec-guardrails.ts,yolo.ts") problems.push(`plugin order ${plugins.join(",")}`);
+      // load in file-system order (on CI: yolo before the guardrails). OpenCode 2 loads a
+      // configured plugin only as a directory (MISS-20260926-07 order kept on both).
+      if (r.plugins.join(",") !== "telemetry,spec-guardrails,yolo") problems.push(`plugin order ${r.plugins.join(",")}`);
+      if (r.pluginsActive === false) problems.push("a Playbook plugin did not activate");
       if (existsSync(join(target, ".opencode/plugin"))) problems.push("a Playbook plugin sits in the auto-discovered .opencode/plugin/ folder");
-      if (!(config.instructions ?? []).some((p) => String(p).endsWith(".playbook/AGENTS.md"))) problems.push(`standing rules are not loaded (instructions ${(config.instructions ?? []).join(",")})`);
+      if (!r.instructions.some((p) => p.endsWith(".playbook/AGENTS.md"))) problems.push(`standing rules are not loaded (instructions ${r.instructions.join(",")})`);
       assert(!problems.length, problems.join("; "));
     }],
     ["the supported OpenCode version is recorded and matches the one observed", () => {
       const supported = pkg.opencode?.supported;
       assert(supported, "package.json opencode.supported is missing");
-      if (supported !== oc.version) console.log(`note: observed OpenCode ${oc.version}, supported ${supported}`);
+      assert(Array.isArray(supported) && supported.length, "package.json opencode.supported is not a list of versions");
+      if (!supported.includes(oc.version)) console.log(`note: observed OpenCode ${oc.version}, supported ${supported.join(", ")}`);
     }],
   ]);
 } else if (id === "PB-02") {

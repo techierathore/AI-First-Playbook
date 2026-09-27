@@ -62,8 +62,8 @@ export const FILE_WRITING_TOOLS = new Set([
   "write", "edit", "apply_patch", "patch", "create_file", "delete_file", "move_file",
 ]);
 
-/** Tool names that reach the shell. */
-export const SHELL_TOOLS = new Set(["bash"]);
+/** Tool names that reach the shell: `bash` on OpenCode 1.x, `shell` on 2.x. */
+export const SHELL_TOOLS = new Set(["bash", "shell"]);
 
 const MISS_EMITTER = ".playbook/scripts/playbook-miss.mjs";
 const MISS_STREAM = "verification/telemetry/misses.ndjson";
@@ -216,10 +216,10 @@ export function isChecklist(path) {
   return /(^|\/)[^/]*Implementation[-_ ]Checklist\.md$/i.test(path) || /(^|\/)checklists?\/[^/]+\.md$/i.test(path);
 }
 
-export function isSelectedChecklist(path) {
+export function isSelectedChecklist(path, root = process.cwd()) {
   const selected = process.env.PLAYBOOK_CHECKLIST;
   if (!selected) return isChecklist(path);
-  const normalized = normalizePath(selected);
+  const normalized = normalizePath(selected, root);
   return normalized === path;
 }
 
@@ -243,15 +243,15 @@ export function checkForbidden(path) {
   return null;
 }
 
-export function checkWritePolicy(path, verifier = true) {
-  const normalized = normalizePath(path);
+export function checkWritePolicy(path, verifier = true, root = process.cwd()) {
+  const normalized = normalizePath(path, root);
   if (!normalized) return "target path is absolute, traverses the repository, is a symlink, or cannot be determined";
   const forbidden = checkForbidden(normalized);
   if (forbidden) return forbidden;
   if (verifier && normalized === MISS_STREAM) {
     return `The durable miss stream is append-only; invoke the approved ${MISS_EMITTER} CLI without a --misses override`;
   }
-  if (verifier && !(isSelectedChecklist(normalized) || /^verification\//.test(normalized) || /^deploy\/[^/]+\//.test(normalized))) {
+  if (verifier && !(isSelectedChecklist(normalized, root) || /^verification\//.test(normalized) || /^deploy\/[^/]+\//.test(normalized))) {
     return "Verifier writes are limited to the selected implementation checklist, verification/**, or explicitly referenced deploy/<feature>/** helpers";
   }
   return null;
@@ -263,7 +263,7 @@ export function checkWritePolicy(path, verifier = true) {
  * tells the policy whether the stricter verifier write-scope applies; the
  * plugin determines that from the OpenCode hook input.
  */
-export function evaluateToolCall({ tool, args, isVerifier }) {
+export function evaluateToolCall({ tool, args, isVerifier, root = process.cwd() }) {
   const shell = SHELL_TOOLS.has(tool);
   if (!FILE_WRITING_TOOLS.has(tool) && !shell) return null;
 
@@ -291,7 +291,7 @@ export function evaluateToolCall({ tool, args, isVerifier }) {
   }
   if (!paths.length) return null;
 
-  const reason = paths.map((path) => checkWritePolicy(path, isVerifier)).find(Boolean);
+  const reason = paths.map((path) => checkWritePolicy(path, isVerifier, root)).find(Boolean);
   if (!reason) return null;
   return { reason, paths, message: blockMessage(tool, paths, reason) };
 }

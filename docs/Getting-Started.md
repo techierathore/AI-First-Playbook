@@ -28,8 +28,10 @@ flowchart TD
 
 ## 2. Install
 
-Requires Node.js 22.14.0+ and npm 11.5.1+, OpenCode (supported version in `package.json`
+Requires Node.js 22.14.0+ and npm 11.5.1+, OpenCode 1.18.32 or 2.0.18 (`package.json`
 `opencode.supported`), and your application's own toolchain; the Playbook installs none of that.
+If a session opens with `PLAYBOOK GUARDS NOT LOADED`, rerun the install with `--force` and restart
+OpenCode.
 On Windows, run everything inside WSL with repositories under `~/work`
 ([WSL guide](maintainer/OpenCode-WSL-Setup-Guide.md)).
 
