@@ -299,6 +299,12 @@ try {
     assert(text.includes("realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)"), `scripts/${file} decides it is the main module without resolving symlinks`);
   }
 
+  // `install --force` (the documented upgrade) keeps the project's filled-in profile.
+  const filled = readFileSync(join(realTarget, ".playbook/environment-profile.yml"), "utf8").replace(/project_type: .*/, 'project_type: "node-http"');
+  writeFileSync(join(realTarget, ".playbook/environment-profile.yml"), filled);
+  run("scripts/install.mjs", ["install", `--target=${realTarget}`, "--force"]);
+  assert(readFileSync(join(realTarget, ".playbook/environment-profile.yml"), "utf8") === filled, "install --force reset the filled environment profile to placeholders");
+
   console.log("installer tests passed");
 } finally {
   rmSync(sandbox, { recursive: true, force: true });

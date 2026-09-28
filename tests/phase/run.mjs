@@ -146,6 +146,17 @@ const cases = {
       const r2 = script("phase-complete.mjs", ["fix", put("fix1.md", t)]);
       assert(r2.status === 0, r2.stdout);
     }],
+    ["deployment rows (checklist-deploy.mjs's `- [ ]` rows) are not items; an item after them still counts (PB-34 campaign: a YOLO builder patched the gates over this)", () => {
+      const rows = "## Deployment Steps\n\n### Automated\n\n- [ ] Run the automated test suite\n  - `npm test`\n\n### Manual\n\n- [ ] Start the server with `npm start`\n\n## Verifier Run Log";
+      const withRows = built().replace(/## Deployment Steps[\s\S]*?## Verifier Run Log/, rows);
+      const r = script("phase-complete.mjs", ["build", put("deployrows.md", withRows)]);
+      assert(r.status === 0, r.stdout);
+      const lint = script("checklist-lint.mjs", [put("deployrows-lint.md", withRows)]);
+      assert(!/Run the automated test suite|Start the server/.test(lint.stdout) && !/line \d+: missing <!-- metadata/.test(lint.stdout), lint.stdout);
+      const after = withRows.replace("## Verifier Run Log", "## Late Items\n\n- [ ] A planned item after the deployment steps\n\n## Verifier Run Log");
+      const r2 = script("phase-complete.mjs", ["build", put("deployrows-after.md", after)]);
+      assert(r2.status === 1 && /unfinished/.test(r2.stdout), r2.stdout);
+    }],
     ["a missing Deployment Steps section fails completion", () => {
       const r = script("phase-complete.mjs", ["build", put("nodeploy.md", built().replace(/## Deployment Steps[\s\S]*?## Verifier Run Log/, "## Verifier Run Log"))]);
       assert(r.status === 1 && /Deployment Steps/.test(r.stdout), r.stdout);

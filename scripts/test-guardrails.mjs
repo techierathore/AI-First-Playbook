@@ -223,6 +223,14 @@ try {
   if (!decision("bash", { command: "npm test" })) guardrailFail("opaque verifier shell command was allowed");
   if (decision("write", { filePath: "src/app.ts" }, false)) guardrailFail("non-verifier source write was denied");
   if (!decision("write", { filePath: "Feature-Gap-Report.md" }, false)) guardrailFail("forbidden report was allowed for non-verifier");
+  // PB-34 campaign: a YOLO builder rewrote .playbook/scripts/phase-complete.mjs to pass its own build.
+  for (const [tool, args] of [
+    ["edit", { filePath: ".playbook/scripts/phase-complete.mjs" }], ["write", { path: ".playbook/scripts/checklist-lint.mjs" }],
+    ["write", { filePath: ".opencode/playbook-plugin/write-policy.mjs" }], ["edit", { filePath: ".opencode/opencode.json" }],
+    ["bash", { command: "cp /tmp/x.mjs .playbook/scripts/phase-complete.mjs" }], ["shell", { command: "echo x > .opencode/agent/builder.md" }],
+  ]) for (const verifier of [false, true]) if (!decision(tool, args, verifier)) guardrailFail(`agent write to the installed Playbook allowed: ${tool} ${JSON.stringify(args)}`);
+  if (decision("edit", { filePath: ".playbook/environment-profile.yml" }, false)) guardrailFail("the environment profile must stay editable");
+  if (decision("write", { filePath: "src/.opencode-notes.md" }, false) || decision("write", { filePath: "docs/playbook/notes.md" }, false)) guardrailFail("only the installed runtime folders are protected");
 } finally {
   if (previousChecklist === undefined) delete process.env.PLAYBOOK_CHECKLIST;
   else process.env.PLAYBOOK_CHECKLIST = previousChecklist;

@@ -15,6 +15,7 @@ const force = args.includes("--force");
 const uninstall = args.includes("--uninstall") || command === "uninstall";
 const includeGuides = args.includes("--with-guides") && !args.includes("--no-docs");
 const manageGitignore = !args.includes("--no-gitignore");
+const PROFILE = ".playbook/environment-profile.yml";
 const runtimeMappings = [
   ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
   ["scripts/playbook-guards.mjs", ".playbook/scripts/playbook-guards.mjs"],
@@ -248,7 +249,8 @@ function copy(source, destination, exclusions = new Set(), base = source, replac
   const exists = existsSync(destination);
   const destinationRelative = relative(target, destination).replaceAll("\\", "/");
   managed.add(destinationRelative);
-  if (exists && (!force || !ownedBeforeInstall.has(destinationRelative))) { console.log(`preserve ${destinationRelative}`); return; }
+  // The environment profile is the project's own once installed: --force never resets it to placeholders.
+  if (exists && (!force || !ownedBeforeInstall.has(destinationRelative) || destinationRelative === PROFILE)) { console.log(`preserve ${destinationRelative}`); return; }
   console.log(`${exists ? "overwrite" : "create"} ${destinationRelative}`);
   if (!dryRun) {
     mkdirSync(dirname(destination), { recursive: true });

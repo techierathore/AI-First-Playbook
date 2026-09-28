@@ -243,9 +243,21 @@ export function checkForbidden(path) {
   return null;
 }
 
+/**
+ * The installed Playbook (.playbook/, .opencode/) is its own gates, guards and
+ * prompts: no agent edits them, or a builder could rewrite the check that
+ * judges its work. The environment profile is the project's own settings.
+ */
+export function playbookRuntimePath(normalized) {
+  return /^(\.playbook|\.opencode)(\/|$)/.test(normalized) && normalized !== ".playbook/environment-profile.yml";
+}
+
 export function checkWritePolicy(path, verifier = true, root = process.cwd()) {
   const normalized = normalizePath(path, root);
   if (!normalized) return "target path is absolute, traverses the repository, is a symlink, or cannot be determined";
+  if (playbookRuntimePath(normalized)) {
+    return "the installed Playbook (.playbook/, .opencode/) is never edited by an agent: its scripts are the gates that judge the work. Report a Playbook defect as a miss (playbook-miss.mjs) and leave the file unchanged";
+  }
   const forbidden = checkForbidden(normalized);
   if (forbidden) return forbidden;
   if (verifier && normalized === MISS_STREAM) {
