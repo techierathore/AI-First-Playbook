@@ -18,6 +18,7 @@ const manageGitignore = !args.includes("--no-gitignore");
 const runtimeMappings = [
   ["scripts/playbook-miss.mjs", ".playbook/scripts/playbook-miss.mjs"],
   ["scripts/playbook-guards.mjs", ".playbook/scripts/playbook-guards.mjs"],
+  ["scripts/opencode-command.mjs", ".playbook/scripts/opencode-command.mjs"],
   ["scripts/miss-lib.mjs", ".playbook/scripts/miss-lib.mjs"],
   ["scripts/playbook-telemetry.mjs", ".playbook/scripts/playbook-telemetry.mjs"],
   ["scripts/profile-lib.mjs", ".playbook/scripts/profile-lib.mjs"],

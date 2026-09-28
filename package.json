@@ -51,6 +51,7 @@
     "scripts/npm-cleanup.mjs",
     "scripts/playbook-miss.mjs",
     "scripts/playbook-guards.mjs",
+    "scripts/opencode-command.mjs",
     "scripts/miss-lib.mjs",
     "scripts/playbook-telemetry.mjs",
     "scripts/profile-lib.mjs",

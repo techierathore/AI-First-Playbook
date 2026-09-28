@@ -57,7 +57,9 @@ async function probe(name, target, script, runArgs, env = {}) {
     model: "mock/scripted", small_model: "mock/scripted", autoupdate: false, share: "disabled",
   }));
   const out = await new Promise((resolve) => {
-    const child = spawn(bin, runArgs, {
+    // A command on OpenCode 2 runs through the installed driver (node <script> …), not `opencode run`.
+    const [exe, argv] = runArgs[0] === process.execPath ? [runArgs[0], runArgs.slice(1)] : [bin, runArgs];
+    const child = spawn(exe, argv, {
       cwd: target, stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, PWD: target, OPENCODE_DISABLE_AUTOUPDATE: "1", ...env },
     });
@@ -81,47 +83,39 @@ async function probe(name, target, script, runArgs, env = {}) {
 }
 
 // /verify runs the verifier as a subagent. OpenCode 1 starts the command with
-// `run --command verify`; OpenCode 2's `run` has no command flag, so the
-// primary agent dispatches the same verifier subagent with the scripted
-// subagent call, and the verifier's first turn plays the planted steps.
-const verifyArgs = oc.major < 2
+// `run --command verify`. OpenCode 2's `run` has no command flag and passes
+// "/verify …" to the agent as plain text, so the command runs through the
+// installed driver, which posts it to the server's session.command route: the
+// command's own template, agent and subtask apply, as they do for a user.
+const verifyArgs = (target) => oc.major < 2
   ? ["run", "--model", "mock/scripted", "--print-logs", "--command", "verify", "docs/Demo-Implementation-Checklist.md"]
-  : runArgs(oc, { agent: "build", message: "/verify docs/Demo-Implementation-Checklist.md" });
-function verifySteps(target, steps) {
-  if (oc.major < 2) return steps;
-  const [first, ...rest] = steps;
-  return [
-    { tool: T.subagent, args: { agent: "verifier", description: "verify", prompt: "Verify docs/Demo-Implementation-Checklist.md" } },
-    { ...first, fresh: true },
-    ...rest,
-  ];
-}
+  : [process.execPath, join(target, ".playbook/scripts/opencode-command.mjs"), "verify", "docs/Demo-Implementation-Checklist.md", "--model=mock/scripted", "--print-logs", "--timeout=2"];
 
 const cases = {
   "PB-04": [
     ["live /verify: the verifier subagent cannot write product source; evidence writes succeed", async () => {
       const { target } = makeTarget();
-      const text = await probe("verify-write", target, verifySteps(target, [
+      const text = await probe("verify-write", target, [
         T.write(join(target, "src/app.js"), "tampered\n"),
         T.write(join(target, "verification/demo/run-1/probe.txt"), "evidence\n"),
-      ]), verifyArgs);
+      ], verifyArgs(target));
       assert(readFileSync(join(target, "src/app.js"), "utf8").startsWith("export const add"), "src/app.js was modified by the verifier");
       assert(/BLOCKED write of forbidden path/.test(text), "no block reached the live log");
       assert(existsSync(join(target, "verification/demo/run-1/probe.txt")), "permitted evidence write did not happen");
     }],
     ["live /verify: the verifier may run the project's test command", async () => {
       const { target } = makeTarget();
-      const text = await probe("verify-npm-test", target, verifySteps(target, [{ tool: T.shell, args: { command: "npm test", description: "run tests" } }]), verifyArgs);
+      const text = await probe("verify-npm-test", target, [{ tool: T.shell, args: { command: "npm test", description: "run tests" } }], verifyArgs(target));
       assert(!/BLOCKED bash/.test(text), "npm test was blocked for the verifier");
     }],
   ],
   "PB-19": [
     ["live /verify: the verifier subagent cannot write product source; evidence writes succeed", async () => {
       const { target } = makeTarget();
-      const text = await probe("verify-write", target, verifySteps(target, [
+      const text = await probe("verify-write", target, [
         T.write(join(target, "src/app.js"), "tampered\n"),
         T.write(join(target, "verification/demo/run-1/probe.txt"), "evidence\n"),
-      ]), verifyArgs);
+      ], verifyArgs(target));
       assert(readFileSync(join(target, "src/app.js"), "utf8").startsWith("export const add"), "src/app.js was modified by the verifier");
       assert(/BLOCKED write of forbidden path/.test(text), "no block reached the live log");
       assert(existsSync(join(target, "verification/demo/run-1/probe.txt")), "permitted evidence write did not happen");

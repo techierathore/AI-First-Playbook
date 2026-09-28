@@ -321,3 +321,37 @@ console.log("guardrail policy coverage passed");
     rmSync(dir, { recursive: true, force: true });
   }
 }
+
+// ── Headless commands: OpenCode 2's `run` does not expand "/command" ──
+{
+  const { mkdtempSync, writeFileSync, chmodSync, rmSync } = await import("node:fs");
+  const { spawnSync } = await import("node:child_process");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const fail = (msg) => { console.error(`headless command check failed: ${msg}`); process.exit(1); };
+  const c = await import("./opencode-command.mjs");
+  const o = c.parseArgs(["/verify", "--model=p/m", "--auto", "docs/X-Implementation-Checklist.md", "extra"]);
+  if (o.command !== "verify" || o.text !== "docs/X-Implementation-Checklist.md extra" || o.model !== "p/m" || !o.auto) fail(`parseArgs ${JSON.stringify(o)}`);
+  for (const bad of [[], ["Verify"], ["verify", "--model=nope"], ["verify", "--auto=1"], ["verify", "--bogus=1"]]) {
+    let threw = false; try { c.parseArgs(bad); } catch { threw = true; }
+    if (!threw) fail(`parseArgs accepted ${JSON.stringify(bad)}`);
+  }
+  if (c.v1Args(o).join(" ") !== "run --model p/m --auto --command verify docs/X-Implementation-Checklist.md extra") fail(`v1Args ${c.v1Args(o).join(" ")}`);
+  // The YOLO supervisor: a /command prompt goes through the driver on 2.x, plain `run` (with --standalone) otherwise.
+  const dir = mkdtempSync(join(tmpdir(), "pb-headless-"));
+  try {
+    const supervise = (version, prompt) => {
+      const bin = join(dir, `opencode-${version}`);
+      writeFileSync(bin, `#!/bin/sh\necho "opencode v${version}"\n`);
+      chmodSync(bin, 0o755);
+      const r = spawnSync(process.execPath, [fileURLToPath(new URL("./playbook-yolo.mjs", import.meta.url)), `--cwd=${dir}`, `--prompt=${prompt}`, "--dry-run"], { encoding: "utf8", env: { ...process.env, PLAYBOOK_OPENCODE_BIN: bin } });
+      return r.stdout.trim().split("\n").at(-1);
+    };
+    if (!/opencode-command\.mjs implement --auto --format=json --agent=orchestrator "YOLO docs\/X\.md/.test(supervise("2.0.18", "/implement YOLO docs/X.md"))) fail(`v2 command prompt: ${supervise("2.0.18", "/implement YOLO docs/X.md")}`);
+    if (!/opencode-2\.0\.18 run --standalone --auto --format json --agent orchestrator "YOLO/.test(supervise("2.0.18", "YOLO fix the build"))) fail(`v2 plain prompt: ${supervise("2.0.18", "YOLO fix the build")}`);
+    if (!/opencode-1\.18\.32 run --auto --format json --agent orchestrator "\/implement YOLO/.test(supervise("1.18.32", "/implement YOLO docs/X.md"))) fail(`v1 prompt: ${supervise("1.18.32", "/implement YOLO docs/X.md")}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  console.log("headless command checks passed");
+}

@@ -28,7 +28,8 @@ its version during the campaign.
    fill `.playbook/environment-profile.yml`, and confirm `node .playbook/scripts/playbook-probe.mjs`
    prints only `ok` lines.
 4. Copy `tests/phase/fixtures/team-inventory-brd.md` into `docs/team-inventory/` and run, each in a
-   fresh OpenCode session:
+   fresh OpenCode session (headless: `node .playbook/scripts/opencode-command.mjs <command> "<arguments>"`,
+   which works on both versions; OpenCode 2's `opencode run` sends `/command …` as plain text):
    - `/feature-plan @docs/team-inventory/team-inventory-brd.md` — then approve with
      `handoff-record.mjs create plan-approval`.
    - `/implement @docs/team-inventory/<checklist>` — `phase-complete.mjs build` must pass at the end.
@@ -36,7 +37,9 @@ its version during the campaign.
    - `/verify @docs/team-inventory/<checklist>` — expect FAIL on the import items with evidence,
      and a linked miss.
    - `/fix` then a fresh `/verify` — expect ALL PASS.
-5. Run it once more in YOLO mode (`/implement YOLO …`) and confirm no git history was written and
+5. Run it once more in YOLO mode (`/implement YOLO …`; headless:
+   `PLAYBOOK_YOLO=1 node .playbook/scripts/opencode-command.mjs implement "YOLO …" --auto`, which
+   gives the variable to the plugins on OpenCode 2 too) and confirm no git history was written and
    the last line is a `PLAYBOOK_RUN_COMPLETE:` or `PLAYBOOK_RUN_BLOCKED:` sentinel.
 
 ## Record the result
