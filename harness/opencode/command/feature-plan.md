@@ -58,7 +58,11 @@ for service interactions).
 
 ## Handoff
 
-Persist the plan with `node .playbook/scripts/handoff-record.mjs create plan-approval ...`
-(`Status transition: planned -> plan-approved` once a person approves; open decisions name an
-owner and a due date). Then ask whether to render the human documents with `/generate-html`;
+Plan approval is a person's decision. Outside YOLO mode, do not write the plan-approval record:
+end by asking the accountable approver to approve or request changes. Only after a named person
+has answered in this conversation, record it with
+`node .playbook/scripts/handoff-record.mjs create plan-approval ...` (their name as `Approver
+identity`, their `Decision`, the real UTC time; open decisions name an owner and a due date).
+In YOLO mode the gate is pre-approved: record `Approver identity: YOLO pre-approval` and add the
+`## YOLO Decisions` line. Then ask whether to render the human documents with `/generate-html`;
 never render the checklist or an Issues file.

@@ -337,6 +337,13 @@ console.log("guardrail policy coverage passed");
     if (!threw) fail(`parseArgs accepted ${JSON.stringify(bad)}`);
   }
   if (c.v1Args(o).join(" ") !== "run --model p/m --auto --command verify docs/X-Implementation-Checklist.md extra") fail(`v1Args ${c.v1Args(o).join(" ")}`);
+  const answer = c.parseArgs(["--continue=ses_abc123", "Yes, proceed"]);
+  if (answer.continue !== "ses_abc123" || answer.text !== "Yes, proceed" || answer.command !== null) fail(`--continue ${JSON.stringify(answer)}`);
+  if (c.v1Args(answer).join(" ") !== "run --session ses_abc123 Yes, proceed") fail(`v1Args --continue ${c.v1Args(answer).join(" ")}`);
+  for (const bad of [["--continue=nope", "x"], ["--continue=ses_abc"]]) {
+    let threw = false; try { c.parseArgs(bad); } catch { threw = true; }
+    if (!threw) fail(`parseArgs accepted ${JSON.stringify(bad)}`);
+  }
   // The YOLO supervisor: a /command prompt goes through the driver on 2.x, plain `run` (with --standalone) otherwise.
   const dir = mkdtempSync(join(tmpdir(), "pb-headless-"));
   try {

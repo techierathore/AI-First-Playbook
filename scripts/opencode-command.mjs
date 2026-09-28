@@ -5,6 +5,7 @@
  *
  *   node .playbook/scripts/opencode-command.mjs <command> [text…] [--model=provider/model]
  *        [--agent=<name>] [--auto] [--print-logs] [--format=json] [--timeout=<minutes>]
+ *   node .playbook/scripts/opencode-command.mjs --continue=<session id> "<answer>" [same options]
  *
  * OpenCode 1 runs `opencode run --command <command> <text>`. OpenCode 2's
  * `run` has no command flag and sends "/verify …" to the agent as plain text,
@@ -16,10 +17,14 @@
  * PLAYBOOK_* variables reach the plugins (the background service would not).
  * --auto answers each permission request with "once", as `run --auto` does;
  * without it a request is rejected, since nobody is there to answer it.
+ * A question the agent asks (OpenCode 2's question form, e.g. an approval gate)
+ * is printed and cancelled, so the agent ends its turn; answer it with
+ * --continue=<session id> "<answer>", which sends a message to that session.
  *
  * Prints the root session's assistant text (--format=json: one JSON line per
  * text part, each carrying "sessionID"). Exit 0 when the command ran, 1 when
- * the session failed, 2 on usage errors, 5 when OpenCode is missing.
+ * the session failed or was interrupted, 2 on usage errors, 4 when the agent
+ * is waiting for a person's answer, 5 when OpenCode is missing.
  */
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -30,15 +35,21 @@ import { fileURLToPath } from "node:url";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export function parseArgs(argv) {
-  const opts = { command: null, text: [], model: null, agent: null, auto: false, printLogs: false, format: "default", timeout: 240 };
+  const opts = { command: null, text: [], continue: null, model: null, agent: null, auto: false, printLogs: false, format: "default", timeout: 240 };
+  const cont = argv.find((a) => a.startsWith("--continue="))?.slice(11);
   for (const arg of argv) {
-    if (!arg.startsWith("--")) { if (opts.command === null) opts.command = arg.replace(/^\//, ""); else opts.text.push(arg); continue; }
+    if (arg.startsWith("--continue=")) continue;
+    if (!arg.startsWith("--")) { if (opts.command === null && !cont) opts.command = arg.replace(/^\//, ""); else opts.text.push(arg); continue; }
     const [name, value] = [arg.slice(2).split("=")[0], arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : undefined];
     if (name === "auto" || name === "print-logs") { if (value !== undefined) throw new Error(`--${name} takes no value`); opts[name === "auto" ? "auto" : "printLogs"] = true; continue; }
     if (!["model", "agent", "format", "timeout"].includes(name) || !value) throw new Error(`unknown or empty option ${arg}`);
     opts[name] = name === "timeout" ? Number(value) : value;
   }
-  if (!opts.command || !/^[a-z][a-z0-9-]*$/.test(opts.command)) throw new Error("a command name is required, e.g. verify");
+  if (cont !== undefined) {
+    if (!/^ses_[A-Za-z0-9]+$/.test(cont)) throw new Error("--continue takes a session id (ses_…)");
+    if (!opts.text.length) throw new Error("--continue needs the message to send");
+    opts.continue = cont;
+  } else if (!opts.command || !/^[a-z][a-z0-9-]*$/.test(opts.command)) throw new Error("a command name is required, e.g. verify");
   if (!["default", "json"].includes(opts.format)) throw new Error("--format is default or json");
   if (!(opts.timeout > 0)) throw new Error("--timeout is a number of minutes");
   if (opts.model && !/^[^/\s]+\/\S+$/.test(opts.model)) throw new Error("--model is provider/model");
@@ -51,10 +62,11 @@ export function opencodeMajor(bin) {
   return Number(r.stdout.trim().replace(/^opencode\s+v?/i, "").split(".")[0]);
 }
 
-/** OpenCode 1: the arguments for `opencode run --command`. */
+/** OpenCode 1: the arguments for `opencode run --command` (or `--session` to continue). */
 export function v1Args(o) {
   return ["run", ...(o.model ? ["--model", o.model] : []), ...(o.agent ? ["--agent", o.agent] : []), ...(o.auto ? ["--auto"] : []),
-    ...(o.printLogs ? ["--print-logs"] : []), ...(o.format === "json" ? ["--format", "json"] : []), "--command", o.command, ...(o.text ? [o.text] : [])];
+    ...(o.printLogs ? ["--print-logs"] : []), ...(o.format === "json" ? ["--format", "json"] : []),
+    ...(o.continue ? ["--session", o.continue] : ["--command", o.command]), ...(o.text ? [o.text] : [])];
 }
 
 const freePort = () => new Promise((resolve, reject) => {
@@ -95,19 +107,24 @@ export async function runV2(bin, o, dir = process.cwd(), out = process.stdout) {
   try {
     // The location loads its configured commands in the background after the server answers.
     const deadline = Date.now() + 120000;
+    const want = o.continue ? null : o.command;
     let names = [];
-    while (Date.now() < deadline && !names.includes(o.command)) {
+    let ready = false;
+    while (Date.now() < deadline && !ready) {
       if (child.exitCode !== null) throw new Error(`opencode serve exited ${child.exitCode}`);
-      try { names = (await call("GET", "/api/command")).map((c) => c.name); } catch {}
-      if (!names.includes(o.command)) await sleep(1000);
+      try { names = (await call("GET", "/api/command")).map((c) => c.name); ready = want ? names.includes(want) : true; } catch {}
+      if (!ready) await sleep(1000);
     }
-    if (!names.includes(o.command)) throw new Error(`OpenCode does not know the command /${o.command} here (known: ${names.join(", ") || "none"})`);
+    if (!ready) throw new Error(`OpenCode does not know the command /${o.command} here (known: ${names.join(", ") || "none"})`);
     const [providerID, ...rest] = (o.model ?? "").split("/");
-    const session = await call("POST", "/api/session", {
+    const started = Date.now();
+    const session = o.continue ? await call("GET", `/api/session/${o.continue}`) : await call("POST", "/api/session", {
       location: { directory: dir }, ...(o.agent ? { agent: o.agent } : {}), ...(o.model ? { model: { providerID, id: rest.join("/") } } : {}),
     });
     if (o.format === "json") out.write(`${JSON.stringify({ type: "session", sessionID: session.id })}\n`);
-    await call("POST", `/api/session/${session.id}/command`, { name: o.command, text: o.text });
+    if (o.continue) await call("POST", `/api/session/${session.id}/prompt`, { text: o.text });
+    else await call("POST", `/api/session/${session.id}/command`, { name: o.command, text: o.text });
+    let asked = false;
 
     // Idle = the session has messages and neither it nor any subagent session
     // has been running for three polls in a row.
@@ -122,16 +139,28 @@ export async function runV2(bin, o, dir = process.cwd(), out = process.stdout) {
       for (const id of tree) for (const p of (await call("GET", `/api/session/${id}/permission`)) ?? []) {
         await call("POST", `/api/session/${id}/permission/${p.id}/reply`, { decision: o.auto ? "once" : "reject" });
       }
+      // Nobody can fill a form here: print it, cancel it so the agent ends its turn, exit 4.
+      for (const id of tree) for (const f of (await call("GET", `/api/session/${id}/form`)) ?? []) {
+        const fields = f.fields.map((x) => [x.title ?? x.key, ...(x.options ?? []).map((op) => `[${op.label}]`)].join(" ")).join("; ");
+        out.write(o.format === "json" ? `${JSON.stringify({ type: "question", sessionID: session.id, text: `${f.title}: ${fields}` })}\n` : `QUESTION (${f.title}): ${fields}\n`);
+        await call("DELETE", `/api/session/${id}/form/${f.id}`);
+        asked = true;
+      }
       const running = Object.keys((await call("GET", "/api/session/active")) ?? {});
       const messages = (await call("GET", `/api/session/${session.id}/message?limit=1`)) ?? [];
       idle = messages.length && !tree.some((id) => running.includes(id)) ? idle + 1 : 0;
     }
-    for (const m of await assistantMessages(session.id)) for (const part of m.content ?? []) {
+    for (const m of await assistantMessages(session.id)) for (const part of (m.time?.created ?? started) >= started - 1000 ? m.content ?? [] : []) {
       if (part.type !== "text" || !part.text) continue;
       out.write(o.format === "json" ? `${JSON.stringify({ type: "text", sessionID: session.id, text: part.text })}\n` : `${part.text}\n`);
     }
     const info = await call("GET", `/api/session/${session.id}`);
-    return info?.outcome === "failed" ? 1 : 0;
+    if (info?.outcome === "failed" || info?.outcome === "interrupted") return 1;
+    if (asked) {
+      process.stderr.write(`opencode-command: the agent is waiting for an answer; reply with --continue=${session.id} "<answer>"\n`);
+      return 4;
+    }
+    return 0;
   } finally {
     try { process.platform === "win32" ? child.kill() : process.kill(-child.pid, "SIGTERM"); } catch {}
   }
@@ -140,7 +169,7 @@ export async function runV2(bin, o, dir = process.cwd(), out = process.stdout) {
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   let o;
   try { o = parseArgs(process.argv.slice(2)); } catch (error) {
-    console.error(`opencode-command: ${error.message}\nusage: node .playbook/scripts/opencode-command.mjs <command> [text…] [--model=provider/model] [--agent=<name>] [--auto] [--print-logs] [--format=json] [--timeout=<minutes>]`);
+    console.error(`opencode-command: ${error.message}\nusage: node .playbook/scripts/opencode-command.mjs <command> [text…] | --continue=<session id> "<answer>"  [--model=provider/model] [--agent=<name>] [--auto] [--print-logs] [--format=json] [--timeout=<minutes>]`);
     process.exit(2);
   }
   const bin = process.env.PLAYBOOK_OPENCODE_BIN || "opencode";
