@@ -11,7 +11,7 @@
  * the page. An existing .html is kept unless --overwrite is given. Every
  * written page is read back and checked for its title and its full source.
  */
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isAgentDocument } from "./doc-lib.mjs";
@@ -43,7 +43,7 @@ function collect(paths) {
   return out;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const inputs = args.filter((a) => !a.startsWith("--"));
   if (!inputs.length) { console.log("usage: render-docs.mjs <file.md|folder> ... [--overwrite] [--include-agent-docs]"); process.exit(2); }

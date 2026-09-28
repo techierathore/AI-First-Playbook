@@ -13,11 +13,12 @@
  * affected item's metadata. The Issues file is deletable only when every
  * issue is verified and miss-linked; --require-retire exits 1 otherwise.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { parseChecklist } from "./checklist-lib.mjs";
 import { latestVerdict } from "./checklist-plan.mjs";
 import { blocks, issueSource } from "./checklist-ingest.mjs";
 import { parseIssues } from "./issues-file.mjs";
+import { fileURLToPath } from "node:url";
 
 export const STAGES = ["missing", "logged", "analyzed", "fixed", "verified", "miss-linked"];
 
@@ -42,7 +43,7 @@ export function status(checklistText, issuesText, issuesFile) {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, checklist, issues] = process.argv.slice(2);
   if (verb !== "status" || !checklist || !issues) { console.log("usage: status <checklist> <Feature-Issues.md> [--require-retire]"); process.exit(2); }
   const rows = status(readFileSync(checklist, "utf8"), readFileSync(issues, "utf8"), issues);

@@ -13,8 +13,9 @@
  * the .csproj files exist so `dotnet build --no-restore` can be tried. It prints
  * one next action per feed and never prints a credential.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 function walk(dir, pred, out = [], depth = 0) {
   if (depth > 6) return out;
@@ -53,7 +54,7 @@ export function diagnose(logText, root, env = process.env) {
   });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const log = process.argv[2];
   const root = resolve(process.argv.find((a) => a.startsWith("--root="))?.slice(7) ?? process.cwd());
   if (!log) { console.log("usage: dotnet-restore-diagnostics.mjs <restore.log> [--root=<repo>]"); process.exit(2); }

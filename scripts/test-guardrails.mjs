@@ -10,7 +10,7 @@ for (const copy of ["../.opencode/playbook-plugin/write-policy.mjs"]) {
   if (!existsSync(url)) { console.error(`guardrail policy copy missing: ${copy}`); process.exit(1); }
   if (readFileSync(url, "utf8") !== source) { console.error(`guardrail policy copy drift: ${copy}`); process.exit(1); }
 }
-for (const carrier of ["../harness/opencode/playbook-plugin/spec-guardrails.ts"]) {
+for (const carrier of ["../harness/opencode/playbook-plugin/spec-guardrails/index.ts", "../harness/opencode/playbook-plugin/spec-guardrails/server.ts"]) {
   const url = new URL(carrier, import.meta.url);
   if (!existsSync(url)) { console.error(`guardrail carrier missing: ${carrier}`); process.exit(1); }
   if (!readFileSync(url, "utf8").includes("write-policy.mjs")) { console.error(`guardrail carrier does not use shared policy: ${carrier}`); process.exit(1); }
@@ -21,13 +21,43 @@ for (const agent of ["analyst.md", "builder.md", "orchestrator.md", "verifier.md
   if (local !== canonical) { console.error(`OpenCode agent copy drift: ${agent}`); process.exit(1); }
 }
 {
-  const canonical = readFileSync(new URL("../harness/opencode/playbook-plugin/telemetry.ts", import.meta.url), "utf8");
-  const local = readFileSync(new URL("../.opencode/playbook-plugin/telemetry.ts", import.meta.url), "utf8");
-  if (local !== canonical) { console.error("OpenCode telemetry plugin copy drift"); process.exit(1); }
+  for (const file of ["telemetry/index.ts", "telemetry/server.ts", "spec-guardrails/index.ts", "spec-guardrails/server.ts", "yolo/index.ts", "yolo/server.ts", "yolo-policy.mjs", "guard-signal.mjs"]) {
+    const harness = readFileSync(new URL(`../harness/opencode/playbook-plugin/${file}`, import.meta.url), "utf8");
+    const copy = new URL(`../.opencode/playbook-plugin/${file}`, import.meta.url);
+    if (!existsSync(copy) || readFileSync(copy, "utf8") !== harness) { console.error(`OpenCode plugin copy drift: ${file}`); process.exit(1); }
+  }
+  const canonical = readFileSync(new URL("../harness/opencode/playbook-plugin/telemetry/index.ts", import.meta.url), "utf8");
   for (const requiredTerm of ["randomUUID()", 'kind: "subagent-start"', 'kind: "subagent-end"', 'kind: "tool-start"', 'kind: "tool-end"', "activeMs"]) {
     if (!canonical.includes(requiredTerm)) { console.error(`OpenCode telemetry plugin missing schema-2 capture: ${requiredTerm}`); process.exit(1); }
   }
   if (canonical.includes("input.arguments")) { console.error("OpenCode telemetry plugin persists raw command arguments"); process.exit(1); }
+}
+// ── Path spelling: the project root and a tool path can name one folder two
+// ways (macOS /var → /private/var). Both spellings resolve inside; a new file
+// under an in-project symlink that leaves the project stays outside. ─────────
+{
+  const { mkdirSync, mkdtempSync, rmSync, symlinkSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { normalizePath } = await import(policyUrl);
+  const sandbox = mkdtempSync(join(tmpdir(), "playbook-path-spelling-"));
+  const real = join(sandbox, "real");
+  mkdirSync(join(real, "project/verification"), { recursive: true });
+  mkdirSync(join(sandbox, "elsewhere"));
+  symlinkSync(real, join(sandbox, "alias"));
+  symlinkSync(join(sandbox, "elsewhere"), join(real, "project/escape"));
+  const viaAlias = join(sandbox, "alias/project");
+  const viaReal = join(real, "project");
+  const expectations = [
+    [normalizePath(join(viaAlias, "verification/run-1/probe.txt"), viaReal), "verification/run-1/probe.txt", "alias path under a real root"],
+    [normalizePath(join(viaReal, "verification/run-1/probe.txt"), viaAlias), "verification/run-1/probe.txt", "real path under an alias root"],
+    [normalizePath("escape/new-file.txt", viaReal), null, "new file under a symlink leaving the project"],
+    [normalizePath(join(sandbox, "alias/other.txt"), viaReal), null, "alias path outside the project"],
+  ];
+  rmSync(sandbox, { recursive: true, force: true });
+  for (const [got, want, label] of expectations) {
+    if (got !== want) { console.error(`guardrail path spelling: ${label}: expected ${want}, got ${got}`); process.exit(1); }
+  }
 }
 const harnessPromptFiles = [
   "commands/verify.md",
@@ -193,6 +223,14 @@ try {
   if (!decision("bash", { command: "npm test" })) guardrailFail("opaque verifier shell command was allowed");
   if (decision("write", { filePath: "src/app.ts" }, false)) guardrailFail("non-verifier source write was denied");
   if (!decision("write", { filePath: "Feature-Gap-Report.md" }, false)) guardrailFail("forbidden report was allowed for non-verifier");
+  // PB-34 campaign: a YOLO builder rewrote .playbook/scripts/phase-complete.mjs to pass its own build.
+  for (const [tool, args] of [
+    ["edit", { filePath: ".playbook/scripts/phase-complete.mjs" }], ["write", { path: ".playbook/scripts/checklist-lint.mjs" }],
+    ["write", { filePath: ".opencode/playbook-plugin/write-policy.mjs" }], ["edit", { filePath: ".opencode/opencode.json" }],
+    ["bash", { command: "cp /tmp/x.mjs .playbook/scripts/phase-complete.mjs" }], ["shell", { command: "echo x > .opencode/agent/builder.md" }],
+  ]) for (const verifier of [false, true]) if (!decision(tool, args, verifier)) guardrailFail(`agent write to the installed Playbook allowed: ${tool} ${JSON.stringify(args)}`);
+  if (decision("edit", { filePath: ".playbook/environment-profile.yml" }, false)) guardrailFail("the environment profile must stay editable");
+  if (decision("write", { filePath: "src/.opencode-notes.md" }, false) || decision("write", { filePath: "docs/playbook/notes.md" }, false)) guardrailFail("only the installed runtime folders are protected");
 } finally {
   if (previousChecklist === undefined) delete process.env.PLAYBOOK_CHECKLIST;
   else process.env.PLAYBOOK_CHECKLIST = previousChecklist;
@@ -202,7 +240,7 @@ console.log("guardrail policy coverage passed");
 // ── YOLO policy: git writes denied, everything else allowed, limit parsing ──
 {
   const yoloUrl = new URL("../harness/opencode/playbook-plugin/yolo-policy.mjs", import.meta.url);
-  for (const carrier of ["../harness/opencode/playbook-plugin/yolo.ts", "./playbook-yolo.mjs"]) {
+  for (const carrier of ["../harness/opencode/playbook-plugin/yolo/index.ts", "../harness/opencode/playbook-plugin/yolo/server.ts", "./playbook-yolo.mjs"]) {
     const url = new URL(carrier, import.meta.url);
     if (!existsSync(url)) { console.error(`yolo carrier missing: ${carrier}`); process.exit(1); }
     if (!readFileSync(url, "utf8").includes("yolo-policy.mjs")) { console.error(`yolo carrier does not use shared policy: ${carrier}`); process.exit(1); }
@@ -290,4 +328,45 @@ console.log("guardrail policy coverage passed");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+}
+
+// ── Headless commands: OpenCode 2's `run` does not expand "/command" ──
+{
+  const { mkdtempSync, writeFileSync, chmodSync, rmSync } = await import("node:fs");
+  const { spawnSync } = await import("node:child_process");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const fail = (msg) => { console.error(`headless command check failed: ${msg}`); process.exit(1); };
+  const c = await import("./opencode-command.mjs");
+  const o = c.parseArgs(["/verify", "--model=p/m", "--auto", "docs/X-Implementation-Checklist.md", "extra"]);
+  if (o.command !== "verify" || o.text !== "docs/X-Implementation-Checklist.md extra" || o.model !== "p/m" || !o.auto) fail(`parseArgs ${JSON.stringify(o)}`);
+  for (const bad of [[], ["Verify"], ["verify", "--model=nope"], ["verify", "--auto=1"], ["verify", "--bogus=1"]]) {
+    let threw = false; try { c.parseArgs(bad); } catch { threw = true; }
+    if (!threw) fail(`parseArgs accepted ${JSON.stringify(bad)}`);
+  }
+  if (c.v1Args(o).join(" ") !== "run --model p/m --auto --command verify docs/X-Implementation-Checklist.md extra") fail(`v1Args ${c.v1Args(o).join(" ")}`);
+  const answer = c.parseArgs(["--continue=ses_abc123", "Yes, proceed"]);
+  if (answer.continue !== "ses_abc123" || answer.text !== "Yes, proceed" || answer.command !== null) fail(`--continue ${JSON.stringify(answer)}`);
+  if (c.v1Args(answer).join(" ") !== "run --session ses_abc123 Yes, proceed") fail(`v1Args --continue ${c.v1Args(answer).join(" ")}`);
+  for (const bad of [["--continue=nope", "x"], ["--continue=ses_abc"]]) {
+    let threw = false; try { c.parseArgs(bad); } catch { threw = true; }
+    if (!threw) fail(`parseArgs accepted ${JSON.stringify(bad)}`);
+  }
+  // The YOLO supervisor: a /command prompt goes through the driver on 2.x, plain `run` (with --standalone) otherwise.
+  const dir = mkdtempSync(join(tmpdir(), "pb-headless-"));
+  try {
+    const supervise = (version, prompt) => {
+      const bin = join(dir, `opencode-${version}`);
+      writeFileSync(bin, `#!/bin/sh\necho "opencode v${version}"\n`);
+      chmodSync(bin, 0o755);
+      const r = spawnSync(process.execPath, [fileURLToPath(new URL("./playbook-yolo.mjs", import.meta.url)), `--cwd=${dir}`, `--prompt=${prompt}`, "--dry-run"], { encoding: "utf8", env: { ...process.env, PLAYBOOK_OPENCODE_BIN: bin } });
+      return r.stdout.trim().split("\n").at(-1);
+    };
+    if (!/opencode-command\.mjs implement --auto --format=json --agent=orchestrator "YOLO docs\/X\.md/.test(supervise("2.0.18", "/implement YOLO docs/X.md"))) fail(`v2 command prompt: ${supervise("2.0.18", "/implement YOLO docs/X.md")}`);
+    if (!/opencode-2\.0\.18 run --standalone --auto --format json --agent orchestrator "YOLO/.test(supervise("2.0.18", "YOLO fix the build"))) fail(`v2 plain prompt: ${supervise("2.0.18", "YOLO fix the build")}`);
+    if (!/opencode-1\.18\.32 run --auto --format json --agent orchestrator "\/implement YOLO/.test(supervise("1.18.32", "/implement YOLO docs/X.md"))) fail(`v1 prompt: ${supervise("1.18.32", "/implement YOLO docs/X.md")}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  console.log("headless command checks passed");
 }

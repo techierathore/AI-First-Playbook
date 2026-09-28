@@ -9,9 +9,10 @@
  * flow guide, subject-dependent) section in order, each with a `<...>`
  * placeholder that doc-check.mjs refuses until it is replaced. Never overwrites.
  */
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, realpathSync } from "node:fs";
 import { dirname } from "node:path";
 import { loadDocSchemas } from "./doc-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export function scaffold(kind, feature, subject = "Mixed", schemas = loadDocSchemas()) {
   const k = schemas.kinds[kind];
@@ -34,7 +35,7 @@ export function scaffold(kind, feature, subject = "Mixed", schemas = loadDocSche
   return [`# ${feature} — ${k.title}`, `<!-- document: ${kind} -->`, "", ...meta, ...body].join("\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [kind, out] = process.argv.slice(2);
   const opt = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   if (kind === "kinds") { console.log(Object.keys(loadDocSchemas().kinds).join("\n")); process.exit(0); }

@@ -4,8 +4,8 @@
 |---|---|
 | Purpose | The list of things the Playbook must do, each with the one check that proves it. `node scripts/playbook-grade.mjs docs/Playbook-Requirements.md` walks every line. |
 | Audience | Framework maintainers and agents. The owner approves the lines; nobody has to re-read them to know the state, because the grader prints it. Agent document; not rendered to HTML. |
-| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5 and PB-29 to PB-32 in Session 6, one per prose rule that became a script; PB-33 and PB-34 in Session 9 from the owner's campaign decision; PB-35 to PB-44 in Session 10, one per group of prose rules that became runtime scripts. |
-| Headline | **16 of 44 proved by a script**, 25 more by a fixture: 41 of 44 graded. Ungraded: PB-04 (owner decision), PB-20 and PB-34 (live model, runbooks). |
+| Status | PB-01 to PB-18 approved by the owner as written in `docs/Playbook-Reset-Plan.md` §6 (Session 1, 2026-09-26). PB-19 and PB-20 added in Session 2 from the owner's live-probe decision; PB-21 to PB-24 in Session 3 and PB-25 to PB-28 in Session 5 and PB-29 to PB-32 in Session 6, one per prose rule that became a script; PB-33 and PB-34 in Session 9 from the owner's campaign decision; PB-35 to PB-44 in Session 10, one per group of prose rules that became runtime scripts; PB-45 on 2026-09-27 from the owner's macOS and OpenCode 2 request (`docs/Mac-OpenCode2-Progress.md`). |
+| Headline | **16 of 45 proved by a script**, 26 more by a fixture: 42 of 45 graded, on OpenCode 1.18.32 and 2.0.18, macOS and Linux. Ungraded: PB-04 (owner decision), PB-20 and PB-34 (live model, runbooks). |
 | Sources | `docs/Playbook-Reset-Plan.md` §6 and §8; the miss stream `verification/telemetry/misses.ndjson`; owner decisions of 2026-09-26 (§4). |
 
 ---
@@ -35,7 +35,7 @@
 | Document fixtures | `tests/docs/fixtures/`: a Team Inventory flow guide, business reference and code tree (invented from the greenfield case study); legacy inputs are the documents under `docs/` | PB-29 to PB-32 |
 | Runtime project | a disposable project with the Playbook installed; the Session 10 scripts run from `.playbook/scripts/` against copies of the checklist, handoff and phase fixtures, with fake HTTP apps, a fake Jira and a fake desktop bridge on 127.0.0.1 | PB-35 to PB-44 |
 | Packed campaign | `npm pack` of the checkout installed with `npm exec` into a generated project with a tiny HTTP app, a real profile and the Team Inventory fixtures | PB-33 |
-| Scripted model | `tests/live/mock-model.mjs`, an OpenAI-compatible server on 127.0.0.1 that OpenCode uses as its model; it plants tool calls, so a real `opencode run` exercises the live hooks | PB-04, PB-19 |
+| Scripted model | `tests/live/mock-model.mjs`, an OpenAI-compatible server on 127.0.0.1 that OpenCode uses as its model; it plants tool calls, so a real `opencode run` exercises the live hooks; it also records what OpenCode sent it, so a check can read the system prompt | PB-04, PB-19, PB-45 |
 
 ## 3. The four questions for a miss
 
@@ -94,6 +94,7 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | PB-42 | writes Issues files with absent facts marked `[MISSING]` and fetches Jira tickets with credentials from an allowed channel only, never printing the token. | fixture: `node tests/runtime/run.mjs PB-42` (fake Jira on 127.0.0.1). | Reset Plan §4 create-issue-list |
 | PB-43 | keeps the Context-Prompt command block in step with the command set and names every drift. | fixture: `node tests/runtime/run.mjs PB-43`. | Reset Plan §4 update-context |
 | PB-44 | diagnoses a failed .NET restore without printing a credential, and treats an absent desktop bridge as headless, never BLOCKED. | fixture: `node tests/runtime/run.mjs PB-44` (fixture restore log; fake bridge). | Reset Plan §4 verify, desktop adapter |
+| PB-45 | says loudly at session start when the Playbook's guard plugins are not loaded, instead of running unguarded. | fixture: `node tests/live/run.mjs PB-45` drives real OpenCode with the scripted model: a guarded session carries the standing rules and the three `[playbook-guard]` lines in load order; an unguarded one (single-file plugins on OpenCode 2, no plugins on 1) carries none, its agent prompt says to announce `PLAYBOOK GUARDS NOT LOADED` first, and `playbook-guards.mjs` prints the banner with the cause; `--config` and the installer name a stale config. | Owner request 2026-09-27 |
 
 ## 5. Owner decisions
 
@@ -102,4 +103,5 @@ Asked in order; stop at the first fixed response; the response is stored in the 
 | 2026-09-26 | PB-01 to PB-18 approved as written. |
 | 2026-09-26 | Raw run evidence is kept 7 days; graded verdicts 1 year (`playbook/environment-profile.yml` `retention`). |
 | 2026-09-26 | Supported OpenCode version: 1.18.32 (`package.json` `opencode.supported`), observed with `opencode --version`. |
+| 2026-09-27 | Supported OpenCode versions: 1.18.32 and 2.0.18 (`package.json` `opencode.supported`); CI runs both on macOS and Linux, in UTC and Asia/Kolkata. |
 | 2026-09-26 | Allowed secret channels: approved secret manager, environment reference, protected stdin, protected temporary file (`AGENTS.md`; profile `secrets.sources`). |

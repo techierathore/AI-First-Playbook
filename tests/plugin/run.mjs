@@ -39,6 +39,23 @@ process.chdir(target);
 const client = { app: { log: async () => {} }, tui: {} };
 const load = async (name) => (await import(pathToFileURL(join(target, ".opencode/playbook-plugin", name)).href)).default({ client, directory: target, worktree: target });
 
+// OpenCode 2 entry (server.ts): setup() registers hooks on a context; a
+// refused tool call is renamed to its block message (see spec-guardrails/server.ts).
+async function loadV2(name) {
+  const hooks = {};
+  const domain = (key) => ({ hook: async (event, fn) => { (hooks[`${key}.${event}`] ??= []).push(fn); return { dispose: async () => {} }; } });
+  const ctx = { location: { directory: target }, session: domain("session"), shell: domain("shell"), tool: domain("tool"), permission: domain("permission") };
+  const mod = await import(pathToFileURL(join(target, ".opencode/playbook-plugin", name, "server.ts")).href);
+  assert(typeof mod.default?.id === "string" && typeof mod.default?.setup === "function", `${name}/server.ts is not an OpenCode 2 plugin`);
+  await mod.default.setup(ctx);
+  return hooks;
+}
+async function blockedV2(hooks, tool, agent, input) {
+  const event = { tool, agent, sessionID: "ses_v2", messageID: "msg_1", id: "call_1", input };
+  for (const fn of hooks["tool.execute.before"] ?? []) await fn(event);
+  return event.tool === tool ? null : event.tool;
+}
+
 async function blocked(hooks, tool, sessionID, args) {
   try {
     await hooks["tool.execute.before"]({ tool, sessionID, callID: "c1" }, { args });
@@ -57,7 +74,7 @@ async function withEnv(vars, fn) {
   }
 }
 
-const guard = await withEnv({ PLAYBOOK_CHECKLIST: undefined }, () => load("spec-guardrails.ts"));
+const guard = await withEnv({ PLAYBOOK_CHECKLIST: undefined }, () => load("spec-guardrails/index.ts"));
 // Sessions as OpenCode reports them: the orchestrator's primary session and a
 // verifier subagent session, each announced through chat.params.
 await guard["chat.params"]({ sessionID: "ses_orch", agent: "orchestrator" }, {});
@@ -81,6 +98,13 @@ const cases = {
     ["an agent learnt from message.updated events is honoured", async () => {
       await guard.event({ event: { type: "message.updated", properties: { info: { sessionID: "ses_v2", agent: "verifier" } } } });
       assert(await blocked(guard, "write", "ses_v2", { filePath: "src/new.js" }), "event-learnt verifier write was allowed");
+    }],
+    ["OpenCode 2 entry: the verifier's product write is refused and its evidence write allowed", async () => {
+      const v2 = await withEnv({ PLAYBOOK_CHECKLIST: undefined }, () => loadV2("spec-guardrails"));
+      assert(/BLOCKED by spec-guardrails/.test(await blockedV2(v2, "write", "verifier", { path: "src/app.js", content: "x" }) ?? ""), "verifier source write was allowed");
+      assert(await blockedV2(v2, "shell", "verifier", { command: "echo x > src/app.js" }), "verifier redirect was allowed");
+      assert(!(await blockedV2(v2, "write", "verifier", { path: "verification/demo/run-1/probe.txt", content: "x" })), "evidence write was refused");
+      assert(!(await blockedV2(v2, "edit", "orchestrator", { path: "src/app.js" })), "orchestrator edit was refused");
     }],
     ["verifier safe test command (`npm test`) is allowed (defect M08)", async () => {
       assert(!(await blocked(guard, "bash", "ses_verify", { command: "npm test" })), "npm test was blocked for the verifier");
@@ -106,7 +130,7 @@ const cases = {
     }],
     ["YOLO mode: the permission prompt for a git push is denied and an edit is allowed", async () => {
       await withEnv({ PLAYBOOK_YOLO: "1" }, async () => {
-        const yolo = await load("yolo.ts");
+        const yolo = await load("yolo/index.ts");
         const push = { status: "ask" };
         await yolo["permission.ask"]({ type: "bash", title: "git push origin main", pattern: "git push*", metadata: { command: "git push origin main" }, sessionID: "ses_orch" }, push);
         assert(push.status === "deny", `git push permission was ${push.status}`);
@@ -117,8 +141,30 @@ const cases = {
     }],
     ["YOLO mode: git commit is blocked even when the human approved git", async () => {
       await withEnv({ PLAYBOOK_YOLO: "1", PLAYBOOK_GIT_APPROVED: "1" }, async () => {
-        const yolo = await load("yolo.ts");
+        const yolo = await load("yolo/index.ts");
         assert(await blocked(yolo, "bash", "ses_orch", { command: "git commit -am wip" }), "YOLO allowed git commit");
+      });
+    }],
+    ["OpenCode 2 entry: git writes refused in normal mode, allowed when approved; YOLO denies a push permission, allows an edit, refuses commit", async () => {
+      await withEnv({ PLAYBOOK_YOLO: undefined, PLAYBOOK_GIT_APPROVED: undefined }, async () => {
+        const v2 = await loadV2("spec-guardrails");
+        for (const command of ["git commit -m x", "git push origin main", "npm test; git reset --hard"]) {
+          assert(await blockedV2(v2, "shell", "orchestrator", { command }), `OpenCode 2 normal mode allowed: ${command}`);
+        }
+        assert(!(await blockedV2(v2, "shell", "orchestrator", { command: "git status" })), "read-only git refused");
+        await withEnv({ PLAYBOOK_GIT_APPROVED: "1" }, async () => {
+          assert(!(await blockedV2(v2, "shell", "orchestrator", { command: "git commit -m x" })), "approved commit refused");
+        });
+      });
+      await withEnv({ PLAYBOOK_YOLO: "1", PLAYBOOK_GIT_APPROVED: "1" }, async () => {
+        const yolo = await loadV2("yolo");
+        const push = { sessionID: "ses_v2", action: "shell", resources: ["git push origin main"], metadata: { command: "git push origin main" }, effect: "ask" };
+        for (const fn of yolo["permission.evaluate"] ?? []) await fn(push);
+        assert(push.effect === "deny", `git push permission was ${push.effect}`);
+        const edit = { sessionID: "ses_v2", action: "edit", resources: ["src/app.js"], effect: "ask" };
+        for (const fn of yolo["permission.evaluate"] ?? []) await fn(edit);
+        assert(edit.effect === "allow", `edit permission was ${edit.effect}`);
+        assert(/BLOCKED by yolo-policy/.test(await blockedV2(yolo, "shell", "orchestrator", { command: "git commit -am wip" }) ?? ""), "YOLO allowed git commit");
       });
     }],
   ],

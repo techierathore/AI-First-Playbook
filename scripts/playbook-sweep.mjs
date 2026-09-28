@@ -15,9 +15,10 @@
  * create run folders call sweepRuns() once per process, so raw evidence is
  * swept without anyone remembering to.
  */
-import { existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { readProfile } from "./profile-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -65,7 +66,7 @@ export function sweepGrades(root = process.cwd(), { apply = false, now = Date.no
   return { dropped: lines.length - keep.length, kept: keep.length };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const apply = process.argv.includes("--apply");
   const nowArg = process.argv.find((a) => a.startsWith("--now="))?.slice(6);
   const now = nowArg ? Date.parse(nowArg) : Date.now();

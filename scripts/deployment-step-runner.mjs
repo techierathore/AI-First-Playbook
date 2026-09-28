@@ -13,10 +13,11 @@
  * prints `BLOCKED` (exit 2), because verifying against a half-deployed feature
  * produces misleading FAILs. Manual rows are listed as deferred to a person.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { runDirectory } from "./profile-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export function deploymentRows(text) {
   const lines = text.split("\n");
@@ -38,7 +39,7 @@ export function deploymentRows(text) {
   return rows;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [checklist, ...rest] = process.argv.slice(2);
   const id = rest.find((a) => a.startsWith("--run-id="))?.slice(9);
   if (!checklist || !id) { console.log("usage: deployment-step-runner.mjs <checklist> --run-id=<id> [--approved]"); process.exit(2); }

@@ -10,7 +10,7 @@
  */
 
 import { existsSync, lstatSync, realpathSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 // ────────────────────────────────────────────────────────────────────────────
 // FORBIDDEN FILE PATTERNS
@@ -62,8 +62,8 @@ export const FILE_WRITING_TOOLS = new Set([
   "write", "edit", "apply_patch", "patch", "create_file", "delete_file", "move_file",
 ]);
 
-/** Tool names that reach the shell. */
-export const SHELL_TOOLS = new Set(["bash"]);
+/** Tool names that reach the shell: `bash` on OpenCode 1.x, `shell` on 2.x. */
+export const SHELL_TOOLS = new Set(["bash", "shell"]);
 
 const MISS_EMITTER = ".playbook/scripts/playbook-miss.mjs";
 const MISS_STREAM = "verification/telemetry/misses.ndjson";
@@ -180,20 +180,35 @@ export function pathsInPatch(value) {
     .map((m) => m[0].replace(/^(?:\+\+\+|---|\*\*\* (?:Add|Update|Delete) File:)\s*/, "").trim());
 }
 
+/**
+ * The canonical form of a path that may not exist yet: the real path of its
+ * deepest existing ancestor plus the rest. The project root and the tool's
+ * path can name the same folder through different spellings (macOS
+ * /var → /private/var, a symlinked checkout), so both are compared canonically.
+ */
+function canonical(absolute) {
+  let head = absolute;
+  const rest = [];
+  while (!existsSync(head)) {
+    const parent = dirname(head);
+    if (parent === head) return absolute;
+    rest.unshift(basename(head));
+    head = parent;
+  }
+  return join(realpathSync(head), ...rest);
+}
+
 export function normalizePath(path, root = process.cwd()) {
   if (!path || /[\0\r\n]/.test(path)) return null;
   const unix = path.replaceAll("\\", "/");
   const absolute = isAbsolute(unix) ? resolve(unix) : resolve(root, unix);
-  const rel = relative(root, absolute);
-  if (rel === ".." || rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) || isAbsolute(rel)) return null;
-  if (existsSync(absolute)) {
-    try {
-      const real = realpathSync(absolute);
-      const realRel = relative(root, real);
-      if (realRel === ".." || realRel.startsWith("../") || isAbsolute(realRel)) return null;
-    } catch { return null; }
-    if (lstatSync(absolute).isSymbolicLink()) return null;
-  }
+  const outside = (rel) => rel === ".." || rel.startsWith("../") || rel.startsWith("..\\") || isAbsolute(rel);
+  let rel;
+  try {
+    rel = relative(canonical(resolve(root)), canonical(absolute));
+  } catch { return null; }
+  if (outside(rel)) return null;
+  if (existsSync(absolute) && lstatSync(absolute).isSymbolicLink()) return null;
   return rel.replaceAll("\\", "/");
 }
 
@@ -201,10 +216,10 @@ export function isChecklist(path) {
   return /(^|\/)[^/]*Implementation[-_ ]Checklist\.md$/i.test(path) || /(^|\/)checklists?\/[^/]+\.md$/i.test(path);
 }
 
-export function isSelectedChecklist(path) {
+export function isSelectedChecklist(path, root = process.cwd()) {
   const selected = process.env.PLAYBOOK_CHECKLIST;
   if (!selected) return isChecklist(path);
-  const normalized = normalizePath(selected);
+  const normalized = normalizePath(selected, root);
   return normalized === path;
 }
 
@@ -228,15 +243,27 @@ export function checkForbidden(path) {
   return null;
 }
 
-export function checkWritePolicy(path, verifier = true) {
-  const normalized = normalizePath(path);
+/**
+ * The installed Playbook (.playbook/, .opencode/) is its own gates, guards and
+ * prompts: no agent edits them, or a builder could rewrite the check that
+ * judges its work. The environment profile is the project's own settings.
+ */
+export function playbookRuntimePath(normalized) {
+  return /^(\.playbook|\.opencode)(\/|$)/.test(normalized) && normalized !== ".playbook/environment-profile.yml";
+}
+
+export function checkWritePolicy(path, verifier = true, root = process.cwd()) {
+  const normalized = normalizePath(path, root);
   if (!normalized) return "target path is absolute, traverses the repository, is a symlink, or cannot be determined";
+  if (playbookRuntimePath(normalized)) {
+    return "the installed Playbook (.playbook/, .opencode/) is never edited by an agent: its scripts are the gates that judge the work. Report a Playbook defect as a miss (playbook-miss.mjs) and leave the file unchanged";
+  }
   const forbidden = checkForbidden(normalized);
   if (forbidden) return forbidden;
   if (verifier && normalized === MISS_STREAM) {
     return `The durable miss stream is append-only; invoke the approved ${MISS_EMITTER} CLI without a --misses override`;
   }
-  if (verifier && !(isSelectedChecklist(normalized) || /^verification\//.test(normalized) || /^deploy\/[^/]+\//.test(normalized))) {
+  if (verifier && !(isSelectedChecklist(normalized, root) || /^verification\//.test(normalized) || /^deploy\/[^/]+\//.test(normalized))) {
     return "Verifier writes are limited to the selected implementation checklist, verification/**, or explicitly referenced deploy/<feature>/** helpers";
   }
   return null;
@@ -248,7 +275,7 @@ export function checkWritePolicy(path, verifier = true) {
  * tells the policy whether the stricter verifier write-scope applies; the
  * plugin determines that from the OpenCode hook input.
  */
-export function evaluateToolCall({ tool, args, isVerifier }) {
+export function evaluateToolCall({ tool, args, isVerifier, root = process.cwd() }) {
   const shell = SHELL_TOOLS.has(tool);
   if (!FILE_WRITING_TOOLS.has(tool) && !shell) return null;
 
@@ -276,7 +303,7 @@ export function evaluateToolCall({ tool, args, isVerifier }) {
   }
   if (!paths.length) return null;
 
-  const reason = paths.map((path) => checkWritePolicy(path, isVerifier)).find(Boolean);
+  const reason = paths.map((path) => checkWritePolicy(path, isVerifier, root)).find(Boolean);
   if (!reason) return null;
   return { reason, paths, message: blockMessage(tool, paths, reason) };
 }

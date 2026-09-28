@@ -5,11 +5,12 @@
 // scripts; only the tarball's.
 //   node tests/campaign/run.mjs PB-33 [--record=<file>]
 import { createHash } from "node:crypto";
-import { closeSync, cpSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
+import { opencodeInfo, resolved } from "../opencode.mjs";
 import { assert, repoRoot, requirementId, runCases, ungraded } from "../lib.mjs";
 
 const id = requirementId("PB-33");
@@ -117,19 +118,13 @@ const cases = [
     ok(run("playbook-telemetry.mjs", ["--misses"]), "telemetry export");
     ok(run("playbook-sweep.mjs"), "sweep");
   }],
-  ["OpenCode resolves the installed commands, agents and plugins", () => {
-    const bin = process.env.PLAYBOOK_OPENCODE_BIN || "opencode";
-    const v = spawnSync(bin, ["--version"], { encoding: "utf8" });
-    if (v.status !== 0) { note("opencode not on PATH: resolution observed by PB-01 when available"); return; }
-    const out = join(work, "config.json");
-    const fd = openSync(out, "w");
-    const r = spawnSync(bin, ["debug", "config"], { cwd: target, stdio: ["ignore", fd, "pipe"], timeout: 180000, env: { ...process.env, PWD: target } });
-    closeSync(fd);
-    assert(r.status === 0, `opencode debug config exited ${r.status}`);
-    const text = readFileSync(out, "utf8");
-    const config = JSON.parse(text.slice(text.indexOf("{")));
-    note(`opencode ${v.stdout.trim()}: ${Object.keys(config.command ?? {}).length} commands, ${Object.keys(config.agent ?? {}).length} agents`);
-    assert(Object.keys(config.command ?? {}).length === 14 && ["analyst", "builder", "orchestrator", "verifier"].every((a) => a in (config.agent ?? {})), "resolution incomplete");
+  ["OpenCode resolves the installed commands, agents and plugins", async () => {
+    const oc = opencodeInfo();
+    if (!oc) { note("opencode not on PATH: resolution observed by PB-01 when available"); return; }
+    const r = await resolved(oc, target);
+    note(`opencode ${oc.version}: ${r.commands.length} commands, ${r.agents.length} agents, plugins ${r.plugins.join(",")}`);
+    assert(r.commands.length === 14 && ["analyst", "builder", "orchestrator", "verifier"].every((a) => r.agents.includes(a)), "resolution incomplete");
+    assert(r.plugins.join(",") === "telemetry,spec-guardrails,yolo" && r.pluginsActive !== false, `plugins ${r.plugins.join(",")}`);
   }],
 ];
 

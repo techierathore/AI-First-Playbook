@@ -2,7 +2,8 @@
  * telemetry.ts — per-phase usage, time and subagent capture for the AI-First Playbook.
  *
  * Opt-in: set PLAYBOOK_TELEMETRY=1 before starting OpenCode; without it this
- * plugin registers nothing. When enabled it appends NDJSON events to
+ * plugin registers only the guard signal (../guard-signal.mjs). When enabled it
+ * appends NDJSON events to
  * verification/telemetry/events.ndjson in the project directory:
  *
  *   {"schema":2,"kind":"phase-start","phaseExecutionID":"...","command":"verify","sessionID":"...","ts":"..."}
@@ -33,9 +34,15 @@ import type { Plugin } from "@opencode-ai/plugin";
 import { appendFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import { GUARD_ENV, guardLine, withGuard } from "../guard-signal.mjs";
 
 export const PlaybookTelemetry: Plugin = async ({ directory, client }) => {
-  if (process.env.PLAYBOOK_TELEMETRY !== "1") return {};
+  const guard = {
+    // Guard signal (guard-signal.mjs): the session can tell this plugin loaded.
+    "experimental.chat.system.transform": async (_input, output) => { output.system.push(guardLine("telemetry")); },
+    "shell.env": async (_input, output) => { output.env[GUARD_ENV] = withGuard(output.env[GUARD_ENV], "telemetry"); },
+  };
+  if (process.env.PLAYBOOK_TELEMETRY !== "1") return guard;
 
   // sessionID -> parentID (null for top-level sessions). Populated from
   // session.created/session.updated; lazily backfilled via the SDK when a turn
@@ -98,6 +105,7 @@ export const PlaybookTelemetry: Plugin = async ({ directory, client }) => {
   const marker = () => ({ seq: sequence++, ts: new Date().toISOString() });
 
   return {
+    ...guard,
     "command.execute.before": async (input) => {
       const mark = marker();
       try {

@@ -201,6 +201,17 @@ All installed under `.playbook/scripts/`; each prints what it did and exits non-
 | `doc-drift.mjs`, `reference-lint.mjs` | Name stale code references and broken links |
 | `doc-upgrade.mjs` | Back up legacy documents before an upgrade |
 | `playbook-miss.mjs`, `playbook-telemetry.mjs` | Miss records and telemetry export |
+| `deployment-step-runner.mjs` | Plan, then after approval run, a checklist's Automated deployment rows |
+| `verification-result-writer.mjs`, `verification-summary.mjs` | Write Verifier outcomes into the checklist; render the final summary from it |
+| `secret-safe-config-resolver.mjs` | Hand a config value to a command through a 0600 file or stdin |
+| `smoke-runner.mjs`, `self-test-result-writer.mjs` | Run declared self-test probes; record them per item |
+| `checklist-infra.mjs`, `checklist-deploy.mjs` | Keep Infrastructure Requirements and Deployment Steps in shape |
+| `checklist-amend.mjs`, `checklist-archive.mjs` | Exact checklist edits with stable IDs; archive and restore PASS items |
+| `feature-context.mjs`, `checklist-ingest.mjs` | Find a feature's checklist and documents; fold bugs and stories into it |
+| `escaped-bug-workflow.mjs`, `incident-workflow.mjs` | Track escaped bugs and incidents to verified, miss-linked closure |
+| `gate-check.mjs` | Evidence for the plan-review and verification-results gates |
+| `issues-file.mjs`, `jira-issues.mjs` | Render and check Issues files; fetch Jira tickets |
+| `dotnet-restore-diagnostics.mjs`, `windows-app-bridge-client.mjs` | Optional .NET feed and Windows desktop adapters |
 
 ## 8. Telemetry
 
@@ -268,8 +279,16 @@ command's `model:` front matter overrides the TUI choice by design. In a source 
 
 The owner releases the npm package; agents never publish or tag. CI
 (`.github/workflows/validate.yml`) runs the four npm test scripts and the grader on every push, on
-Node 22.14.0, npm 11.5.1 and the supported OpenCode, and keeps the grader output as the
-`grader-output` artefact for 90 days; the release workflow runs the same checks before publishing.
+Node 22.14.0, npm 11.5.1 and each supported OpenCode (1.18.32 and 2.0.18), and keeps the grader
+output as a `grader-output-oc&lt;version&gt;` artefact for 90 days; `platforms.yml` repeats them on macOS
+and Linux in UTC and Asia/Kolkata; the release workflow runs the same checks before publishing.
+
+OpenCode 1 and 2 load the same install: each guard plugin is a directory under
+`.opencode/playbook-plugin/` with `index.ts` (1.x) and `server.ts` (2.x). On 2.x the `PLAYBOOK_*`
+variables (`PLAYBOOK_YOLO`, `PLAYBOOK_TELEMETRY`, `PLAYBOOK_GIT_APPROVED`, `PLAYBOOK_CHECKLIST`) are
+read by the OpenCode server: start it with `--standalone` from the shell that sets them, or set them
+on the background service. `node .playbook/scripts/playbook-guards.mjs --config` checks the plugin
+configuration before a session.
 The procedure is in
 [maintainer/Npm-Release-Guide.md](maintainer/Npm-Release-Guide.md).
 

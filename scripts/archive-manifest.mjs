@@ -10,8 +10,9 @@
  * those lines. README.md and MANIFEST.sha256 themselves are not hashed.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, realpathSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const sha = (b) => createHash("sha256").update(b).digest("hex");
 function files(dir, root = dir, out = []) {
@@ -26,7 +27,7 @@ export function manifest(folder) {
   const lines = files(folder).filter((f) => f !== "MANIFEST.sha256" && f !== "README.md").map((f) => `${sha(readFileSync(join(folder, f)))}  ${f}`);
   return `${lines.join("\n")}\ntree ${sha(lines.join("\n"))}\n`;
 }
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const folder = process.argv[2];
   if (!folder) { console.log("usage: archive-manifest.mjs <folder> [--check]"); process.exit(2); }
   const text = manifest(folder);

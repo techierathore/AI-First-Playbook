@@ -17,9 +17,10 @@
  * Refuses an unknown outcome, a BLOCKED without its audit trail, a DATA-GAP
  * without a setup line, or any secret-like text. Nothing is written on refusal.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { Checklist, OUTCOME_STATUS, cleanText, today, utcNow } from "./checklist-edit-lib.mjs";
 import { itemType, parseChecklist } from "./checklist-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export function applyResults(path, data, runId, now = new Date()) {
   const c = new Checklist(path);
@@ -68,7 +69,7 @@ export function applyResults(path, data, runId, now = new Date()) {
   return { written: sorted.length, counts };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [checklist, ...rest] = process.argv.slice(2);
   const resultsPath = rest.find((a) => a.startsWith("--results="))?.slice(10);
   const runId = rest.find((a) => a.startsWith("--run-id="))?.slice(9);

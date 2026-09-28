@@ -22,7 +22,9 @@ export function startMockModel(script) {
       const next = step < script.length ? script[step] : null;
       const lastIsTool = parsed.messages?.at(-1)?.role === "tool";
       // A title-generation or summary request carries no tools: answer text.
-      const action = toolNames.size && next && (step === 0 || lastIsTool) ? next : null;
+      // A step marked `fresh` opens a new session's first turn (a subagent the
+      // previous step dispatched), whose last message is its prompt, not a tool result.
+      const action = toolNames.size && next && (step === 0 || lastIsTool || (next.fresh && !lastIsTool)) ? next : null;
       if (action) step += 1;
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
       const id = `chatcmpl-${requests.length}`;

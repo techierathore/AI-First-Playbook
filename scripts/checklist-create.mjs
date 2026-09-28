@@ -10,8 +10,9 @@
  * Verifier Run Log) and refuses to overwrite. `sync` rewrites the Status Table
  * from item metadata (ID, title, status), so no command hand-edits status rows.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { parseChecklist } from "./checklist-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export function skeleton(feature) {
   return `# ${feature} — Implementation Checklist
@@ -54,7 +55,7 @@ export function syncStatusTable(text) {
   return [...lines.slice(0, start), ...table, ...lines.slice(end)].join("\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, path] = process.argv.slice(2);
   const feature = process.argv.find((a) => a.startsWith("--feature="))?.slice(10);
   if (verb === "new" && path && feature) {

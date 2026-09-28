@@ -12,9 +12,10 @@
  * row rules (named flow rows, plain English, portal paths, ER diagram, no
  * secrets). One line per problem; exit 1 on any.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { fencedBlocks, headings, kindOf, loadDocSchemas, matches, metadataRows, proseWords } from "./doc-lib.mjs";
 import { redact } from "./miss-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 const SQL = /\b(SELECT\s+.+\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|CREATE\s+(TABLE|VIEW|PROCEDURE))\b/i;
 const INTERNAL = /(`[^`]+`|\b\w+\.(cs|ts|tsx|js|py|sql|java)\b|\busp[A-Z]\w+|\bvw[A-Z]\w+|\[\w+\]\.\[\w+\])/;
@@ -76,7 +77,7 @@ export function checkDocument(text, { kind, size = "medium", schemas = loadDocSc
   return { kind, words, target, max, problems };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const file = process.argv[2];
   const opt = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split("=")[1];
   if (!file) { console.log("usage: doc-check.mjs <doc.md> [--kind=<kind>] [--size=small|medium|large]"); process.exit(2); }

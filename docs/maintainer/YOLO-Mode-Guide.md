@@ -149,7 +149,7 @@ Status Table and the Verifier Run Log, then commit yourself.
 | Policy | `harness/opencode/playbook-plugin/yolo-policy.mjs` |
 | Permission bypass | `plugin/yolo.ts` → `permission.ask` sets `allow` / `deny`; `tool.execute.before` throws on git writes even when the agent's config already says `bash: allow` |
 | Limit detection | `event` → `session.error` → `verification/yolo/rate-limit.json` |
-| Launch flags used by the supervisor | `opencode run --auto --format json [--agent …] [--session …]` |
+| Launch flags used by the supervisor | `opencode run --auto --format json [--agent …] [--session …]`; on OpenCode 2 `run --standalone …`, and a first prompt that names a command (`/implement …`) goes through `scripts/opencode-command.mjs … --auto --format=json` |
 | Registration | `opencode.json` → `"plugin": [spec-guardrails.ts, yolo.ts]` (order matters: guardrail first) |
 
 The YOLO carrier is **inert without `PLAYBOOK_YOLO=1`** — an ordinary interactive session is
@@ -159,9 +159,16 @@ unchanged.
 
 - `opencode run --auto` approves everything not explicitly denied; the plugin additionally
   answers `permission.ask` so the TUI path works too, and denies git writes on both paths.
-- The plugin is loaded from `.opencode/playbook-plugin/` (not auto-discovered) and must be listed **after**
-  `spec-guardrails.ts` in `opencode.json` so a forbidden filename is blocked before YOLO
-  could allow it. `scripts/playbook-validate.mjs` checks the order.
+- The plugin is the directory `.opencode/playbook-plugin/yolo/` (not auto-discovered; `index.ts`
+  for OpenCode 1, `server.ts` for 2) and must be listed **after** `spec-guardrails` in
+  `opencode.json` so a forbidden filename is blocked before YOLO could allow it.
+  `scripts/playbook-validate.mjs` checks the order.
+- On OpenCode 2 the plugin answers the `permission` `evaluate` hook and records limits from the
+  `session` `retry` hook, and `PLAYBOOK_YOLO=1` must be in the OpenCode server's environment:
+  `opencode run --standalone` or `opencode --standalone` from the shell that sets it, or the
+  background service's own environment. OpenCode 2's `run` also sends `/implement …` to the
+  agent as plain text (no command template), so the supervisor starts a command prompt through
+  `scripts/opencode-command.mjs`, which posts it to the private server's command route.
 
 ### Permission decision flow
 

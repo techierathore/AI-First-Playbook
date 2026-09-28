@@ -96,10 +96,12 @@ echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
 # Playwright browser dependencies (for a WSL-local Playwright MCP)
 sudo npx --yes playwright install-deps
 
-# OpenCode itself — pick ONE:
-curl -fsSL https://opencode.ai/install | bash      # → ~/.opencode/bin (add to PATH)
+# OpenCode itself — a supported version (package.json opencode.supported), pick ONE:
+curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.32   # 1.x → ~/.opencode/bin
+curl -fsSL https://opencode.ai/v2/install | bash                         # 2.x → ~/.opencode/bin
 # or, behind a locked-down proxy where the script is blocked but npm is mirrored:
-npm install -g opencode-ai                          # honors your .npmrc registry/cafile/proxy
+npm install -g opencode-ai@1.18.32                  # 1.x; honors your .npmrc registry/cafile/proxy
+npm install -g @opencode/cli@2.0.18                 # 2.x (same `opencode` binary: one at a time)
 ```
 
 The npm path matters in corporates: package installation and update checks go through

@@ -12,10 +12,11 @@
  * latest Verifier Result must be PASS: an incident is not resolved on a fix
  * nobody verified.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { parseChecklist } from "./checklist-lib.mjs";
 import { latestVerdict } from "./checklist-plan.mjs";
 import { parseRecord, validateRecord } from "./handoff-record.mjs";
+import { fileURLToPath } from "node:url";
 
 export function validateIncident(recordText, checklistText) {
   const problems = validateRecord(recordText).map((p) => `record: ${p}`);
@@ -36,7 +37,7 @@ export function validateIncident(recordText, checklistText) {
   return problems;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, record, checklist] = process.argv.slice(2);
   if (verb !== "validate" || !record || !checklist) { console.log("usage: validate <incident.md> <checklist>"); process.exit(2); }
   const p = validateIncident(readFileSync(record, "utf8"), readFileSync(checklist, "utf8"));

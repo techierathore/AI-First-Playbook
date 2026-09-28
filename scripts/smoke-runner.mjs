@@ -15,10 +15,11 @@
  * the results file `smoke-results.json` there feeds self-test-result-writer.mjs.
  * Exit 1 when any probe fails; a profile placeholder is BLOCKED (exit 2).
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { field, readProfile, runDirectory } from "./profile-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export async function runSmoke(probes, { root = process.cwd(), runId, only = null } = {}) {
   const dir = runDirectory(root, runId);
@@ -58,7 +59,7 @@ export async function runSmoke(probes, { root = process.cwd(), runId, only = nul
   return { results, file: join(dir, "smoke-results.json") };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [spec, ...rest] = process.argv.slice(2);
   const runId = rest.find((a) => a.startsWith("--run-id="))?.slice(9);
   const only = rest.find((a) => a.startsWith("--items="))?.slice(8).split(",");

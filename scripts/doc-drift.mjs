@@ -10,8 +10,9 @@
  * counted, not checked. The report lists stale references by line — the
  * input for /refresh-doc; exit 1 when anything is stale.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 function index(roots) {
   const byName = new Map();
@@ -49,7 +50,7 @@ export function drift(text, roots) {
   return { checked, marked, stale };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const doc = process.argv[2];
   const code = process.argv.find((a) => a.startsWith("--code="))?.slice(7).split(",");
   if (!doc || !code) { console.log("usage: doc-drift.mjs <doc.md> --code=<dir>[,<dir>...] [--json]"); process.exit(2); }

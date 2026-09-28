@@ -16,7 +16,7 @@
  * missing output is never read as PASS. Every ID appends one redacted
  * grader-verdict record through scripts/miss-lib.mjs. Exit 1 on any fail.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -129,7 +129,7 @@ export function grade(requirementsPath, { root = repoRoot, telemetryPath = defau
   return { runId, results, pass, fail, ungraded, total: results.length };
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const file = args.find((a) => !a.startsWith("--"));
   const opt = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=").slice(1).join("=");

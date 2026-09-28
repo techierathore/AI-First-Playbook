@@ -16,6 +16,13 @@ files. Fixes are made by `/fix` and then independently verified.
 Every gate persists a handoff record made and checked by `scripts/handoff-record.mjs`; every
 checklist passes `scripts/checklist-lint.mjs`.
 
+## Guard plugins
+
+The guard plugins add `[playbook-guard] telemetry loaded`, `[playbook-guard] spec-guardrails loaded`
+and `[playbook-guard] yolo loaded` to your context. If any is missing, the first line of your first
+reply is `PLAYBOOK GUARDS NOT LOADED: <missing> — this session is unguarded.`; run
+`node scripts/playbook-guards.mjs`, write nothing and wait for a human, even in YOLO mode.
+
 ## Version control
 
 Git history, index and ref writes are blocked by the guardrail plugin (PB-05, PB-19). Leave

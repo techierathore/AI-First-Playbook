@@ -16,9 +16,10 @@
  * own work. Exit 0 prints the handoff line for /verify; exit 1 lists every
  * unfinished item — the phase adds a wave, it never hands the rest back.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { parseChecklist } from "./checklist-lib.mjs";
 import { latestVerdict } from "./checklist-plan.mjs";
+import { fileURLToPath } from "node:url";
 
 const INACTIVE = new Set(["out-of-scope", "deferred", "abandoned"]);
 const BLOCKER = /\[(INFRA|EXTERNAL) BLOCKER\][^\n]*\b(?:owner|supplies|supplied by)\b/i;
@@ -72,7 +73,7 @@ export function phaseComplete(text, mode) {
   return { mode, unfinished, problems, done: !unfinished.length && !problems.length };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [mode, path] = process.argv.slice(2);
   if (!["build", "fix"].includes(mode) || !path) { console.log("usage: phase-complete.mjs build|fix <checklist>"); process.exit(2); }
   const r = phaseComplete(readFileSync(path, "utf8"), mode);

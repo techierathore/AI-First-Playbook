@@ -15,12 +15,13 @@
  * exception, all PASS → human acceptance. A given verification-results record
  * must agree with the checklist (outcome and non-PASS IDs).
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { lintChecklist } from "./checklist-lint.mjs";
 import { parseChecklist } from "./checklist-lib.mjs";
 import { latestVerdict } from "./checklist-plan.mjs";
 import { coverage } from "./plan-coverage.mjs";
 import { parseRecord, validateRecord } from "./handoff-record.mjs";
+import { fileURLToPath } from "node:url";
 
 export function planReview(checklistText, sourceText, handoffText = null) {
   const blockers = [];
@@ -46,7 +47,7 @@ export function route(checklistText) {
   return r;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [gate, checklist, ...rest] = process.argv.slice(2);
   const opt = (n) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   if (!["plan-review", "verification-results"].includes(gate) || !checklist) { console.log("usage: plan-review|verification-results <checklist> [...]"); process.exit(2); }

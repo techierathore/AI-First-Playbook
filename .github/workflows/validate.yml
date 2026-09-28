@@ -3,14 +3,18 @@ on: [push, pull_request]
 jobs:
   docs:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        opencode: ["1.18.32", "2.0.18"]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with: {node-version: 22.14.0}
       - name: Set up npm
         run: npm install --global npm@11.5.1
-      - name: Install the supported OpenCode
-        run: npm install --global "opencode-ai@$(node --print "require('./package.json').opencode.supported")"
+      - name: Install the supported OpenCode ${{ matrix.opencode }}
+        run: npm install --global "$(node scripts/opencode-package.mjs "${{ matrix.opencode }}")"
       - run: npm run validate
       - run: npm run test:guardrails
       - run: npm run test:misses
@@ -21,11 +25,11 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p grader-output
-          node scripts/playbook-grade.mjs docs/Playbook-Requirements.md --run-id="ci-${{ github.run_id }}-${{ github.run_attempt }}" --telemetry=grader-output/grades.ndjson | tee grader-output/grader.txt
+          node scripts/playbook-grade.mjs docs/Playbook-Requirements.md --run-id="ci-${{ github.run_id }}-${{ github.run_attempt }}-oc${{ matrix.opencode }}" --telemetry=grader-output/grades.ndjson | tee grader-output/grader.txt
       - name: Upload grader output
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: grader-output
+          name: grader-output-oc${{ matrix.opencode }}
           path: grader-output/
           retention-days: 90

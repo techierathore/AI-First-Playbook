@@ -4,7 +4,8 @@
  *
  * An item is an optional `<!-- metadata: {...} -->` line followed by
  * `- [ ] <title>` (or `- [x]`) and indented `- Field: value` lines, where a
- * value may continue on further indented lines.
+ * value may continue on further indented lines. The `- [ ]` rows under
+ * `## Deployment Steps` are deployment actions (checklist-deploy.mjs), not items.
  */
 export const ITEM_TYPES = ["ui", "backend-api", "backend-service", "db", "logging", "infrastructure", "cross-cutting", "desktop"];
 export const FIELD_ORDER = ["Type", "Behavior", "Location", "UI ref", "Logging", "Acceptance", "Verify", "Coding Standards", "Depends on"];
@@ -17,11 +18,17 @@ export function parseChecklist(text) {
   let current = null;
   let field = null;
   let fence = false;
+  let deploy = false;
   lines.forEach((line, index) => {
     if (/^\s*```/.test(line)) { fence = !fence; current = null; return; }
     if (fence) return;
     const heading = line.match(/^(#{1,6})\s+(.*)$/);
-    if (heading) { sections.push({ level: heading[1].length, title: heading[2].trim(), line: index + 1 }); current = null; pendingMeta = null; return; }
+    if (heading) {
+      sections.push({ level: heading[1].length, title: heading[2].trim(), line: index + 1 });
+      if (heading[1].length <= 2) deploy = heading[1].length === 2 && heading[2].trim() === "Deployment Steps";
+      current = null; pendingMeta = null; return;
+    }
+    if (deploy) return;
     const meta = line.match(/^\s*<!--\s*metadata:\s*(\{.*\})\s*-->\s*$/);
     if (meta) {
       try { pendingMeta = { value: JSON.parse(meta[1]), line: index + 1 }; }

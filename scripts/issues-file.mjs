@@ -11,8 +11,9 @@
  * fails on a missing field, unordered steps, an unknown severity, a requested
  * key that is absent, or a secret-like value.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { redact, WHY_MISSED } from "./miss-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 const SEVERITY = ["High", "Medium", "Low"];
 const FIELDS = ["Source", "Expected", "Actual", "Steps", "Severity", "Why missed", "Miss ID"];
@@ -64,7 +65,7 @@ export function validateIssues(text, keys = []) {
   return { issues, problems };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, input, ...rest] = process.argv.slice(2);
   const opt = (n) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   if (verb === "render" && input && opt("out")) {

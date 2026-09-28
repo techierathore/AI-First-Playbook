@@ -10,8 +10,9 @@
  * are headings of the form `### Screen: <name>`; each must be named in the UI
  * ref of a `ui` or `desktop` item. Unmapped entries are listed; exit 1.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { itemType, parseChecklist } from "./checklist-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 const REQ = /\b(?:BRD|FR|US|INT|NFR)-\d+\b/g;
 
@@ -31,7 +32,7 @@ export function coverage(sourceText, checklistText) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [source, checklist] = process.argv.slice(2);
   if (!source || !checklist) { console.log("usage: plan-coverage.mjs <requirements.md> <checklist.md> [--json]"); process.exit(2); }
   const r = coverage(readFileSync(source, "utf8"), readFileSync(checklist, "utf8"));

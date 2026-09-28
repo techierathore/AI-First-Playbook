@@ -14,8 +14,9 @@
  * Steps where headed so; anything absent stays [MISSING] for a person to fill.
  * Priority maps to High | Medium | Low. Pipe the output to issues-file.mjs render.
  */
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 export const keyOf = (s) => s.match(/([A-Z][A-Z0-9]+-\d+)/)?.[1] ?? null;
 
@@ -97,7 +98,7 @@ export async function fetchIssues(inputs, cred) {
   return { issues, failures };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, ...rest] = process.argv.slice(2);
   const out = rest.find((a) => a.startsWith("--out="))?.slice(6);
   const inputs = rest.filter((a) => !a.startsWith("--"));

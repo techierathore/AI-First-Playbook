@@ -36,7 +36,9 @@
  */
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { opencodeMajor } from "./opencode-command.mjs";
 import { rateLimitPlan, runOutcome, hasYoloToken, SENTINEL_COMPLETE, SENTINEL_BLOCKED, DEFAULT_BUFFER_MINUTES, DEFAULT_UNPARSED_WAIT_MINUTES, MAX_WAIT_MINUTES } from "../harness/opencode/playbook-plugin/yolo-policy.mjs";
 
 // ── args ────────────────────────────────────────────────────────────────────
@@ -146,9 +148,22 @@ function childEnv() {
 }
 function readSafe(p) { try { return readFileSync(p, "utf8"); } catch { return ""; } }
 
+// OpenCode 2: `run` reaches the plugins' environment (PLAYBOOK_YOLO) only with
+// --standalone, and never expands "/command …", so a first prompt that names a
+// command goes through opencode-command.mjs (the server's session.command route).
+let major;
 function buildCommand(text, sessionId) {
   const bin = process.env.PLAYBOOK_OPENCODE_BIN || "opencode";
-  const args = ["run", "--auto", "--format", "json"];
+  major ??= opencodeMajor(bin) ?? 1;
+  const slash = text.match(/^\/([a-z][a-z0-9-]*)(?:\s+([\s\S]*))?$/);
+  if (major >= 2 && slash && !sessionId) {
+    const args = [join(dirname(fileURLToPath(import.meta.url)), "opencode-command.mjs"), slash[1], "--auto", "--format=json"];
+    if (agent) args.push(`--agent=${agent}`);
+    if (model) args.push(`--model=${model}`);
+    args.push(slash[2] ?? "");
+    return { bin: process.execPath, args };
+  }
+  const args = ["run", ...(major >= 2 ? ["--standalone"] : []), "--auto", "--format", "json"];
   if (agent) args.push("--agent", agent);
   if (model) args.push("--model", String(model));
   if (sessionId) args.push("--session", sessionId);

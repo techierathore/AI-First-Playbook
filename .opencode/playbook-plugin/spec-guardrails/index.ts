@@ -17,8 +17,9 @@
  */
 
 import type { Plugin } from "@opencode-ai/plugin";
-import { evaluateToolCall, extractPath, FILE_WRITING_TOOLS } from "./write-policy.mjs";
-import { gitWriteReason } from "./yolo-policy.mjs";
+import { evaluateToolCall, extractPath, FILE_WRITING_TOOLS } from "../write-policy.mjs";
+import { gitWriteReason } from "../yolo-policy.mjs";
+import { GUARD_ENV, guardLine, withGuard } from "../guard-signal.mjs";
 
 function agentName(value: unknown): string | null {
   if (typeof value === "string") return value;
@@ -64,6 +65,9 @@ export const SpecGuardrails: Plugin = async ({ client }) => {
   await log("info", "spec-guardrails plugin loaded");
 
   return {
+    // Guard signal (guard-signal.mjs): the session can tell this plugin loaded.
+    "experimental.chat.system.transform": async (_input, output) => { output.system.push(guardLine("spec-guardrails")); },
+    "shell.env": async (_input, output) => { output.env[GUARD_ENV] = withGuard(output.env[GUARD_ENV], "spec-guardrails"); },
     "chat.params": async (input) => remember(input.sessionID, input.agent),
     "chat.message": async (input) => remember(input.sessionID, input.agent),
     event: async ({ event }) => {

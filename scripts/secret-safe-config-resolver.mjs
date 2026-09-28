@@ -15,10 +15,11 @@
  * stdin. A missing key or config is `BLOCKED` naming the reference, never a
  * guessed default. The value is never printed.
  */
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { field, readProfile, runDirectory } from "./profile-lib.mjs";
+import { fileURLToPath } from "node:url";
 
 export function resolveValue(ref, { config, root = process.cwd(), env = process.env } = {}) {
   if (!ref) return { blocked: "no --key given" };
@@ -42,7 +43,7 @@ export function resolveValue(ref, { config, root = process.cwd(), env = process.
   return { value: node };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
   const dash = argv.indexOf("--");
   const own = dash === -1 ? argv : argv.slice(0, dash);

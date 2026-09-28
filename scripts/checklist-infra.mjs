@@ -12,6 +12,8 @@
  * 1 when the section is missing, empty or malformed.
  */
 import { Checklist, cleanText } from "./checklist-edit-lib.mjs";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const SCAFFOLD = /^_To be completed by \/implement and \/fix\._$/;
 
@@ -34,7 +36,7 @@ export function validateInfra(c) {
   return problems;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [verb, path, ...rest] = process.argv.slice(2);
   const opt = (n) => rest.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=");
   if (!["add", "none", "validate"].includes(verb) || !path) { console.log("usage: add|none|validate <checklist> [...]"); process.exit(2); }
