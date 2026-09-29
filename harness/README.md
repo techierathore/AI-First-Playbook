@@ -8,7 +8,7 @@ harness loads and executes.
 |---|---|---|
 | Form | one spec per command, prose | the real `.md` / `.ts` / `.html` files |
 | Audience | someone deciding whether to adopt, or porting to another harness | someone installing it today |
-| Length | ~1 page each | 1,700+ lines for the Verifier alone |
+| Length | ~1 page each | short prompts that hand the mechanics to `.playbook/scripts/` (the Verifier is 80 lines plus one adapter per item type) |
 
 Read `templates/` first. Install from here.
 
@@ -16,21 +16,33 @@ Read `templates/` first. Install from here.
 
 ```
 harness/opencode/
-  command/          15 command files — the slash commands (/feature-plan, /verify, /log-miss, …)
-                    each stamped with a `model:` tier from playbook/model-tiers.yml
-  agent/verifier.md the Verifier agent: 1,050 lines of anti-excuse rules and probes
-  agent/builder.md  the wave worker /implement and /fix spawn — carries its own (cheaper)
-                    model tier so parallel waves never inherit the orchestrator's model
-  plugin/           spec-guardrails.ts + write-policy.mjs — mechanical enforcement of the
-                    one-file rule (write-policy.mjs is the harness-independent policy)
-                    telemetry.ts — opt-in per-phase token/cost capture (PLAYBOOK_TELEMETRY=1)
-                    yolo.ts + yolo-policy.mjs — YOLO mode: auto-approve every permission except
-                    git history, record usage-limit reset times (PLAYBOOK_YOLO=1; inert otherwise)
-  templates/        doc-shell.html — the self-rendering HTML shell for human docs
+  opencode.json     installed as .opencode/opencode.json: agents, standing-rule instructions,
+                    the three plugins in load order, the (disabled) Playwright MCP entry
+  command/          15 command files — the slash commands (/feature-plan, /verify, /log-miss, …);
+                    14 are installed (/update-context maintains this repo's Context-Prompt.md).
+                    Routing (off by default) stamps a `model:` tier from playbook/model-tiers.yml
+  agent/            analyst.md, orchestrator.md, builder.md, verifier.md — the four agents.
+                    builder.md is the wave worker /implement and /fix spawn; with routing on it
+                    carries its own (cheaper) tier so parallel waves never inherit the
+                    orchestrator's model
+  playbook-plugin/  one directory per guard plugin, loaded in this order; each has index.ts
+                    (OpenCode 1) and server.ts (OpenCode 2):
+    telemetry/        opt-in per-phase token/cost capture (PLAYBOOK_TELEMETRY=1)
+    spec-guardrails/  mechanical write rules: no report files, the Verifier's write scope, no
+                      agent edits to .playbook/ or .opencode/, no git history writes
+    yolo/             YOLO mode: auto-approve every permission except git history, record
+                      usage-limit reset times (PLAYBOOK_YOLO=1; inert otherwise)
+    write-policy.mjs, yolo-policy.mjs   the harness-independent policies both entries share
+    guard-signal.mjs  the `[playbook-guard] <name> loaded` line and PLAYBOOK_GUARDS marker
+                      each plugin leaves, so a missing plugin is noticed
+  templates/        doc-shell.html — the self-rendering HTML shell for human docs;
+                    verifier/ — the per-item-type Verifier adapters (ui, api, db,
+                    logging-infra, desktop)
 ```
 
-Built for **[OpenCode](https://opencode.ai)**. The command and agent files are markdown prompts
-with OpenCode YAML frontmatter.
+Built for **[OpenCode](https://opencode.ai)** 1.18.32 and 2.0.18 (`package.json`
+`opencode.supported`; CI runs both). The command and agent files are markdown prompts with
+OpenCode YAML frontmatter.
 
 ## Model tiers (per-phase routing)
 
@@ -48,7 +60,8 @@ enforce consistency with `node scripts/apply-model-tiers.mjs --check`. Operator 
 Add the token `YOLO` to a command (`/implement YOLO @checklist`) or start OpenCode with
 `PLAYBOOK_YOLO=1`. The prompts then treat every approval gate as pre-approved and
 `playbook-plugin/yolo/` (`index.ts` on OpenCode 1, `server.ts` on 2), backed by `playbook-plugin/yolo-policy.mjs`, auto-approves every permission
-request except git history writes, which they deny. For a run that also survives the
+request except git history writes, which they deny. On OpenCode 2 the variable must be in the
+OpenCode server's environment (`opencode run --standalone` from the shell that sets it). For a run that also survives the
 provider's 5-hour / weekly usage limit, use the supervisor — it sets the variable, parses the
 reset time from the limit error, waits it out (+15 min) and resumes the same session until
 the agent prints `PLAYBOOK_RUN_COMPLETE`:
@@ -69,8 +82,11 @@ cd /path/to/your-repo
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-The target receives only `.opencode/` and `.playbook/`; both are hidden and gitignored. The
-standing rules are `.playbook/AGENTS.md`, and the topology/command contract is
+The target receives only `.opencode/` and `.playbook/`; both are hidden and gitignored. Upgrade
+with `install --force`: it moves an older install to the plugin directories and never resets the
+environment profile. The standing rules are `.playbook/AGENTS.md` (OpenCode 1 loads it through the
+config's `instructions`; OpenCode 2.0.18 ignores `instructions`, so the spec-guardrails plugin adds
+it), and the topology/command contract is
 `.playbook/environment-profile.yml`. Replace its placeholders before the first run. Optional
 Playwright is configured through `PLAYWRIGHT_MCP_URL`:
 
@@ -78,9 +94,11 @@ Playwright is configured through `PLAYWRIGHT_MCP_URL`:
    npx @playwright/mcp@latest --port "$PLAYWRIGHT_PORT" --allowed-hosts "*"
    ```
 
-Smoke-test before trusting it: run `/verify` against a checklist with a bug you
-   planted, and confirm the Verifier annotates it `FAIL` **inline in the checklist**. If
-   it produces a separate report file instead, the plugin isn't loading.
+Check the plugins with `node .playbook/scripts/playbook-guards.mjs --config`; inside a session, a
+missing plugin makes the agent open with `PLAYBOOK GUARDS NOT LOADED` and write nothing. Then
+smoke-test before trusting it: run `/verify` against a checklist with a bug you planted, and
+confirm the Verifier annotates it `FAIL` **inline in the checklist**. If it produces a separate
+report file instead, the plugin isn't loading.
 
 Runtime CLIs are under `.playbook/scripts/`, and model tiers are
 `.playbook/model-tiers.yml`. Preserve durable `verification/telemetry/misses.ndjson`; ignore only
@@ -88,56 +106,56 @@ the transient `/verification/telemetry/events.ndjson`, never the whole telemetry
 
 ## Personas
 
-Several commands open with "activate the Analyst persona" or "activate the Orchestrator
-persona". A persona here is just a prompt file that sets voice, priorities, and elicitation
-style before the command body runs. Two roles are used:
+Each command names the agent it runs as, and the four agents ship in `.opencode/agent/`. A persona
+here is just a prompt file that sets voice, priorities and elicitation style before the command
+body runs:
 
 | Role | Used by | What it changes |
 |---|---|---|
-| **Analyst** | `/feature-plan`, `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`, `/create-issue-list` | Asks for missing inputs instead of guessing; writes documents, not code |
-| **Orchestrator** | `/implement`, `/fix` | Coordinates parallel sub-agents in waves rather than working items one at a time |
+| **Analyst** | `/feature-plan`, `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`, `/create-issue-list` ("You are the Analyst (`.opencode/agent/analyst.md`)"), `/legacy-audit` (`agent: analyst`) | Asks for missing inputs instead of guessing; writes documents, not code |
+| **Orchestrator** | `/implement`, `/fix` ("You are the Orchestrator (`.opencode/agent/orchestrator.md`)"); spawns **Builder** workers per slice | Coordinates parallel sub-agents in waves rather than working items one at a time |
+| **Verifier** | `/verify` (`agent: verifier`, `subtask: true`) | Runs in a fresh child session with no memory of the build |
 
-These commands were originally written against persona agents from
+The commands were originally written against persona agents from
 [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) (MIT), which is **not
-redistributed here**. The shipped native agents under `.opencode/agent/` are the supported
-default; existing BMAD installations remain optional:
-
-- **Install BMAD** into your harness and the paths resolve as written.
-- **Substitute your own** analyst/orchestrator persona files and update the path in the
-  seven affected commands.
-- **Skip personas entirely.** Delete the activation paragraph. The commands still work —
-  every behaviour that matters is spelled out in the command body itself. You lose
-  consistency of voice, not capability.
+redistributed here**. The shipped native agents are the supported default; to use your own
+persona files, change the path in the command's first line. The commands still work without the
+persona line, because every behaviour that matters is spelled out in the command body.
 
 The mechanical commands (`/generate-html`, `/amend-checklist`, `/archive-checklist`,
-`/update-context`) deliberately activate **no persona**. Don't "upgrade" them.
+`/log-miss`, `/update-context`) deliberately name **no persona**. Don't "upgrade" them.
 
-## Environment assumptions baked into these files
+## Environment assumptions — now in the profile
 
-These files are a working system, not a neutral template — they assume the stack they were
-built against. None of it is load-bearing for the *process*, but you will want to edit
-these before your first run:
+Earlier versions baked one stack into the prompts (a Linux container talking to a Windows host
+over `host.docker.internal`, .NET with `sqlcmd`, Playwright on port 8931, `appsettings.Development.json`).
+The prompts no longer name a stack. Every such fact is a field of `.playbook/environment-profile.yml`,
+and the runtime scripts read it:
 
-| Assumption | Where it shows up | Change it to |
+| Fact | Profile / source | Read by |
 |---|---|---|
-| Agent runs in a Linux container; apps run on the developer's Windows host | Command prompts only; the Verifier reads topology from the profile (`playbook-probe.mjs`) | Your topology — if agent and apps share a host, `localhost` replaces `host.docker.internal` throughout |
-| .NET backend + React frontend | `dotnet build`, `npm run start:local`, `verification/<feature>Runner/` consoles | Your build, run, and test commands |
-| Raw SQL over `sqlcmd`; **no** Entity Framework | Deployment Steps rules in `/implement`, `/fix` | Your migration tool |
-| Playwright MCP on port 8931 | `opencode.json` MCP entry; the Verifier uses the profile's `browser.endpoint` | Your port, or drop the probe |
-| Config read from `appsettings.Development.json` | Verifier Steps 1 and 3 | Your config file |
-| Jira via REST v3 + a `jira-config.json` at the shared root | `/create-issue-list` | Your tracker, or use the command's plain-text input mode |
+| Topology, OS, shell | `topology`, `os`, `shell` | `playbook-probe.mjs` |
+| Build, test, start, stop, cleanup commands | `commands`, `cleanup.command` | `profile-gates.mjs`, `playbook-app-lifecycle.mjs` |
+| Application URLs | `application` | `playbook-probe.mjs`, the UI and API adapters |
+| Database method and config path; migration command | `database.method`, `database.config_path`, `database.migration_command` | the DB adapter, through `secret-safe-config-resolver.mjs` |
+| Browser endpoint (Playwright) | `browser.endpoint`; the MCP URL is `{env:PLAYWRIGHT_MCP_URL}` in `opencode.json` | the UI adapter |
+| Jira | `jira-issues.mjs`: REST v3, credentials from `JIRA_BASE_URL`/`JIRA_EMAIL`/`JIRA_API_TOKEN` or a 0600 `JIRA_CONFIG` file | `/create-issue-list` |
+
+A value nobody knows stays a placeholder: the probe reports it as `blocked` by field name, and
+nothing guesses it.
 
 What is *not* stack-specific, and is the actual content: verify by executing rather than
-reading, one checklist as the single output, evidence attached to every verdict, the
-forbidden-excuse list, and parallelism by item type.
+reading, one checklist as the single output, evidence attached to every verdict, and
+parallelism by item type.
 
 ## The optional Windows-app bridge
 
-The Verifier and `/implement` probe `${WINAPP_BRIDGE:-http://host.docker.internal:8932}/health`
-before attempting GUI-level verification of a Windows desktop app. **No bridge ships in this
-repo.** If `/health` doesn't answer, the agents fall back to the headless path — running the
-desktop app's .NET library logic directly from a console runner — which is the default and
-covers everything except pure window chrome.
+The desktop adapter (`.opencode/templates/verifier/desktop.md`) uses a GUI bridge only when the
+probe or the `WINAPP_BRIDGE` environment reference names one and `GET /health` answers 200
+(`windows-app-bridge-client.mjs`; there is no default address). **No bridge ships in this repo.**
+Without one, the Verifier takes the default headless path — running the desktop app's library
+logic from a console runner under `verification/<feature>/` — which covers everything except pure
+window chrome.
 
 If you want to build one, the contract the agents expect is:
 
@@ -151,8 +169,8 @@ If you want to build one, the contract the agents expect is:
 | `GET /screenshot` | PNG evidence |
 | `POST /stop` | Shut down |
 
-Absence of the bridge is **never** a valid `BLOCKED` reason — that rule is written into the
-Verifier three times because it was violated three times.
+Absence of the bridge is **never** a valid `BLOCKED` reason; the desktop adapter says so, because
+the rule was violated three times when it lived only in prose.
 
 ## OpenCode command frontmatter
 
@@ -168,11 +186,14 @@ subtask: true          # only /verify — runs in a fresh context
 
 `$ARGUMENTS` is substituted with whatever the user typed after the command name. The prompts use
 OpenCode's `read`, `edit`, `write`, `grep`, `glob`, `bash`, and `task` tools. The `task` tool
-provides the parallel subagents used by `/implement`, `/fix`, and `/verify`.
+provides the parallel subagents used by `/implement`, `/fix`, and `/verify`. OpenCode 2 names the
+shell tool `shell` and a file tool's path argument `path` (OpenCode 1: `bash`, `filePath`); the
+plugins handle both spellings.
 
 ## Why the guardrail plugin exists
 
-`spec-guardrails.ts` blocks writes to `*Gap-Report*.md`, `*Verification-Report*.md`, and
+The spec-guardrails plugin (`playbook-plugin/spec-guardrails/`, policy in `write-policy.mjs`)
+blocks writes to `*Gap-Report*.md`, `*Verification-Report*.md`, and
 similar filenames. It exists because prompt rules alone did not hold: after three rounds of
 adding progressively louder instructions, the Verifier still created separate report files,
 because "write a report at the end" is deeply trained behaviour. The rule became mechanical

@@ -61,7 +61,8 @@ PLAYBOOK_TELEMETRY=1 opencode
 
 # 2. Work normally — run /implement, /verify, /fix …
 #    Events append to verification/telemetry/events.ndjson (best-effort, never
-#    interferes with a run; without the env var the plugin registers nothing).
+#    interferes with a run; without the env var the plugin registers only its
+#    guard signal, `[playbook-guard] telemetry loaded`, and records nothing).
 
 # 3. Produce the per-phase records:
 node .playbook/scripts/playbook-telemetry.mjs --checklist=verification/MyFeature-Checklist.md
@@ -92,8 +93,14 @@ node .playbook/scripts/playbook-telemetry.mjs --checklist=… | \
 
 ## 5. OpenCode capture boundary
 
-OpenCode is the sole telemetry producer for this framework. The plugin observes command,
-session, message, part, and tool lifecycle events; the joiner combines them with checklist data.
+OpenCode is the sole telemetry producer for this framework. The plugin is the directory
+`.opencode/playbook-plugin/telemetry/`. On OpenCode 1 (`index.ts`) it observes command, session,
+message, part, and tool lifecycle events; the joiner combines them with checklist data. On
+OpenCode 2 (`server.ts`) it records only `tool-start` and `tool-end` rows in the same schema-2
+stream. OpenCode 2.0.18 has no command-start hook and a different session event stream, so phase,
+turn and subagent rows are not captured on 2.x yet, and the joiner treats their absence as
+unmeasured, never as zero. On 2.x `PLAYBOOK_TELEMETRY=1` must be in the OpenCode server's
+environment (`--standalone` from the shell that sets it).
 
 - Keep the plugin's event writes best-effort and error-isolated.
 - Treat child sessions as part of the active phase tree only through recorded parent links.
@@ -103,7 +110,8 @@ This boundary keeps provider observations separate from framework classification
 
 ## 6. FAQ
 
-- **"events.ndjson doesn't exist."** The plugin only registers when `PLAYBOOK_TELEMETRY=1` was set before OpenCode started. Set it and restart.
+- **"events.ndjson doesn't exist."** The plugin records only when `PLAYBOOK_TELEMETRY=1` was set before OpenCode started (on OpenCode 2, in the server's environment). Set it and restart.
+- **"No phase records on OpenCode 2."** Expected for now: 2.x capture is tool rows only (§5).
 - **"Records show attempt: null."** Pass `--checklist=` pointing at the checklist the phases ran against; attempt/verdict are parsed from it.
 - **"cost_usd is 0 on every record."** See the v2-engine caveat in `Telemetry-Hooks.md`. Non-zero-token zero cost is labelled `cost_status:"zero-unverified"` and excluded from measured-cost aggregates; compute a separately labelled rate-card estimate if needed.
 - **"Two phases in one session?"** Each `command.execute.before` starts a new record for that session; the joiner closes only that session's previous window. Interleaved top-level sessions remain isolated, while recursively linked child sessions roll up only to their own active root. Session reuse across phases is fine.

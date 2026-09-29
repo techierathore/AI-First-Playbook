@@ -40,8 +40,9 @@ per-sub-verifier accounting are both available without estimation.
 | Per-subagent split | Filter turns/tools by `sessionID` and recursively resolve the recorded parent chain | `packages/opencode/src/tool/task.ts:156-172`; `packages/core/src/session/projector.ts:89-109` |
 | Offline backfill / audit | SQLite `~/.local/share/opencode/opencode.db`: `session` rollup columns; `json_extract(message.data, '$.tokens.input')` over message blobs (the exact recipe OpenCode's own backfill migration uses) | `packages/core/src/session/sql.ts:43-48`; `packages/core/src/database/migration/20260510033149_session_usage.ts:24-52` |
 
-**Recommended carrier:** a second small plugin (`telemetry.ts`, sibling of the guardrail) using
-`command.execute.before` + the `event` hook, appending NDJSON to
+**Recommended carrier:** a second small plugin (shipped as `playbook-plugin/telemetry/index.ts`,
+sibling of the guardrail, for OpenCode 1; its `server.ts` records tool rows only on OpenCode 2 —
+see `Telemetry-Guide.md` §5) using `command.execute.before` + the `event` hook, appending NDJSON to
 `verification/telemetry/events.ndjson`; `playbook-telemetry.mjs` then joins those rows with the
 checklist-parsed attempt/verdict into the final record. The `event` hook is fire-and-forget
 and error-isolated, so telemetry can never break a run

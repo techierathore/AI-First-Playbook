@@ -55,7 +55,14 @@ cleans up after itself, but `npx … install` is the supported form.
 | From a source clone | `node <clone>/scripts/install.mjs install --target=/abs/path/to/project` |
 
 `--force` replaces or removes only files recorded in `.playbook/installation.json`; unowned files
-are always kept. After installing, restart OpenCode in the project root.
+are always kept, and `.playbook/environment-profile.yml` is never reset. An upgrade with `--force`
+also moves an older install to the current plugin layout: each guard plugin is a directory under
+`.opencode/playbook-plugin/` (`telemetry`, `spec-guardrails`, `yolo`, loaded in that order) with
+`index.ts` for OpenCode 1 and `server.ts` for OpenCode 2, and the old single-file plugins are
+removed. An upgrade without `--force` keeps the old `.opencode/opencode.json`, which OpenCode 2
+cannot load, and the installer prints `PLAYBOOK GUARDS NOT LOADED` to say so.
+`node .playbook/scripts/playbook-guards.mjs --config` checks the layout at any time. After
+installing, restart OpenCode in the project root.
 
 ## 3. Before the first command
 
@@ -64,8 +71,10 @@ are always kept. After installing, restart OpenCode in the project root.
    `node .playbook/scripts/playbook-probe.mjs`; every line should read `ok`.
 2. **Secrets.** Only an approved secret manager, an environment reference, protected stdin or a
    protected temporary file — never arguments, Markdown, logs, URLs or evidence.
-3. **Standing rules.** `.playbook/AGENTS.md` is loaded into every agent. The approved checklist is
-   authoritative over chat; the Verifier writes results only inside it.
+3. **Standing rules.** `.playbook/AGENTS.md` is loaded into every agent (OpenCode 1 through
+   `instructions`; OpenCode 2 ignores `instructions`, so the spec-guardrails plugin adds it). The
+   approved checklist is authoritative over chat; the Verifier writes results only inside it. No
+   agent may edit `.playbook/` or `.opencode/`, except the environment profile.
 4. **Telemetry.** Keep `/verification/telemetry/events.ndjson` (transient) and `/verification/runs/`
    (raw evidence, swept after 7 days) ignored; commit `verification/telemetry/misses.ndjson`. Never
    ignore the whole `verification/telemetry/` folder. Start with `PLAYBOOK_TELEMETRY=1 opencode`

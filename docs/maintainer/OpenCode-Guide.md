@@ -192,15 +192,19 @@ internal LLM gateway endpoint configured as a provider instead of fighting the p
 
 ## 5. Install the framework into the WSL-hosted repo
 
-Exactly as `harness/README.md` describes, from the repo now living in `~/work/<repo>`:
+With the package installer (`docs/Getting-Started.md` §2), from the repo now living in
+`~/work/<repo>`:
 
 ```bash
-cp -r harness/opencode/. .opencode/ && cp opencode.json ./
-cd .opencode && npm install @opencode-ai/plugin && cd ..
+npx @techierathore/ai-first-playbook@latest install --dry-run
+npx @techierathore/ai-first-playbook@latest install          # upgrade: install --force
+node .playbook/scripts/playbook-guards.mjs --config
 ```
 
-Then smoke-test the guardrail per `harness/README.md:58-60` (plant a bug, run `/verify`,
-confirm the FAIL lands **inline** in the checklist).
+The install writes only `.opencode/`, `.playbook/` and a managed `.gitignore` block; it copies no
+`node_modules`, and no `npm install` inside `.opencode/` is needed. Restart OpenCode, then
+smoke-test the guardrail as `harness/README.md` (Install) describes: plant a bug, run `/verify`,
+confirm the FAIL lands **inline** in the checklist.
 
 ## 6. Topology: rewiring what the container assumed
 
@@ -210,8 +214,8 @@ Two supported shapes:
 **Shape A — everything in WSL (recommended, simplest).** Apps (`dotnet run`, `npm run
 start:local`) run inside WSL next to the agent. Set `playbook/environment-profile.yml`:
 `topology: same-host`, URLs `http://127.0.0.1:<port>`. Windows browsers can reach WSL
-services on `localhost` automatically. Every `host.docker.internal` in the Verifier's world
-becomes `localhost`, exactly as the table in `harness/README.md:94-99` prescribes. SQL Server
+services on `localhost` automatically. The profile's URLs use `localhost`/`127.0.0.1`, not
+`host.docker.internal`. SQL Server
 still on Windows? Enable TCP + firewall rule; with mirrored networking (§2) the connection
 string host is simply `localhost`.
 
@@ -222,19 +226,17 @@ networking (older Windows 10), the Windows host is reachable at the gateway IP:
 in the profile — the WSL analogue of `host.docker.internal`. The optional Windows-app bridge
 (`WINAPP_BRIDGE`) follows the same substitution.
 
-The Verifier itself reads all of this from the profile, so no agent-file edits are required
-beyond the one-line topology note in `verifier.md:69` ("running inside a Linux Docker
-container…") — update it to "running inside WSL on the user's Windows host" when you adopt
-this guide; it is descriptive prose, not logic.
+The Verifier reads all of this from the profile (`playbook-probe.mjs`), so no agent-file edits
+are required.
 
 ## 7. Migration checklist (from the container)
 
 1. Provision WSL (§2–§4) — certificates before anything else.
 2. Clone the target repo into `~/work/` (not `/mnt/c`), install the framework (§5).
 3. Set the environment profile for Shape A or B (§6).
-4. `opencode` → run the doctor pass: the Verifier's own Step-1 environment probe
-   (`command -v dotnet node npm sqlcmd`, Playwright endpoint curl) is the acceptance test the
-   framework already defines.
+4. `opencode` → run the doctor pass: `node .playbook/scripts/playbook-probe.mjs` (the probe the
+   Verifier runs first) must report every profile fact `ok`, and
+   `node .playbook/scripts/playbook-guards.mjs --config` must pass.
 5. **Run the historical large-checklist workload that crashed under bun on Windows** (§1.3).
    Only after it passes: stop launching the container, keep the Dockerfile for CI.
 6. Rotate nothing silently: when the corporate CA rotates, re-run §4 steps 1–2 —
@@ -242,7 +244,9 @@ this guide; it is descriptive prose, not logic.
 
 ## 8. OpenCode upgrades — no version pinning
 
-The framework does **not** pin an OpenCode version, and upgrading is not a
+The framework does **not** enforce an OpenCode version: nothing refuses to run on another one.
+It does name the versions it is tested on — `package.json` `opencode.supported`, currently
+1.18.32 and 2.0.18 — and CI runs every check on each of them. Upgrading is not a
 re-verification event. Leave autoupdate on (the `OPENCODE_DISABLE_AUTOUPDATE` flag in §4 is
 for change-controlled shops that freeze *all* tooling, not a framework recommendation).
 
@@ -253,6 +257,9 @@ internals, and because breakage is cheap to detect after the fact:
 - `npm run validate` and `npm run test:guardrails` (already in CI) prove the pack and the
   shared write-policy are intact.
 - `node scripts/apply-model-tiers.mjs --check` (or `node scripts/playbook-routing.mjs status`) proves the tier stamps agree with the map and its on/off flag.
+- `node .playbook/scripts/playbook-guards.mjs --config` proves the plugin layout still matches
+  what both OpenCode versions load; inside a session a missing plugin makes the agent open with
+  `PLAYBOOK GUARDS NOT LOADED`.
 - The plant-a-bug smoke test (§5) proves the guardrail actually blocks inside the running
   harness — two minutes, and it exercises the only integration that could break silently.
 

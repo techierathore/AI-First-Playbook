@@ -48,7 +48,8 @@ narration goes to `verification/yolo/supervisor.log` and the console.
 You can also keep the TUI and just stop the prompts:
 
 ```bash
-PLAYBOOK_YOLO=1 opencode            # OpenCode: the yolo.ts plugin answers every permission.ask
+PLAYBOOK_YOLO=1 opencode              # OpenCode 1: the yolo plugin answers every permission.ask
+PLAYBOOK_YOLO=1 opencode --standalone # OpenCode 2: the server must see the variable
 ```
 
 Windows binaries launched from WSL only see variables listed in `WSLENV`
@@ -101,8 +102,8 @@ itself returns HTTP 429 `rate_limit_error` (and `overloaded_error` under load). 
 stops a run, the supervisor:
 
 1. **Recognises** the error from the harness output (or, on OpenCode, from
-   `verification/yolo/rate-limit.json`, which the `yolo.ts` plugin writes the moment it sees
-   a `session.error` carrying a limit message — including the `retry-after` /
+   `verification/yolo/rate-limit.json`, which the yolo plugin writes the moment it sees
+   a limit message (`session.error` on OpenCode 1, the `session` `retry` hook on OpenCode 2) — including the `retry-after` /
    `anthropic-ratelimit-*-reset` headers).
 2. **Parses the reset time** from whatever shape it came in:
    `You've hit your session limit · resets 3:45pm` · `resets Mon 12:00am` ·
@@ -147,10 +148,10 @@ Status Table and the Verifier Run Log, then commit yourself.
 | Component | OpenCode implementation |
 |---|---|
 | Policy | `harness/opencode/playbook-plugin/yolo-policy.mjs` |
-| Permission bypass | `plugin/yolo.ts` → `permission.ask` sets `allow` / `deny`; `tool.execute.before` throws on git writes even when the agent's config already says `bash: allow` |
-| Limit detection | `event` → `session.error` → `verification/yolo/rate-limit.json` |
+| Permission bypass | `playbook-plugin/yolo/index.ts` (OpenCode 1) → `permission.ask` sets `allow` / `deny`; `tool.execute.before` throws on git writes even when the agent's config already says `bash: allow`. `playbook-plugin/yolo/server.ts` (OpenCode 2) → the `permission` `evaluate` hook; `tool` `execute.before` renames a git-write call to its block message (a thrown error would end the turn). Both treat `bash` and `shell` as the shell tool |
+| Limit detection | OpenCode 1: `event` → `session.error`; OpenCode 2: `session` `retry` → `verification/yolo/rate-limit.json` |
 | Launch flags used by the supervisor | `opencode run --auto --format json [--agent …] [--session …]`; on OpenCode 2 `run --standalone …`, and a first prompt that names a command (`/implement …`) goes through `scripts/opencode-command.mjs … --auto --format=json` |
-| Registration | `opencode.json` → `"plugin": [spec-guardrails.ts, yolo.ts]` (order matters: guardrail first) |
+| Registration | `.opencode/opencode.json` → `"plugin": ["./playbook-plugin/telemetry", "./playbook-plugin/spec-guardrails", "./playbook-plugin/yolo"]` (order matters: guardrail before YOLO) |
 
 The YOLO carrier is **inert without `PLAYBOOK_YOLO=1`** — an ordinary interactive session is
 unchanged.
@@ -204,7 +205,7 @@ Before leaving a VM unattended:
   repo" is literal.
 - Git history is the rollback line: because the agent can never commit, `git checkout --`
   / `git clean` by **you** restores any state. Commit your own work before starting a run.
-- Secrets rules are unchanged — see [`Security.md`](../Operating-Guide.md).
+- Secrets rules are unchanged — see the [Operating Guide](../Operating-Guide.md) §5.
 - The telemetry plugin (`PLAYBOOK_TELEMETRY=1`) still works under YOLO; the supervisor
   passes the variable through, so you can cost an unattended run per phase afterwards.
 
@@ -217,7 +218,7 @@ What has been verified, and what has not, as of 2026-08-21:
 | Piece | Verified how |
 |---|---|
 | Policy (`yolo-policy.mjs`): git-write denial, allow-list, reset-time parsing, sentinels | `node scripts/test-guardrails.mjs` — 20+ deny/allow cases, 7 reset-time shapes |
-| OpenCode carrier (`yolo.ts`) | `node scripts/test-guardrails.mjs` covers allow/deny policy behavior; live TUI behavior remains listed separately below |
+| OpenCode carrier (`yolo/index.ts`, `yolo/server.ts`) | `node scripts/test-guardrails.mjs` covers allow/deny policy behavior; live TUI behavior remains listed separately below |
 | Supervisor command lines | `--dry-run` for OpenCode |
 | Plugin registration order and policy drift | `node scripts/playbook-validate.mjs` |
 | **A real headless session hitting a real usage limit and resuming** | **Not yet** — no live run has gone through a 5-hour reset |
@@ -237,13 +238,13 @@ your own work (the agent cannot, so git is your rollback line). Then:
 
 If something in this table turns out wrong in practice, the fix belongs in
 `yolo-policy.mjs` (parsing / allow-list) or the OpenCode carrier — then update this
-table and `docs/Decisions.md`.
+table and `docs/maintainer/Decisions.md`.
 
 ## 9. Troubleshooting
 
 | Symptom | Action |
 |---|---|
-| Still being prompted in the TUI | `PLAYBOOK_YOLO` is not reaching the process. From WSL launching a Windows binary: `export WSLENV=$WSLENV:PLAYBOOK_YOLO`. Confirm `opencode.json` registers `yolo.ts` after `spec-guardrails.ts`. |
+| Still being prompted in the TUI | `PLAYBOOK_YOLO` is not reaching the process. From WSL launching a Windows binary: `export WSLENV=$WSLENV:PLAYBOOK_YOLO`. On OpenCode 2 the variable must be in the server's environment (`--standalone`). Confirm `node .playbook/scripts/playbook-guards.mjs --config` passes (the `yolo` plugin directory is registered after `spec-guardrails`). |
 | The agent still asked "Proceed?" | It did not see the trigger. Put the token `YOLO` directly after the command name (`/implement YOLO …`) or use the supervisor, which injects the rules into the prompt. |
 | The agent committed — or tried to | It cannot: the carrier denies git writes. If you see the block message in the log that is the policy working. |
 | Supervisor slept far longer than the window | Time-zone mismatch on a bare wall-clock time. Set `PLAYBOOK_TZ` to the zone the harness prints in, or check `verification/yolo/state.json` → `retryAt`. |

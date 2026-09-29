@@ -136,6 +136,8 @@ escalation route and next due date. Link evidence; never paste secrets or large 
    `plan-coverage.mjs`.
 3. **Approve.** A person reviews every requirement, mockup element and Verify method and records
    `plan-approval`. Implementation never starts from an unapproved checkbox or a chat statement.
+   Outside YOLO, `/feature-plan` ends by asking the approver and records `plan-approval` only
+   after a named person has answered.
 4. **Build and self-review.** `/implement` in a fresh chat; it ends only when
    `phase-complete.mjs build` passes.
 5. **Verify.** `/verify` in a fresh context; results are inline in the checklist.
@@ -161,6 +163,16 @@ stored; `handoff-record.mjs` and the grader refuse secret-like values. Set `PLAY
 restrict the Verifier's checklist writes to one file. A secret found in evidence is rotated, the
 artifact removed, and the run repeated with redaction.
 
+The spec-guardrails plugin enforces the write boundaries in both OpenCode versions. No agent edits
+the installed Playbook (`.playbook/`, `.opencode/`), because its scripts are the gates that judge
+the work; only `.playbook/environment-profile.yml` is the project's own. A Playbook defect is
+reported as a miss. The Verifier writes only the selected checklist, `verification/**` and
+referenced `deploy/&lt;feature&gt;/**` helpers. Its shell runs only the approved
+`node .playbook/scripts/&lt;script&gt;.mjs` commands (probe, plan, lint, gates, app lifecycle,
+deployment steps, result writer, summary, smoke runner, config resolver, gate check and the two
+optional adapters) and the miss emitter. Its tests run through `profile-gates.mjs`, not as bare
+`npm test`.
+
 ## 6. Command catalogue
 
 | Command | Example | Use it for |
@@ -180,12 +192,22 @@ artifact removed, and the run repeated with redaction.
 | `/generate-html` | `/generate-html @docs/Cost/` | Render human documents; never the checklist |
 | `/archive-checklist` | `/archive-checklist @&lt;checklist&gt;` | Compact mature PASS history, restorably |
 
+Headless (a script, CI or a remote shell):
+`node .playbook/scripts/opencode-command.mjs &lt;command&gt; &quot;&lt;arguments&gt;&quot; [--auto] [--model=provider/model]`.
+It works on both OpenCode versions. OpenCode 1 runs `opencode run --command`. OpenCode 2's
+`opencode run` would send `/&lt;command&gt; …` to the agent as plain text, so on 2.x the script starts a
+private `opencode serve` and posts the command to its command route. It exits 4 when the agent
+waits for a person's answer (for example plan approval); answer with
+`--continue=&lt;session id&gt; &quot;&lt;answer&gt;&quot;`.
+
 ## 7. Runtime scripts
 
 All installed under `.playbook/scripts/`; each prints what it did and exits non-zero on a problem.
 
 | Script | Does |
 |---|---|
+| `playbook-guards.mjs` | Say whether the three guard plugins loaded (inside a session), or with `--config` whether `.opencode/opencode.json` lists them correctly; exits 3 with a `PLAYBOOK GUARDS NOT LOADED` banner otherwise |
+| `opencode-command.mjs` | Run a Playbook command headlessly on OpenCode 1 or 2 (§6) |
 | `playbook-probe.mjs` | Resolve every profile fact; report placeholders and unreachable services by name |
 | `playbook-app-lifecycle.mjs` | Start, poll, record and stop only the processes a run started |
 | `profile-gates.mjs` | Run the profile's build and test commands as gates |
@@ -201,6 +223,7 @@ All installed under `.playbook/scripts/`; each prints what it did and exits non-
 | `doc-drift.mjs`, `reference-lint.mjs` | Name stale code references and broken links |
 | `doc-upgrade.mjs` | Back up legacy documents before an upgrade |
 | `playbook-miss.mjs`, `playbook-telemetry.mjs` | Miss records and telemetry export |
+| `playbook-sweep.mjs` | Remove raw run evidence and grader verdicts past the profile's retention (`--apply`; prints the plan without it) |
 | `deployment-step-runner.mjs` | Plan, then after approval run, a checklist's Automated deployment rows |
 | `verification-result-writer.mjs`, `verification-summary.mjs` | Write Verifier outcomes into the checklist; render the final summary from it |
 | `secret-safe-config-resolver.mjs` | Hand a config value to a command through a 0600 file or stdin |
@@ -278,13 +301,22 @@ command's `model:` front matter overrides the TUI choice by design. In a source 
 ## 12. Releases of the Playbook itself
 
 The owner releases the npm package; agents never publish or tag. CI
-(`.github/workflows/validate.yml`) runs the four npm test scripts and the grader on every push, on
-Node 22.14.0, npm 11.5.1 and each supported OpenCode (1.18.32 and 2.0.18), and keeps the grader
-output as a `grader-output-oc&lt;version&gt;` artefact for 90 days; `platforms.yml` repeats them on macOS
-and Linux in UTC and Asia/Kolkata; the release workflow runs the same checks before publishing.
+(`.github/workflows/validate.yml`) runs the four npm test scripts and the grader on every push and
+pull request, on Linux with Node 22.14.0, npm 11.5.1 and each supported OpenCode (1.18.32 and
+2.0.18, installed with `node scripts/opencode-package.mjs &lt;version&gt;`). It keeps the grader output
+as a `grader-output-oc&lt;version&gt;` artefact for 90 days. `platforms.yml` repeats the same checks on
+every pull request (or on demand) on macOS and Linux, in UTC and Asia/Kolkata, for both OpenCode
+versions (eight jobs), keeping its output for 30 days. The release workflow runs the four tests,
+`npm pack --dry-run` and the grader for each supported OpenCode before publishing.
 
 OpenCode 1 and 2 load the same install: each guard plugin is a directory under
-`.opencode/playbook-plugin/` with `index.ts` (1.x) and `server.ts` (2.x). On 2.x the `PLAYBOOK_*`
+`.opencode/playbook-plugin/` with `index.ts` (1.x) and `server.ts` (2.x), loaded in the order
+`telemetry`, `spec-guardrails`, `yolo`. The 2.x entries follow OpenCode 2's changes. The shell tool
+is `shell` rather than `bash`, and a file tool's path argument is `path` rather than `filePath`
+(the policy accepts both). A refused call is renamed to its block message rather than thrown,
+because a thrown hook error ends the whole turn. OpenCode 2.0.18 ignores the config's
+`instructions`, so the spec-guardrails plugin adds `.playbook/AGENTS.md` and the profile to the
+context itself. On 2.x the `PLAYBOOK_*`
 variables (`PLAYBOOK_YOLO`, `PLAYBOOK_TELEMETRY`, `PLAYBOOK_GIT_APPROVED`, `PLAYBOOK_CHECKLIST`) are
 read by the OpenCode server: start it with `--standalone` from the shell that sets them, or set them
 on the background service. `node .playbook/scripts/playbook-guards.mjs --config` checks the plugin
@@ -296,7 +328,8 @@ The procedure is in
 
 | Symptom | Action |
 |---|---|
-| Plugin not loaded | Restart OpenCode; `opencode debug config` must list `spec-guardrails.ts` before `yolo.ts`. |
+| `PLAYBOOK GUARDS NOT LOADED` or a plugin not loaded | Run `node .playbook/scripts/playbook-guards.mjs --config`; if it names a problem, run `npx @techierathore/ai-first-playbook install --force` and restart OpenCode (1.18.32 or 2.0.18). `.opencode/opencode.json` must list `&quot;./playbook-plugin/telemetry&quot;`, `&quot;./playbook-plugin/spec-guardrails&quot;`, `&quot;./playbook-plugin/yolo&quot;`, in that order. |
+| Agent write to `.playbook/` or `.opencode/` denied | Expected: the installed Playbook is never edited by an agent. Record the defect with `/log-miss`. |
 | Probe reports `blocked` | Replace that profile placeholder; never substitute a guess. |
 | `DATA-GAP` | Seed approved synthetic data and verify again; do not release. |
 | `BLOCKED` | Resolve the profile blocker or record an expiring exception. |

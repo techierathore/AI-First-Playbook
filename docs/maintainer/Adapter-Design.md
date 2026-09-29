@@ -25,11 +25,11 @@ remain canonical inputs rather than runtime-generated behavior.
 |---|---|
 | Command packaging | `.opencode/command/<name>.md`, frontmatter `description` / `agent` / `subtask` / **`model`** (stamped from the tier map, Part 2) |
 | Agent packaging | `.opencode/agent/*.md` (`mode`, `permission`, `temperature`, **`model`**) |
-| Standing rules wiring | `AGENTS.md` at the repository root |
-| Guardrail carrier | TS plugins registered in `opencode.json` (`tool.execute.before` + throw) |
+| Standing rules wiring | `.playbook/AGENTS.md`, listed in `.opencode/opencode.json` `instructions` (OpenCode 1); OpenCode 2.0.18 ignores `instructions`, so the spec-guardrails plugin adds it to the context |
+| Guardrail carrier | Plugin directories registered in `opencode.json` in the order `telemetry`, `spec-guardrails`, `yolo`; each has `index.ts` (OpenCode 1: `tool.execute.before` + throw) and `server.ts` (OpenCode 2: `tool` `execute.before`, a refused call renamed to its block message) |
 | Guardrail **policy** | Shared pure policy modules consumed by the OpenCode plugin carriers |
 | MCP registration | `opencode.json` `mcp` key with `{env:PLAYWRIGHT_MCP_URL}` syntax |
-| Instruction/profile injection | `opencode.json` `instructions: []` |
+| Instruction/profile injection | `opencode.json` `instructions: []` (OpenCode 1); the spec-guardrails `server.ts` `session` `context` hook (OpenCode 2) |
 | Tier → model resolution | `playbook/model-tiers.yml` → concrete `provider/model` strings stamped into command/agent frontmatter |
 | Install validation | `playbook-validate.mjs` asserts that the emitted OpenCode pack is complete |
 
@@ -38,7 +38,7 @@ remain canonical inputs rather than runtime-generated behavior.
 - The ten phase documents, the gate semantics, the verdict vocabulary
   (`PASS`/`FAIL`/`PASS (code-audit)`/…), the checklist item format, the Status Table and Run
   Log contracts.
-- Every command **body** and the 1,050-line Verifier prompt — they are already
+- Every command **body**, the Verifier prompt and its per-item-type adapters — they are already
   harness-portable prose. The only tolerated in-body divergence is a two-line "tool
   vocabulary" guidance needed for OpenCode's `task` tool; command text is not forked.
 - `playbook/environment-profile.yml`, handoff templates, the HTML doc shell.
@@ -53,8 +53,7 @@ remain canonical inputs rather than runtime-generated behavior.
 - **Session mechanics** — resume, compaction, child-session UX, "restart after config
   change". These never cross the framework's contract surface; phase docs already say only
   "Chat: fresh".
-- **Parallelism mechanics.** OpenCode's `task` tool is the native delegation mechanism, and
-  `harness/README.md` documents serial fallback as acceptable.
+- **Parallelism mechanics.** OpenCode's `task` tool is the native delegation mechanism.
 - **Telemetry transport.** OpenCode's event and SQLite sources feed one emit schema; see
   `Telemetry-Hooks.md`. Abstracting the transport itself buys nothing.
 - **TUI ergonomics, cost display, model pickers** — irrelevant to correctness.

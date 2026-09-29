@@ -256,3 +256,30 @@ group miss, amendment, escape, rework, time or cost figures by actor. “Who ame
 forbidden. Per-actor reporting would discourage recording and destroy both the data and the
 learning loop; closed vocabularies and this reporting ban are the privacy controls for the
 committed stream.
+
+## 2026-09-27 — Two supported OpenCode versions; plugins become directories
+
+Recorded in `docs/Playbook-Requirements.md` (Decisions, 2026-09-27). Paths in the entries above
+predate this and name the old single-file plugins (`telemetry.ts`, `spec-guardrails.ts`,
+`yolo.ts`); they are left as written.
+
+### Decision 1 — support OpenCode 1.18.32 and 2.0.18 side by side
+
+`package.json` `opencode.supported` lists both; CI (`validate.yml`, `platforms.yml`,
+`release.yml`) installs each through `scripts/opencode-package.mjs` (`opencode-ai` for 1.x,
+`@opencode/cli` for 2.x) and runs every check on it. This names what is tested; it does not refuse
+another version, so the 2026-08-20 "no version pinning" entry still holds.
+
+### Decision 2 — one install serves both: a plugin is a directory
+
+OpenCode 2 loads a configured plugin only as a directory (its `server.ts`), so each guard plugin is
+`.opencode/playbook-plugin/<name>/` with `index.ts` (OpenCode 1) and `server.ts` (OpenCode 2),
+listed in the order `telemetry`, `spec-guardrails`, `yolo`. The policies (`write-policy.mjs`,
+`yolo-policy.mjs`) stay shared. `install --force` migrates an older install; a non-forced upgrade
+that keeps an old config is announced by the installer.
+
+### Decision 3 — a missing guard is loud
+
+Every plugin leaves `[playbook-guard] <name> loaded` in the system prompt and its name in
+`PLAYBOOK_GUARDS`; the standing rules make an agent open with `PLAYBOOK GUARDS NOT LOADED`, run
+`playbook-guards.mjs` and write nothing when one is missing (PB-45).

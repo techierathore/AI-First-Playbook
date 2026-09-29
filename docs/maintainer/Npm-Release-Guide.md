@@ -44,7 +44,8 @@ Agents do not stage, commit, push, or tag. No version-only commit is required.
 2. Select **Draft a new release**.
 3. Create a new semantic-version tag beginning with `v`, such as `v0.1.1`.
 4. Target the commit containing the package changes.
-5. Add release notes describing the package changes.
+5. Add release notes describing the package changes: start from the `Unreleased` section of
+   [Changelog.md](Changelog.md), then retitle that section with the new version and date.
 6. Select **Publish release**.
 
 Publishing the GitHub Release starts `.github/workflows/release.yml`. Merely pushing a tag does
@@ -55,17 +56,22 @@ version that already exists before publishing.
 
 ## 5. What CI/CD Does Automatically
 
-The **Publish npm package** workflow:
+The **Publish npm package** workflow validates once per supported OpenCode (`package.json`
+`opencode.supported`: 1.18.32 and 2.0.18); each validation job:
 
 1. Checks out the exact GitHub Release tag.
 2. Installs Node.js 22.14.0 and npm 11.5.1.
 3. Validates the `vX.Y.Z` release tag and applies `X.Y.Z` to the runner's package manifest.
 4. Verifies that `X.Y.Z` does not already exist on npm.
-5. Runs repository validation, guardrail tests and miss-telemetry tests.
-6. Runs `npm pack --dry-run`.
-7. Checks the release commit for whitespace errors.
-8. Publishes stable versions under npm tag `latest` and prereleases under `next`, through OIDC
-   with npm provenance.
+5. Installs that OpenCode (`node scripts/opencode-package.mjs <version>` names the npm package:
+   `opencode-ai` for 1.x, `@opencode/cli` for 2.x).
+6. Runs repository validation, guardrail tests, miss-telemetry tests and install tests.
+7. Runs `npm pack --dry-run`.
+8. Runs the requirement grader (`scripts/playbook-grade.mjs docs/Playbook-Requirements.md`).
+9. Checks the release commit for whitespace errors.
+
+Only when every validation job passes does it publish, stable versions under npm tag `latest` and
+prereleases under `next`, through OIDC with npm provenance.
 
 You do not need to run those validation commands manually. A failed check stops publication.
 

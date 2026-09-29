@@ -37,9 +37,15 @@ npx @techierathore/ai-first-playbook@latest install --dry-run
 npx @techierathore/ai-first-playbook@latest install
 ```
 
-Requires Node.js 22.14.0+, npm 11.5.1+ and OpenCode. Only `.opencode/`, `.playbook/` and a managed
-`.gitignore` block reach the project. Upgrade, uninstall and source-clone installs are in
+Requires Node.js 22.14.0+, npm 11.5.1+ and OpenCode 1.18.32 or 2.0.18 (the supported versions,
+`package.json` `opencode.supported`). Only `.opencode/`, `.playbook/` and a managed
+`.gitignore` block reach the project. Upgrade (`install --force`, which also moves an older install
+to the current plugin layout), uninstall and source-clone installs are in
 [Getting Started](docs/Getting-Started.md#2-install).
+
+The three guard plugins — `telemetry`, `spec-guardrails` and `yolo` — each announce themselves
+when they load. If one does not, the session opens with `PLAYBOOK GUARDS NOT LOADED` and writes
+nothing until a person fixes the install.
 
 ## The problem
 
@@ -105,24 +111,29 @@ A **fresh-context, independent agent** (it did not write the code, so it has no 
 believe the work is done) that must prove every claim by **running the real code path and
 observing the real side effect**:
 
-- **Playwright MCP** for web UI: checks every mockup element via the accessibility tree,
-  takes screenshots. Code audit is the explicit *last resort*, never the default.
-- **dotnet integration tests and runner consoles** it writes itself under
-  `verification/` — builds the app's host, triggers the real sync/job, opens a real
-  `SqlConnection` using the app's own config, asserts the view actually populated,
-  greps the real logs for the required INFO lines.
-- **Environment probing + real config only**: `command -v` for every tool it needs;
-  connection strings from `appsettings.Development.json` — never invented, never logged.
-- **Three forbidden excuses**: "no SQL access", "can't run the web app", "can't run the
-  Windows app". Each has a prescribed workaround; only the human may authorize skipping.
-- Verdicts: `PASS`, `FAIL`, `PASS (code-audit)`, `FAIL (code-audit)`, `DATA-GAP`, `BLOCKED` — written
-  inline in the checklist with evidence. *"A 200 response with zero rows written is a
-  FAIL, not a pass."*
+- **Environment facts from the profile only**: `playbook-probe.mjs` reports every fact in
+  `.playbook/environment-profile.yml` as `ok`, `blocked` or `down`; a missing port, host, path or
+  tool is recorded by name, never guessed. Config values reach commands only through
+  `secret-safe-config-resolver.mjs` — never printed, never logged.
+- **Split by item type**: `checklist-plan.mjs verify` buckets the in-scope items, and each
+  bucket's sub-verifier loads only its adapter (UI, API, database, logging/infrastructure,
+  desktop). UI items are driven with Playwright while the browser endpoint answers; database
+  items are queried through the profile's database method; desktop items run the real library
+  code from a console runner under `verification/`.
+- **Runtime before code audit**: a real headless or runtime path is attempted first. `BLOCKED` is
+  last, after the config was read, the codebase workaround tried and the user asked once; the
+  result writer refuses a `BLOCKED` without that audit.
+- Outcomes: `PASS`, `FAIL`, `PASS (code-audit)`, `FAIL (code-audit)`, `BLOCKED`, and the
+  non-verdict `DATA-GAP` — written inline in the checklist with evidence by
+  `verification-result-writer.mjs`. *"A 200 response with zero rows written is a FAIL, not a
+  pass."*
 
 Full spec: [`templates/verifier-agent.md`](templates/verifier-agent.md) and
-[`phases/05-verify.md`](phases/05-verify.md). The **runnable agent** — all 1,050 lines of
-probes, anti-excuse rules, and verdict discipline — is
-[`harness/opencode/agent/verifier.md`](harness/opencode/agent/verifier.md).
+[`phases/05-verify.md`](phases/05-verify.md). The **runnable agent** is
+[`harness/opencode/agent/verifier.md`](harness/opencode/agent/verifier.md), a short core that
+hands probing, planning, result writing and the summary to the runtime scripts, with one adapter
+per item type in
+[`harness/opencode/templates/verifier/`](harness/opencode/templates/verifier).
 
 ## The command library
 
@@ -141,6 +152,12 @@ Supporting: `/analyze-fix`, `/add-doc`, `/refresh-doc`, `/upgrade-docs`,
 `/create-issue-list`, `/amend-checklist`, `/archive-checklist`, `/generate-html`,
 `/update-context`, `/legacy-audit`, `/log-miss`. `/log-miss` is the quick between-phase
 front door: classify and append a durable record without booting or reproducing the app.
+`/update-context` maintains this repository's `Context-Prompt.md` and is not installed into
+projects, so an installed project has the other fourteen.
+
+On OpenCode 1, `opencode run --command <name>` runs a command headlessly. OpenCode 2's `run` sends
+`/<name> …` to the agent as plain text, so use
+`node .playbook/scripts/opencode-command.mjs <name> "<arguments>"`, which works on both.
 
 ## What is checked by a script
 
@@ -154,7 +171,8 @@ prints `N of M graded` and appends one verdict per requirement to
 Source layout, design decisions, telemetry contracts, YOLO supervision, model routing, the WSL
 setup and the npm release procedure live under [docs/maintainer/](docs/maintainer/). The runnable
 OpenCode files are in [harness/](harness/) ([harness/README.md](harness/README.md)); runtime scripts
-are in [scripts/](scripts/) and their checks in [tests/](tests/). Superseded documents are kept in
+are in [scripts/](scripts/) and their checks in [tests/](tests/). Changes since the last release are
+in [docs/maintainer/Changelog.md](docs/maintainer/Changelog.md). Superseded documents are kept in
 `docs/archive/`.
 
 This is the team edition; the solo edition is

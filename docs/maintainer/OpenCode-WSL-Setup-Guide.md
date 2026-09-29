@@ -275,16 +275,22 @@ on a spinner.
 
 ## Step 6 — Install OpenCode
 
+The Playbook supports OpenCode 1.18.32 and 2.0.18 (`package.json` `opencode.supported`). Both
+install an `opencode` binary, so pick one.
+
 **Ubuntu:**
 
 ```bash
-curl -fsSL https://opencode.ai/install | bash
+curl -fsSL https://opencode.ai/install | bash -s -- --version 1.18.32   # OpenCode 1
+# or: curl -fsSL https://opencode.ai/v2/install | bash                  # OpenCode 2
 echo 'export PATH="$HOME/.opencode/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 opencode --version
 ```
 
-**Expect:** a version number.
+**Expect:** a version number — `1.18.32`, or for OpenCode 2 the version the v2 installer
+fetched; the supported 2.x version is `2.0.18` (`npm install -g @opencode/cli@2.0.18` installs
+exactly that).
 
 **If it fails:**
 
@@ -292,7 +298,7 @@ opencode --version
 |---|---|
 | `curl: (60) SSL certificate problem` | Step 4 was skipped or didn't take. Re-run Step 4d. |
 | `opencode: command not found` after a successful install | The `PATH` line above wasn't applied. Run `source ~/.bashrc`, or open a new Ubuntu terminal. |
-| The proxy blocks `opencode.ai` entirely but npm works | Install through npm instead: `npm config set cafile /etc/ssl/certs/ca-certificates.crt` then `npm install -g opencode-ai`. |
+| The proxy blocks `opencode.ai` entirely but npm works | Install through npm instead: `npm config set cafile /etc/ssl/certs/ca-certificates.crt` then `npm install -g opencode-ai@1.18.32` (OpenCode 1) or `npm install -g @opencode/cli@2.0.18` (OpenCode 2). The npm package `opencode2` is **not** OpenCode 2. |
 
 ---
 
